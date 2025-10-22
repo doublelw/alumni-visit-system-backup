@@ -1,0 +1,21 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 圆形背景 -->
+  <circle cx="16" cy="16" r="16" fill="#4A90E2"/>
+
+  <!-- 建筑物轮廓 -->
+  <rect x="6" y="12" width="20" height="15" fill="white"/>
+
+  <!-- 建筑物细节 -->
+  <rect x="8" y="14" width="3" height="3" fill="#4A90E2"/>
+  <rect x="13" y="14" width="3" height="3" fill="#4A90E2"/>
+  <rect x="18" y="14" width="3" height="3" fill="#4A90E2"/>
+  <rect x="8" y="19" width="3" height="3" fill="#4A90E2"/>
+  <rect x="13" y="19" width="3" height="3" fill="#4A90E2"/>
+  <rect x="18" y="19" width="3" height="3" fill="#4A90E2"/>
+
+  <!-- 大门 -->
+  <rect x="14" y="22" width="4" height="5" fill="#2C5282"/>
+
+  <!-- 校友标志 -->
+  <text x="16" y="9" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="8" font-weight="bold">校友</text>
+</svg>

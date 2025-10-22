@@ -1,0 +1,20 @@
+[Unit]
+Description=LS Alumni System
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+RuntimeDirectory=lsalumni
+WorkingDirectory=/var/www/lsalumni
+Environment=PATH=/var/www/lsalumni/venv/bin
+Environment=FLASK_ENV=production
+ExecStart=/var/www/lsalumni/venv/bin/gunicorn -c gunicorn_config.py run:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

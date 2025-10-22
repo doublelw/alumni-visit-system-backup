@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1976d2">
+    <title>管理后台登录 - 校友入校登记系统</title>
+
+    <!-- 引入字体 -->
+    <style>
+        /* 使用系统字体避免HTTPS请求 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+    </style>
+
+    <!-- 引入图标 -->
+    <link href="/static/vendor/remixicon.css" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .login-header {
+            margin-bottom: 40px;
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .login-logo i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .login-title {
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .login-form {
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+        }
+
+        .form-input.error {
+            border-color: #f44336;
+        }
+
+        .input-icon {
+            position: relative;
+        }
+
+        .input-icon i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 18px;
+        }
+
+        .input-icon .form-input {
+            padding-left: 48px;
+        }
+
+        .form-error {
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .form-error.show {
+            display: block;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .login-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(25, 118, 210, 0.3);
+        }
+
+        .login-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .login-button.loading {
+            background: #ccc;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        .login-button.loading .spinner {
+            display: inline-block;
+        }
+
+        .login-button.loading .button-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .login-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .login-footer a {
+            color: #1976d2;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .default-account {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .default-account strong {
+            color: #333;
+        }
+
+        .alert {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid #f44336;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border-left-color: #4caf50;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+
+            .login-title {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="login-logo">
+                <i class="ri-shield-user-line"></i>
+            </div>
+            <h1 class="login-title">管理后台</h1>
+            <p class="login-subtitle">校友入校登记系统</p>
+        </div>
+
+        <div class="alert" id="alertBox"></div>
+
+        <form class="login-form" id="loginForm">
+            <div class="form-group">
+                <label for="username" class="form-label">用户名</label>
+                <div class="input-icon">
+                    <i class="ri-user-line"></i>
+                    <input type="text" id="username" name="username" class="form-input"
+                           placeholder="请输入管理员用户名" required autocomplete="username">
+                </div>
+                <div class="form-error" id="usernameError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">密码</label>
+                <div class="input-icon">
+                    <i class="ri-lock-line"></i>
+                    <input type="password" id="password" name="password" class="form-input"
+                           placeholder="请输入密码" required autocomplete="current-password">
+                </div>
+                <div class="form-error" id="passwordError"></div>
+            </div>
+
+            <button type="submit" class="login-button" id="loginButton">
+                <div class="spinner"></div>
+                <span class="button-text">
+                    <i class="ri-login-box-line"></i>
+                    登录
+                </span>
+            </button>
+        </form>
+
+        <div class="default-account">
+            <strong>默认管理员账户：</strong><br>
+            用户名：<code>admin</code><br>
+            密码：<code>admin123</code>
+        </div>
+
+        <div class="login-footer">
+            <a href="/">← 返回主页面</a>
+        </div>
+    </div>
+
+    <script>
+        // DOM 元素
+        const loginForm = document.getElementById('loginForm');
+        const loginButton = document.getElementById('loginButton');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const alertBox = document.getElementById('alertBox');
+        const usernameError = document.getElementById('usernameError');
+        const passwordError = document.getElementById('passwordError');
+
+        // 显示提示信息
+        function showAlert(message, type = 'error') {
+            alertBox.textContent = message;
+            alertBox.className = `alert ${type} show`;
+
+            // 5秒后自动隐藏
+            setTimeout(() => {
+                alertBox.classList.remove('show');
+            }, 5000);
+        }
+
+        // 显示字段错误
+        function showFieldError(field, message) {
+            const errorElement = document.getElementById(field + 'Error');
+            const inputElement = document.getElementById(field);
+
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+            inputElement.classList.add('error');
+        }
+
+        // 清除所有错误
+        function clearErrors() {
+            document.querySelectorAll('.form-error').forEach(el => {
+                el.classList.remove('show');
+            });
+            document.querySelectorAll('.form-input').forEach(el => {
+                el.classList.remove('error');
+            });
+            alertBox.classList.remove('show');
+        }
+
+        // 设置加载状态
+        function setLoading(loading) {
+            if (loading) {
+                loginButton.classList.add('loading');
+                loginButton.disabled = true;
+                usernameInput.disabled = true;
+                passwordInput.disabled = true;
+            } else {
+                loginButton.classList.remove('loading');
+                loginButton.disabled = false;
+                usernameInput.disabled = false;
+                passwordInput.disabled = false;
+            }
+        }
+
+        // 表单验证
+        function validateForm() {
+            clearErrors();
+            let isValid = true;
+
+            if (!usernameInput.value.trim()) {
+                showFieldError('username', '请输入用户名');
+                isValid = false;
+            }
+
+            if (!passwordInput.value) {
+                showFieldError('password', '请输入密码');
+                isValid = false;
+            } else if (passwordInput.value.length < 6) {
+                showFieldError('password', '密码至少需要6个字符');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // 登录请求
+        async function performLogin(username, password) {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.user && data.user.user_type === 'admin') {
+                    // 登录成功，保存令牌和用户信息
+                    localStorage.setItem('admin_token', data.access_token);
+                    localStorage.setItem('admin_user', JSON.stringify(data.user));
+
+                    showAlert('登录成功，正在跳转...', 'success');
+
+                    // 跳转到管理后台
+                    setTimeout(() => {
+                        window.location.href = '/admin';
+                    }, 1000);
+
+                } else if (response.ok && data.user && data.user.user_type !== 'admin') {
+                    showAlert('此账户没有管理权限', 'error');
+                } else {
+                    showAlert(data.error || '登录失败，请检查用户名和密码');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('网络错误，请稍后重试');
+            }
+        }
+
+        // 表单提交
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!validateForm()) {
+                return;
+            }
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            setLoading(true);
+
+            try {
+                await performLogin(username, password);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // 输入事件监听
+        usernameInput.addEventListener('input', () => {
+            clearErrors();
+        });
+
+        passwordInput.addEventListener('input', () => {
+            clearErrors();
+        });
+
+        // 检查是否已经登录
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('admin_token');
+            const userStr = localStorage.getItem('admin_user');
+
+            if (token && userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    if (user.user_type === 'admin') {
+                        // 已经登录，直接跳转到管理后台
+                        window.location.href = '/admin';
+                        return;
+                    }
+                } catch (error) {
+                    // 清除无效的数据
+                    localStorage.removeItem('admin_token');
+                    localStorage.removeItem('admin_user');
+                }
+            }
+
+            // 自动填充默认账户信息（开发环境）
+            if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+                usernameInput.value = 'admin';
+                passwordInput.value = 'admin123';
+            }
+        });
+
+        // 回车键登录
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !loginButton.disabled) {
+                loginForm.dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>

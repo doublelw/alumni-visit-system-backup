@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提交申请测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 10px 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>提交申请功能测试</h1>
+
+    <div class="section">
+        <h3>1. 检查用户登录状态</h3>
+        <button onclick="checkAuthStatus()">检查登录状态</button>
+        <div id="authResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>2. 测试拜访对象搜索</h3>
+        <input type="text" id="workIdInput" placeholder="输入工作ID (如: EMP001)" style="width: 200px; padding: 5px;">
+        <button onclick="testTargetPersonSearch()">搜索</button>
+        <div id="searchResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>3. 测试提交申请</h3>
+        <button onclick="testSubmitApplication()">提交测试申请</button>
+        <div id="submitResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>4. 查看申请历史</h3>
+        <button onclick="loadApplicationHistory()">加载历史</button>
+        <div id="historyResult"></div>
+    </div>
+
+    <script>
+        // 模拟API请求
+        async function apiRequest(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            const token = localStorage.getItem('token');
+            if (token) {
+                defaultOptions.headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(url, { ...defaultOptions, ...options });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || `请求失败 (${response.status})`);
+            }
+
+            return data;
+        }
+
+        // 检查登录状态
+        async function checkAuthStatus() {
+            const resultDiv = document.getElementById('authResult');
+            resultDiv.innerHTML = '<p class="info">检查中...</p>';
+
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    resultDiv.innerHTML = '<p class="error">未找到登录token</p>';
+                    return;
+                }
+
+                const data = await apiRequest('/api/users/profile');
+                resultDiv.innerHTML = `
+                    <p class="success">用户已登录</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">登录检查失败: ${error.message}</p>`;
+            }
+        }
+
+        // 测试拜访对象搜索
+        async function testTargetPersonSearch() {
+            const workId = document.getElementById('workIdInput').value.trim();
+            const resultDiv = document.getElementById('searchResult');
+
+            if (!workId) {
+                resultDiv.innerHTML = '<p class="error">请输入工作ID</p>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<p class="info">搜索中...</p>';
+
+            try {
+                const data = await apiRequest(`/api/target-persons/search?work_id=${encodeURIComponent(workId)}`);
+                resultDiv.innerHTML = `
+                    <p class="success">找到拜访对象</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">搜索失败: ${error.message}</p>`;
+            }
+        }
+
+        // 测试提交申请
+        async function testSubmitApplication() {
+            const resultDiv = document.getElementById('submitResult');
+            resultDiv.innerHTML = '<p class="info">提交中...</p>';
+
+            const testData = {
+                visit_date: '2025-10-27',
+                visit_time_start: '10:00',
+                visit_time_end: '12:00',
+                visit_purpose: '测试访问',
+                target_work_id: 'EMP001',
+                target_person: '张伟',
+                target_department: '计算机科学与技术学院',
+                visitor_name: '测试用户',
+                visitor_phone: '13800138000',
+                visitor_id_card: '123456789012345678',
+                visit_type: 'in-person'
+            };
+
+            try {
+                const data = await apiRequest('/api/visits/applications', {
+                    method: 'POST',
+                    body: JSON.stringify(testData)
+                });
+
+                resultDiv.innerHTML = `
+                    <p class="success">申请提交成功！</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">提交失败: ${error.message}</p>`;
+            }
+        }
+
+        // 加载申请历史
+        async function loadApplicationHistory() {
+            const resultDiv = document.getElementById('historyResult');
+            resultDiv.innerHTML = '<p class="info">加载中...</p>';
+
+            try {
+                const data = await apiRequest('/api/visits/applications');
+
+                if (data.applications.length === 0) {
+                    resultDiv.innerHTML = '<p class="info">暂无申请记录</p>';
+                    return;
+                }
+
+                const historyHtml = data.applications.map(app => `
+                    <div style="border: 1px solid #ddd; margin: 10px 0; padding: 10px;">
+                        <strong>ID:</strong> ${app.id}<br>
+                        <strong>访问日期:</strong> ${app.visit_date}<br>
+                        <strong>访问时间:</strong> ${app.visit_time_start} - ${app.visit_time_end}<br>
+                        <strong>拜访对象:</strong> ${app.target_person}<br>
+                        <strong>状态:</strong> ${app.application_status}<br>
+                        <strong>创建时间:</strong> ${app.created_at}
+                    </div>
+                `).join('');
+
+                resultDiv.innerHTML = `
+                    <p class="success">找到 ${data.applications.length} 条申请记录</p>
+                    ${historyHtml}
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">加载失败: ${error.message}</p>`;
+            }
+        }
+
+        // 页面加载时自动检查登录状态
+        window.onload = function() {
+            checkAuthStatus();
+        };
+    </script>
+</body>
+</html>

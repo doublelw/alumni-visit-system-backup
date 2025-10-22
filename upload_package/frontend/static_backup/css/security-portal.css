@@ -1,0 +1,295 @@
+/**
+ * 保安管理端样式
+ */
+
+/* 全局样式 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 工具类 */
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-in-out;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* 验证区域样式 */
+.verification-section {
+    transition: all 0.3s ease-in-out;
+}
+
+.verification-section.active {
+    border-color: #3b82f6 !important;
+    background-color: #eff6ff;
+}
+
+/* 人脸识别视频样式 */
+#faceVideo {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+#faceVideo.active {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* 操作记录样式 */
+.log-item {
+    transition: all 0.2s ease;
+    border-left: 4px solid transparent;
+}
+
+.log-item:hover {
+    background-color: #f9fafb;
+    border-left-color: #3b82f6;
+}
+
+.log-item.success {
+    border-left-color: #10b981;
+}
+
+.log-item.failed {
+    border-left-color: #ef4444;
+}
+
+.log-item.warning {
+    border-left-color: #f59e0b;
+}
+
+/* 访客信息卡片样式 */
+.visitor-info-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.visitor-info-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.visitor-info-card.valid {
+    border-color: #10b981;
+    background-color: #f0fdf4;
+}
+
+.visitor-info-card.invalid {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+}
+
+/* 状态标签样式 */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-badge.checked-in {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-badge.checked-out {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge.scheduled {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-badge.absent {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* 按钮样式增强 */
+.btn-enhanced {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.btn-enhanced::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.btn-enhanced:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* 输入框样式增强 */
+.input-enhanced {
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.input-enhanced:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Toast 提示样式 */
+.toast-success {
+    border-left: 4px solid #10b981;
+    background-color: #f0fdf4;
+}
+
+.toast-error {
+    border-left: 4px solid #ef4444;
+    background-color: #fef2f2;
+}
+
+.toast-warning {
+    border-left: 4px solid #f59e0b;
+    background-color: #fffbeb;
+}
+
+.toast-info {
+    border-left: 4px solid #3b82f6;
+    background-color: #eff6ff;
+}
+
+/* 卡片悬浮效果 */
+.hover-card {
+    transition: all 0.3s ease;
+}
+
+.hover-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* 进度条样式 */
+.progress-bar {
+    position: relative;
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    transform: translateX(-100%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .mobile-stack {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .mobile-full {
+        width: 100% !important;
+    }
+
+    .mobile-center {
+        text-align: center;
+    }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+    .dark-mode {
+        background-color: #1f2937;
+        color: #f9fafb;
+    }
+
+    .dark-mode .bg-white {
+        background-color: #374151 !important;
+    }
+
+    .dark-mode .text-gray-900 {
+        color: #f9fafb !important;
+    }
+
+    .dark-mode .text-gray-600 {
+        color: #d1d5db !important;
+    }
+}
+
+/* 打印样式 */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .print-only {
+        display: block !important;
+    }
+}

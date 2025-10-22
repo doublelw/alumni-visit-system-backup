@@ -1,0 +1,17 @@
+# 校友入校登记系统部署包
+# 创建时间: nt.times_result(user=0.0625, system=0.078125, children_user=0.0, children_system=0.0, elapsed=0.0)
+# 目标服务器: 8.146.210.18
+# 部署路径: /var/www/lsalumni
+# 域名: www.pofeclife.top
+
+## 文件清单:
+- backend
+- frontend
+- run.py
+- requirements_prod.txt
+- gunicorn_config.py
+- nginx_config.conf
+- systemd_service.service
+- server_setup.sh
+- deploy.sh
+- README_DEPLOYMENT.md

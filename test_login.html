@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>登录测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+        .input-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+        button:hover { background: #0056b3; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        .account-info { background: #f0f0f0; padding: 15px; border-radius: 4px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h2>保安管理端登录测试</h2>
+
+    <div class="account-info">
+        <h3>测试账户信息：</h3>
+        <p><strong>用户名：</strong> test_security</p>
+        <p><strong>密码：</strong> 123456</p>
+        <p><strong>真实姓名：</strong> 测试保安</p>
+        <p><strong>账户类型：</strong> security</p>
+    </div>
+
+    <form id="loginForm">
+        <div class="input-group">
+            <label for="username">用户名：</label>
+            <input type="text" id="username" value="test_security" onclick="this.select();" onfocus="this.select();" required>
+        </div>
+
+        <div class="input-group">
+            <label for="password">密码：</label>
+            <input type="password" id="password" value="123456" onclick="this.select();" onfocus="this.select();" required>
+        </div>
+
+        <button type="submit">测试登录</button>
+        <button type="button" onclick="testWrongCredentials()">测试错误凭据</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+
+            resultDiv.innerHTML = '<p class="info">正在登录...</p>';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ 登录成功！</h3>
+                            <p>欢迎，${data.user.real_name}</p>
+                            <p>用户类型：${data.user.user_type}</p>
+                            <p>Token：${data.access_token.substring(0, 50)}...</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ 登录失败</h3>
+                            <p>${data.error}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ 网络错误</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+
+        async function testWrongCredentials() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p class="info">测试错误凭据...</p>';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: 'wrong', password: 'wrong' })
+                });
+
+                const data = await response.json();
+
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>✅ 错误凭据测试正常</h3>
+                        <p>服务器正确返回：${data.error}</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ 测试失败</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

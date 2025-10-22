@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>保安管理端</title>
+    <style>
+        /* 基础样式，替代Tailwind CSS */
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+        }
+
+        /* Tailwind CSS 类别替代 */
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-white { background-color: #ffffff; }
+        .bg-blue-50 { background-color: #eff6ff; }
+        .bg-blue-500 { background-color: #3b82f6; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-blue-700 { background-color: #1d4ed8; }
+        .bg-green-500 { background-color: #10b981; }
+        .bg-green-600 { background-color: #059669; }
+        .bg-red-500 { background-color: #ef4444; }
+        .bg-red-600 { background-color: #dc2626; }
+        .bg-gray-600 { background-color: #4b5563; }
+        .bg-black { background-color: #000000; }
+        .bg-indigo-600 { background-color: #4f46e5; }
+
+        .text-white { color: #ffffff; }
+        .text-gray-500 { color: #6b7280; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-900 { color: #111827; }
+        .text-blue-600 { color: #2563eb; }
+        .text-blue-800 { color: #1e40af; }
+        .text-blue-900 { color: #1e3a8a; }
+        .text-green-800 { color: #15803d; }
+        .text-red-600 { color: #dc2626; }
+        .text-red-800 { color: #991b1b; }
+
+        .min-h-screen { min-height: 100vh; }
+        .max-w-7xl { max-width: 1280px; margin-left: auto; margin-right: auto; }
+        .max-w-md { max-width: 28rem; margin-left: auto; margin-right: auto; }
+        .w-96 { width: 24rem; }
+        .w-full { width: 100%; }
+
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .p-8 { padding: 2rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+        .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .mr-1 { margin-right: 0.25rem; }
+        .mr-2 { margin-right: 0.5rem; }
+        .mr-3 { margin-right: 0.75rem; }
+        .mr-4 { margin-right: 1rem; }
+        .ml-2 { margin-left: 0.5rem; }
+
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+        .text-6xl { font-size: 3.75rem; line-height: 1; }
+
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        .block { display: block; }
+        .flex { display: flex; }
+        .inline-block { display: inline-block; }
+        .grid { display: grid; }
+        .hidden { display: none; }
+        .fixed { position: fixed; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .z-50 { z-index: 50; }
+
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .space-x-3 > * + * { margin-left: 0.75rem; }
+        .space-x-4 > * + * { margin-left: 1rem; }
+        .space-y-2 > * + * { margin-top: 0.5rem; }
+        .space-y-3 > * + * { margin-top: 0.75rem; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .space-y-8 > * + * { margin-top: 2rem; }
+
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .rounded-full { border-radius: 9999px; }
+
+        .border { border: 1px solid #d1d5db; }
+        .border-2 { border: 2px solid #d1d5db; }
+        .border-dashed { border-style: dashed; }
+        .border-gray-200 { border-color: #e5e7eb; }
+        .border-gray-300 { border-color: #d1d5db; }
+        .border-gray-400 { border-color: #9ca3af; }
+        .border-blue-200 { border-color: #bfdbfe; }
+        .border-transparent { border-color: transparent; }
+
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+
+        .hover\:bg-blue-600:hover { background-color: #2563eb; }
+        .hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+        .hover\:bg-green-600:hover { background-color: #059669; }
+        .hover\:bg-red-600:hover { background-color: #dc2626; }
+        .hover\:bg-gray-600:hover { background-color: #4b5563; }
+        .hover\:bg-gray-700:hover { background-color: #374151; }
+        .hover\:text-blue-800:hover { color: #1e40af; }
+        .hover\:border-gray-400:hover { border-color: #9ca3af; }
+
+        .focus\:outline-none:focus { outline: none; }
+        .focus\:ring-2:focus { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); }
+        .focus\:ring-blue-500:focus { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); }
+        .focus\:border-transparent:focus { border-color: transparent; }
+        .focus\:ring-offset-2:focus { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 0 1px rgba(255, 255, 255, 1); }
+
+        .disabled\:opacity-50:disabled { opacity: 0.5; }
+
+        .transition-colors { transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out; }
+
+        .bg-gradient-to-br {
+            background-image: linear-gradient(to bottom right, #3b82f6, #4f46e5);
+        }
+
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+
+        .bg-opacity-50 { background-color: rgba(0, 0, 0, 0.5); }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .flex-wrap { flex-wrap: wrap; }
+        .flex-1 { flex: 1 1 0%; }
+        .min-w-0 { min-width: 0px; }
+
+        /* 图标替代 - 使用emoji */
+        .bi-shield-check::before { content: "🛡️"; }
+        .bi-box-arrow-in-right::before { content: "🚪"; }
+        .bi-shield-fill-check::before { content: "🛡️"; }
+        .bi-box-arrow-right::before { content: "🚪"; }
+        .bi-clock-history::before { content: "⏰"; }
+        .bi-arrow-right-circle::before { content: "➡️"; }
+        .bi-arrow-left-circle::before { content: "⬅️"; }
+        .bi-person-check::before { content: "👤"; }
+        .bi-qr-code-scan::before { content: "📱"; }
+        .bi-person-badge::before { content: "🆔"; }
+        .bi-pencil-square::before { content: "✏️"; }
+        .bi-camera::before { content: "📷"; }
+        .bi-image::before { content: "🖼️"; }
+        .bi-pencil::before { content: "✏️"; }
+        .bi-play-circle::before { content: "▶️"; }
+        .bi-stop-circle::before { content: "⏹️"; }
+        .bi-cloud-upload::before { content: "☁️"; }
+        .bi-folder-open::before { content: "📁"; }
+        .bi-arrow-clockwise::before { content: "🔄"; }
+        .bi-camera-video::before { content: "📹"; }
+        .bi-plus-circle::before { content: "➕"; }
+        .bi-people::before { content: "👥"; }
+        .bi-journal-text::before { content: "📋"; }
+
+        .bi {
+            margin-right: 0.5rem;
+            display: inline-block;
+            width: 1.25rem;
+            text-align: center;
+        }
+
+        .border-b { border-bottom: 1px solid #e5e7eb; }
+    </style>
+    <link href="/static/css/security-portal.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <!-- 登录页面 -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600">
+        <div class="w-96 space-y-8 bg-white p-6 rounded-xl shadow-2xl">
+            <div class="text-center">
+                <i class="bi bi-shield-check text-6xl text-blue-600 mb-4"></i>
+                <h2 class="text-3xl font-bold text-gray-900">保安管理系统</h2>
+                <p class="mt-2 text-gray-600">请登录您的保安账户</p>
+            </div>
+
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">用户名</label>
+                    <input type="text" id="username" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="请输入保安用户名">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">密码</label>
+                    <input type="password" id="password" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="请输入密码">
+                </div>
+
+                <button type="submit" id="loginBtn"
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="bi bi-box-arrow-in-right mr-2"></i>
+                    登录
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 主页面 -->
+    <div id="mainPage" class="min-h-screen hidden">
+        <!-- 顶部导航 -->
+        <header class="bg-white shadow-md border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <i class="bi bi-shield-fill-check text-3xl text-blue-600 mr-3"></i>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">保安管理系统</h1>
+                            <p class="text-sm text-gray-500">访客验证与出入管理</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-gray-900" id="securityName">-</p>
+                            <p class="text-xs text-gray-500" id="shiftStatus">-</p>
+                        </div>
+                        <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                            <i class="bi bi-box-arrow-right mr-1"></i>
+                            退出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- 班次管理卡片 -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">
+                        <i class="bi bi-clock-history text-blue-600 mr-2"></i>
+                        班次管理
+                    </h2>
+                    <div id="currentTime" class="text-lg font-medium text-gray-700"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-sm text-gray-600">今日日期</p>
+                        <p class="text-lg font-semibold text-gray-900" id="todayDate">-</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-sm text-gray-600">班次时间</p>
+                        <p class="text-lg font-semibold text-gray-900" id="shiftTime">-</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-sm text-gray-600">工作时长</p>
+                        <p class="text-lg font-semibold text-gray-900" id="workDuration">-</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-center mt-6">
+                    <button id="checkInBtn" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors mr-4">
+                        <i class="bi bi-arrow-right-circle mr-2"></i>
+                        签到
+                    </button>
+                    <button id="checkOutBtn" class="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50" disabled>
+                        <i class="bi bi-arrow-left-circle mr-2"></i>
+                        签退
+                    </button>
+                </div>
+            </div>
+
+            <!-- 访客验证区域 -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">
+                    <i class="bi bi-person-check text-blue-600 mr-2"></i>
+                    访客验证
+                </h2>
+
+                <!-- 验证方式选择 -->
+                <div class="flex space-x-4 mb-6">
+                    <button id="qrScanBtn" class="flex-1 bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                        <i class="bi bi-qr-code-scan mr-2"></i>
+                        扫描二维码
+                    </button>
+                    <button id="faceScanBtn" class="flex-1 bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 transition-colors">
+                        <i class="bi bi-person-badge mr-2"></i>
+                        人脸识别
+                    </button>
+                    <button id="manualBtn" class="flex-1 bg-gray-500 text-white px-4 py-3 rounded-lg hover:bg-gray-600 transition-colors">
+                        <i class="bi bi-pencil-square mr-2"></i>
+                        手动输入
+                    </button>
+                </div>
+
+                <!-- 二维码扫描区域 -->
+                <div id="qrScanSection" class="verification-section hidden">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                        <i class="bi bi-qr-code-scan text-6xl text-gray-400 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">二维码扫描验证</h3>
+                        <p class="text-gray-600 mb-6">选择扫描方式进行访客信息验证</p>
+
+                        <!-- 扫描方式选择 -->
+                        <div class="flex flex-wrap justify-center gap-3 mb-6">
+                            <button id="openCameraBtn"
+                                    class="flex-1 min-w-0 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="bi bi-camera"></i> 打开相机
+                            </button>
+                            <button id="uploadImageBtn"
+                                    class="flex-1 min-w-0 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                <i class="bi bi-image"></i> 上传图片
+                            </button>
+                            <button id="manualInputBtn"
+                                    class="flex-1 min-w-0 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                                <i class="bi bi-pencil"></i> 手动输入
+                            </button>
+                        </div>
+
+                        <!-- 相机扫描区域 -->
+                        <div id="cameraScanArea" class="hidden max-w-md mx-auto">
+                            <video id="qrCameraVideo" class="w-full rounded-lg mb-4" style="display: none;"></video>
+                            <canvas id="qrCameraCanvas" class="hidden"></canvas>
+                            <div class="flex justify-center space-x-3">
+                                <button id="startCameraBtn"
+                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="bi bi-play-circle"></i> 启动相机
+                                </button>
+                                <button id="captureQrBtn"
+                                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50" disabled>
+                                    <i class="bi bi-camera"></i> 拍照识别
+                                </button>
+                                <button id="stopCameraBtn"
+                                        class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors hidden">
+                                    <i class="bi bi-stop-circle"></i> 停止相机
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 图片上传区域 -->
+                        <div id="imageUploadArea" class="hidden max-w-md mx-auto">
+                            <div class="border-2 border-dashed border-gray-400 rounded-lg p-6 mb-4">
+                                <i class="bi bi-cloud-upload text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600 mb-4">点击选择或拖拽二维码图片到此处</p>
+                                <input type="file" id="qrImageInput" accept="image/*" capture="environment" class="hidden">
+                                <button id="selectImageBtn"
+                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="bi bi-folder-open"></i> 选择图片
+                                </button>
+                            </div>
+                            <div id="qrImagePreview" class="hidden mb-4">
+                                <img id="qrPreviewImg" class="w-full rounded-lg" alt="二维码预览">
+                                <button id="reselectImageBtn"
+                                        class="mt-2 w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                                    <i class="bi bi-arrow-clockwise"></i> 重新选择
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 手动输入区域 -->
+                        <div id="manualInputArea" class="hidden max-w-md mx-auto">
+                            <input type="number" id="applicationIdInput"
+                                   class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="请输入访问申请编号" min="1">
+                            <button id="verifyManualQrBtn"
+                                    class="mt-4 w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                                <i class="bi bi-search"></i> 验证访问信息
+                            </button>
+                        </div>
+
+                        <!-- 扫描结果显示 -->
+                        <div id="qrScanResult" class="hidden max-w-md mx-auto mt-4">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p class="text-sm font-medium text-blue-800 mb-1">识别结果：</p>
+                                <p id="qrScanResultText" class="text-lg font-semibold text-blue-900"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 人脸识别区域 -->
+                <div id="faceScanSection" class="verification-section hidden">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                        <i class="bi bi-camera-video text-6xl text-gray-400 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">人脸识别验证</h3>
+                        <p class="text-gray-600 mb-4">请对准摄像头进行人脸识别验证</p>
+
+                        <div class="max-w-md mx-auto">
+                            <video id="faceVideo" class="w-full rounded-lg mb-4" style="display: none;"></video>
+                            <canvas id="faceCanvas" class="hidden"></canvas>
+                            <button id="startFaceScanBtn"
+                                    class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold">
+                                <i class="bi bi-camera"></i> 开始人脸识别
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 手动输入区域 -->
+                <div id="manualSection" class="verification-section hidden">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">手动输入访客信息</h3>
+
+                        <!-- 访客基本信息 -->
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3">访客基本信息</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">访客姓名 *</label>
+                                    <input type="text" id="manualName" placeholder="请输入访客姓名"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">联系电话 *</label>
+                                    <input type="text" id="manualPhone" placeholder="请输入联系电话"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">访问目的</label>
+                                    <input type="text" id="manualPurpose" placeholder="请输入访问目的"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">被访人</label>
+                                    <input type="text" id="manualTarget" placeholder="请输入被访人姓名"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 同行人信息 -->
+                        <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-semibold text-gray-700">同行人信息</h4>
+                                <button id="addCompanionBtn"
+                                        class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors text-sm">
+                                    <i class="bi bi-plus-circle mr-1"></i> 添加同行人
+                                </button>
+                            </div>
+                            <div id="companionsList" class="space-y-2">
+                                <!-- 同行人列表将动态插入这里 -->
+                                <div class="text-center text-gray-500 py-2">
+                                    <i class="bi bi-people text-2xl mb-2"></i>
+                                    <p class="text-sm">暂无同行人</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="verifyManualBtn"
+                                class="mt-4 w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                            <i class="bi bi-search"></i> 验证访客信息
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 验证结果区域 -->
+            <div id="verificationResult" class="hidden bg-white rounded-lg shadow-lg p-6 mb-8">
+                <!-- 结果内容将动态插入 -->
+            </div>
+
+            <!-- 操作记录区域 -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">
+                        <i class="bi bi-journal-text text-blue-600 mr-2"></i>
+                        今日操作记录
+                    </h2>
+                    <button id="refreshLogsBtn" class="text-blue-600 hover:text-blue-800">
+                        <i class="bi bi-arrow-clockwise mr-1"></i>
+                        刷新
+                    </button>
+                </div>
+
+                <div id="logsContainer" class="space-y-2">
+                    <!-- 记录内容将动态插入 -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-4 flex items-center">
+            <i id="toastIcon" class="text-2xl mr-3"></i>
+            <div>
+                <p id="toastTitle" class="font-semibold text-gray-900"></p>
+                <p id="toastMessage" class="text-sm text-gray-600"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载提示 -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p id="loadingText" class="text-gray-700">处理中...</p>
+        </div>
+    </div>
+
+    <script>
+        // 简化的jsQR实现，用于二维码识别
+        // 注意：这是一个简化版本，实际项目中应该使用完整的jsQR库
+        (function(global) {
+            'use strict';
+
+            function jsQR(data, width, height, options) {
+                // 简化版本的二维码识别
+                // 这里返回null表示无法识别，实际使用时需要完整的jsQR库
+                console.log('jsQR called with data length:', data ? data.length : 'no data');
+                return null;
+            }
+
+            if (typeof exports === 'object' && typeof module !== 'undefined') {
+                module.exports = jsQR;
+            } else if (typeof define === 'function' && define.amd) {
+                define([], function() { return jsQR; });
+            } else {
+                global.jsQR = jsQR;
+            }
+        }(typeof window !== 'undefined' ? window : this));
+    </script>
+    <script src="/static/js/security-portal.js"></script>
+</body>
+</html>

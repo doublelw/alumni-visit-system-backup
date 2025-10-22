@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1976d2">
+    <title>校友入校登记系统 - 管理后台</title>
+
+    <!-- 引入字体 -->
+    <style>
+        /* 使用系统字体避免HTTPS请求 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+    </style>
+
+    <!-- 引入图标 -->
+    <link href="/static/vendor/remixicon.css" rel="stylesheet">
+
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="ri-graduation-cap-fill"></i>
+                <span>校友管理系统</span>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="ri-menu-line"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <h3>主控面板</h3>
+                <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                    <i class="ri-dashboard-line"></i>
+                    <span>仪表板</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>用户管理</h3>
+                <a href="#users" class="nav-item" data-page="users">
+                    <i class="ri-user-line"></i>
+                    <span>用户列表</span>
+                </a>
+                <a href="#alumni-approve" class="nav-item" data-page="alumni-approve">
+                    <i class="ri-user-star-line"></i>
+                    <span>校友审核</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>访问管理</h3>
+                <a href="#visit-applications" class="nav-item" data-page="visit-applications">
+                    <i class="ri-calendar-check-line"></i>
+                    <span>访问申请</span>
+                </a>
+                <a href="#visit-records" class="nav-item" data-page="visit-records">
+                    <i class="ri-history-line"></i>
+                    <span>访问记录</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>车辆管理</h3>
+                <a href="#vehicles" class="nav-item" data-page="vehicles">
+                    <i class="ri-car-line"></i>
+                    <span>车辆列表</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>系统设置</h3>
+                <a href="#statistics" class="nav-item" data-page="statistics">
+                    <i class="ri-bar-chart-line"></i>
+                    <span>数据统计</span>
+                </a>
+                <a href="#batch-approve" class="nav-item" data-page="batch-approve">
+                    <i class="ri-group-line"></i>
+                    <span>批量授权</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="avatar">
+                    <i class="ri-user-fill"></i>
+                </div>
+                <div class="user-details">
+                    <div class="name" id="adminName">管理员</div>
+                    <div class="role">系统管理员</div>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">
+                <i class="ri-logout-box-line"></i>
+                退出
+            </button>
+        </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <!-- 顶部栏 -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="mobile-sidebar-toggle" id="mobileSidebarToggle">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="breadcrumb">
+                    <span class="breadcrumb-item">首页</span>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item active" id="currentPage">仪表板</span>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="search-box">
+                    <i class="ri-search-line"></i>
+                    <input type="text" placeholder="搜索..." id="globalSearch">
+                </div>
+                <div class="notifications">
+                    <button class="notification-btn">
+                        <i class="ri-notification-3-line"></i>
+                        <span class="badge">3</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 页面内容 -->
+        <div class="content">
+            <!-- 仪表板页面 -->
+            <div class="page active" id="dashboardPage">
+                <div class="page-header">
+                    <h1>仪表板</h1>
+                    <p>系统概览和关键指标</p>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="ri-user-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalUsers">0</h3>
+                            <p>总用户数</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="ri-graduation-cap-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalAlumni">0</h3>
+                            <p>注册校友</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="ri-calendar-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="todayVisits">0</h3>
+                            <p>今日访问</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon red">
+                            <i class="ri-time-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="pendingCount">0</h3>
+                            <p>待处理事项</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>最近7天访问趋势</h3>
+                            <div class="chart-actions">
+                                <button class="btn btn-sm">导出</button>
+                            </div>
+                        </div>
+                        <div class="chart-content">
+                            <canvas id="visitTrendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>访问目的分布</h3>
+                        </div>
+                        <div class="chart-content">
+                            <canvas id="purposeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近活动 -->
+                <div class="activity-section">
+                    <div class="section-header">
+                        <h3>最近活动</h3>
+                        <a href="#visit-records" class="view-all">查看全部</a>
+                    </div>
+                    <div class="activity-list" id="recentActivity">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户列表页面 -->
+            <div class="page" id="usersPage">
+                <div class="page-header">
+                    <h1>用户管理</h1>
+                    <div class="page-actions">
+                        <div class="search-filter">
+                            <input type="text" placeholder="搜索用户..." id="userSearch">
+                            <select id="userTypeFilter">
+                                <option value="">全部类型</option>
+                                <option value="alumni">校友</option>
+                                <option value="teacher">教师</option>
+                                <option value="security">保安</option>
+                                <option value="admin">管理员</option>
+                            </select>
+                            <select id="userStatusFilter">
+                                <option value="">全部状态</option>
+                                <option value="active">激活</option>
+                                <option value="inactive">禁用</option>
+                                <option value="pending">待审核</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary">
+                            <i class="ri-add-line"></i>
+                            添加用户
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>用户名</th>
+                                <th>真实姓名</th>
+                                <th>类型</th>
+                                <th>邮箱</th>
+                                <th>手机号</th>
+                                <th>状态</th>
+                                <th>注册时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="usersPagination">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 校友审核页面 -->
+            <div class="page" id="alumni-approvePage">
+                <div class="page-header">
+                    <h1>校友审核</h1>
+                    <p>审核校友注册申请</p>
+                </div>
+
+                <div class="approve-list" id="alumniApproveList">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+
+            <!-- 访问申请页面 -->
+            <div class="page" id="visit-applicationsPage">
+                <div class="page-header">
+                    <h1>访问申请</h1>
+                    <div class="page-actions">
+                        <select id="visitStatusFilter">
+                            <option value="">全部状态</option>
+                            <option value="pending">待审核</option>
+                            <option value="approved">已通过</option>
+                            <option value="rejected">已拒绝</option>
+                            <option value="completed">已完成</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="applications-list" id="visitApplicationsList">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+
+            <!-- 访问记录页面 -->
+            <div class="page" id="visit-recordsPage">
+                <div class="page-header">
+                    <h1>访问记录</h1>
+                    <div class="page-actions">
+                        <div class="date-filter">
+                            <input type="date" id="recordStartDate">
+                            <span>至</span>
+                            <input type="date" id="recordEndDate">
+                        </div>
+                        <button class="btn btn-outline">
+                            <i class="ri-download-line"></i>
+                            导出记录
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="recordsTable">
+                        <thead>
+                            <tr>
+                                <th>访问者</th>
+                                <th>访问日期</th>
+                                <th>访问时间</th>
+                                <th>访问目的</th>
+                                <th>验证方式</th>
+                                <th>闸机</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 车辆管理页面 -->
+            <div class="page" id="vehiclesPage">
+                <div class="page-header">
+                    <h1>车辆管理</h1>
+                    <div class="page-actions">
+                        <select id="vehicleStatusFilter">
+                            <option value="">全部状态</option>
+                            <option value="pending">待审核</option>
+                            <option value="approved">已通过</option>
+                            <option value="rejected">已拒绝</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="vehiclesTable">
+                        <thead>
+                            <tr>
+                                <th>车牌号</th>
+                                <th>车主</th>
+                                <th>车型</th>
+                                <th>颜色</th>
+                                <th>品牌</th>
+                                <th>关系</th>
+                                <th>状态</th>
+                                <th>登记时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 数据统计页面 -->
+            <div class="page" id="statisticsPage">
+                <div class="page-header">
+                    <h1>数据统计</h1>
+                    <p>系统数据分析和报表</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="ri-file-list-3-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalApplications">0</h3>
+                            <p>总申请数</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="ri-check-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="approvedApplications">0</h3>
+                            <p>已通过申请</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="ri-car-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalVehicles">0</h3>
+                            <p>注册车辆</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="ri-user-face-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="faceRegistered">0</h3>
+                            <p>人脸注册</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-section">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>年级分布统计</h3>
+                        </div>
+                        <div class="chart-content">
+                            <canvas id="gradeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>院系分布统计</h3>
+                        </div>
+                        <div class="chart-content">
+                            <canvas id="departmentChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 批量授权页面 -->
+            <div class="page" id="batch-approvePage">
+                <div class="page-header">
+                    <h1>批量授权</h1>
+                    <p>为特定群体批量创建访问授权</p>
+                </div>
+
+                <div class="batch-form">
+                    <form id="batchApproveForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>授权类型</label>
+                                <select id="batchType" required>
+                                    <option value="">请选择授权类型</option>
+                                    <option value="class">按班级</option>
+                                    <option value="year">按年级</option>
+                                    <option value="department">按院系</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>目标群体</label>
+                                <select id="batchTarget" disabled required>
+                                    <option value="">请先选择授权类型</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>访问日期</label>
+                                <input type="date" id="batchDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>开始时间</label>
+                                <input type="time" id="batchStartTime" required min="08:00" max="18:00">
+                            </div>
+                            <div class="form-group">
+                                <label>结束时间</label>
+                                <input type="time" id="batchEndTime" required min="08:00" max="18:00">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>访问目的</label>
+                            <input type="text" id="batchPurpose" placeholder="请输入访问目的" required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" id="previewBatch">
+                                <i class="ri-eye-line"></i>
+                                预览
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ri-check-line"></i>
+                                确认授权
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="batch-preview" id="batchPreview" style="display: none;">
+                    <h3>授权预览</h3>
+                    <div class="preview-content" id="previewContent">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="adminToast">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>确认操作</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">确定要执行此操作吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelConfirm">取消</button>
+                <button class="btn btn-primary" id="confirmAction">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入Chart.js -->
+    <script src="/static/vendor/chart.js"></script>
+
+    <!-- 引入脚本 -->
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

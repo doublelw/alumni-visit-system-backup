@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>保安登录测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 400px; margin: 0 auto; }
+        input { width: 100%; padding: 8px; margin: 5px 0; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; margin: 10px 0; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>保安登录测试</h2>
+        <div>
+            <label>用户名:</label>
+            <input type="text" id="username" value="test_security">
+        </div>
+        <div>
+            <label>密码:</label>
+            <input type="password" id="password" value="123456">
+        </div>
+        <button onclick="testLogin()">测试登录</button>
+        <button onclick="testLoginWrongCredentials()">测试错误凭据</button>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+
+            try {
+                console.log('尝试登录:', { username, password });
+
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                console.log('响应状态:', response.status, response.statusText);
+
+                const data = await response.json();
+                console.log('响应数据:', data);
+
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>登录成功!</h3>
+                        <p>用户: ${data.user.real_name}</p>
+                        <p>类型: ${data.user.user_type}</p>
+                        <p>Token: ${data.access_token.substring(0, 50)}...</p>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h3>登录失败</h3><p>${data.error}</p>`;
+                }
+            } catch (error) {
+                console.error('请求错误:', error);
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h3>请求错误</h3><p>${error.message}</p>`;
+            }
+        }
+
+        async function testLoginWrongCredentials() {
+            const resultDiv = document.getElementById('result');
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: 'wrong', password: 'wrong' })
+                });
+
+                const data = await response.json();
+
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h3>错误凭据测试</h3><p>${data.error}</p>`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h3>请求错误</h3><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

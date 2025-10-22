@@ -1,0 +1,21 @@
+{
+  "production": {
+    "FLASK_ENV": "production",
+    "HOST": "0.0.0.0",
+    "PORT": 5000,
+    "SSL_ENABLED": "true",
+    "DATABASE_URL": "mysql+pymysql://lsalumni:YOUR_PASSWORD@localhost/lsalumni",
+    "JWT_SECRET_KEY": "GENERATE_NEW_SECRET_KEY",
+    "SSL_CERT": "/etc/ssl/certs/alumni_system.crt",
+    "SSL_KEY": "/etc/ssl/private/alumni_system.key",
+    "MAIL_SERVER": "smtp.gmail.com",
+    "MAIL_PORT": 587,
+    "MAIL_USE_TLS": "true",
+    "MAIL_USERNAME": "your_email@gmail.com",
+    "MAIL_PASSWORD": "your_app_password",
+    "SITE_NAME": "校友入校登记系统",
+    "ADMIN_EMAIL": "admin@yourdomain.com",
+    "UPLOAD_FOLDER": "/var/www/alumni_system/uploads",
+    "MAX_CONTENT_LENGTH": "10485760"
+  }
+}
