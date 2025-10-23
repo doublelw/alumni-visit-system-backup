@@ -868,9 +868,14 @@ const VisitorVerification = {
 
     // 显示验证模式
     showVerificationMode(mode) {
-        // 隐藏所有验证区域
-        document.querySelectorAll('.verification-section').forEach(section => {
-            section.classList.add('hidden');
+        // 只隐藏扫描验证区域，不隐藏主验证区域
+        const scanSections = ['qrScanSection', 'faceScanSection'];
+        scanSections.forEach(sectionId => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.add('hidden');
+                section.classList.remove('active', 'fade-in');
+            }
         });
 
         // 显示选中的验证区域
@@ -883,6 +888,11 @@ const VisitorVerification = {
         if (section) {
             section.classList.remove('hidden');
             section.classList.add('active', 'fade-in');
+
+            // 滚动到扫描区域，但不要太突然
+            setTimeout(() => {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
         }
 
         this.currentMode = mode;

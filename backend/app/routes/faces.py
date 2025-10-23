@@ -100,6 +100,58 @@ def detect_and_extract_face(image_path):
     except Exception as e:
         return None, None, f"人脸处理失败: {str(e)}"
 
+def compare_faces(face_encoding1, face_encoding2):
+    """
+    比较两个人脸特征的相似度
+    返回相似度分数 (0-100)
+    """
+    try:
+        # 解码人脸特征
+        data1 = json.loads(face_encoding1)
+        data2 = json.loads(face_encoding2)
+
+        if not CV2_AVAILABLE:
+            # 模拟人脸比对，返回固定分数
+            return 90.0
+
+        # 基于质量分数的简单比对
+        quality_diff = abs(data1.get('quality_score', 0) - data2.get('quality_score', 0))
+
+        # 基于尺寸的比对
+        size_diff = abs(data1['width'] - data2['width']) + abs(data1['height'] - data2['height'])
+
+        # 基于位置差异的比对
+        pos_diff = abs(data1['position'][0] - data2['position'][0]) + abs(data1['position'][1] - data2['position'][1])
+
+        # 基于直方图差异的比对
+        hist1 = data1.get('histogram', [])
+        hist2 = data2.get('histogram', [])
+        hist_diff = 0
+        if hist1 and hist2 and len(hist1) == len(hist2):
+            for i in range(len(hist1)):
+                hist_diff += abs(hist1[i] - hist2[i])
+            hist_diff = hist_diff / len(hist1) if len(hist1) > 0 else 0
+
+        # 计算综合相似度分数
+        quality_similarity = max(0, 100 - quality_diff / 10)
+        size_similarity = max(0, 100 - size_diff / 2)
+        position_similarity = max(0, 100 - pos_diff / 5)
+        histogram_similarity = max(0, 100 - hist_diff / 1000)
+
+        # 加权平均
+        similarity_score = (
+            quality_similarity * 0.3 +
+            size_similarity * 0.2 +
+            position_similarity * 0.2 +
+            histogram_similarity * 0.3
+        )
+
+        return min(100.0, max(0.0, similarity_score))
+
+    except Exception as e:
+        current_app.logger.error(f"人脸比对失败: {str(e)}")
+        return 0.0
+
 @faces_bp.route('/register', methods=['POST'])
 @jwt_required()
 def register_face():
@@ -109,8 +161,7 @@ def register_face():
 
         # 检查用户是否已经注册过人脸
         existing_face = FaceData.query.filter_by(user_id=current_user_id).first()
-        if existing_face:
-            return jsonify({'error': '您已经注册过人脸信息'}), 400
+        is_update = existing_face is not None
 
         # 检查是否有文件上传
         if 'image' not in request.files:
@@ -145,21 +196,63 @@ def register_face():
         if not face_encoding:
             return jsonify({'error': '人脸特征提取失败'}), 400
 
-        # 创建人脸数据记录
-        face_data = FaceData(
-            user_id=current_user_id,
-            face_encoding=face_encoding,
-            face_image_path=face_image_path,
-            quality_score=float(json.loads(face_encoding).get('quality_score', 0))
-        )
+        if is_update:
+            # 人脸更新时进行相似度验证
+            similarity_score = compare_faces(existing_face.face_encoding, face_encoding)
 
-        db.session.add(face_data)
-        db.session.commit()
+            # 设置相似度阈值（85%）
+            SIMILARITY_THRESHOLD = 85.0
 
-        return jsonify({
-            'message': '人脸注册成功',
-            'face_data': face_data.to_dict()
-        }), 201
+            if similarity_score < SIMILARITY_THRESHOLD:
+                # 删除新生成的人脸图片文件
+                if face_image_path and os.path.exists(face_image_path):
+                    try:
+                        os.remove(face_image_path)
+                    except Exception as e:
+                        current_app.logger.warning(f"删除新人脸图片失败: {str(e)}")
+
+                return jsonify({
+                    'error': f'人脸验证失败，相似度为{similarity_score:.1f}%，低于{SIMILARITY_THRESHOLD}%的阈值。请确保拍摄的是同一个人。',
+                    'similarity_score': similarity_score,
+                    'threshold': SIMILARITY_THRESHOLD
+                }), 400
+
+            # 验证通过，删除旧的人脸图片文件
+            if existing_face.face_image_path and os.path.exists(existing_face.face_image_path):
+                try:
+                    os.remove(existing_face.face_image_path)
+                except Exception as e:
+                    current_app.logger.warning(f"删除旧人脸图片失败: {str(e)}")
+
+            # 更新人脸数据
+            existing_face.face_encoding = face_encoding
+            existing_face.face_image_path = face_image_path
+            existing_face.quality_score = float(json.loads(face_encoding).get('quality_score', 0))
+            existing_face.updated_at = datetime.utcnow()
+
+            db.session.commit()
+
+            return jsonify({
+                'message': f'人脸更新成功，相似度为{similarity_score:.1f}%',
+                'face_data': existing_face.to_dict(),
+                'similarity_score': similarity_score
+            }), 200
+        else:
+            # 创建新的人脸数据记录
+            face_data = FaceData(
+                user_id=current_user_id,
+                face_encoding=face_encoding,
+                face_image_path=face_image_path,
+                quality_score=float(json.loads(face_encoding).get('quality_score', 0))
+            )
+
+            db.session.add(face_data)
+            db.session.commit()
+
+            return jsonify({
+                'message': '人脸注册成功',
+                'face_data': face_data.to_dict()
+            }), 201
 
     except Exception as e:
         db.session.rollback()
@@ -320,3 +413,62 @@ def verify_face():
     except Exception as e:
         current_app.logger.error(f"人脸验证失败: {str(e)}")
         return jsonify({'error': '人脸验证失败'}), 500
+
+
+@faces_bp.route('/delete', methods=['DELETE'])
+@jwt_required()
+def delete_face():
+    """删除人脸信息"""
+    try:
+        current_user_id = get_jwt_identity()
+
+        # 查找用户的人脸数据
+        face_data = FaceData.query.filter_by(user_id=current_user_id).first()
+        if not face_data:
+            return jsonify({'error': '未找到人脸信息'}), 404
+
+        # 删除人脸图片文件
+        if face_data.face_image_path and os.path.exists(face_data.face_image_path):
+            try:
+                os.remove(face_data.face_image_path)
+            except Exception as e:
+                current_app.logger.warning(f"删除人脸图片文件失败: {str(e)}")
+
+        # 删除数据库记录
+        db.session.delete(face_data)
+        db.session.commit()
+
+        return jsonify({'message': '人脸信息删除成功'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"删除人脸信息失败: {str(e)}")
+        return jsonify({'error': '删除人脸信息失败'}), 500
+
+
+@faces_bp.route('/info', methods=['GET'])
+@jwt_required()
+def get_face_info():
+    """获取人脸信息详情"""
+    try:
+        current_user_id = get_jwt_identity()
+
+        # 查找用户的人脸数据
+        face_data = FaceData.query.filter_by(user_id=current_user_id).first()
+        if not face_data:
+            return jsonify({'registered': False}), 200
+
+        # 构造返回数据
+        response_data = {
+            'registered': True,
+            'registration_time': face_data.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'quality_score': face_data.quality_score,
+            'face_image_path': f"/uploads/{os.path.basename(face_data.face_image_path)}" if face_data.face_image_path else None,
+            'status': 'active'
+        }
+
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        current_app.logger.error(f"获取人脸信息失败: {str(e)}")
+        return jsonify({'error': '获取人脸信息失败'}), 500

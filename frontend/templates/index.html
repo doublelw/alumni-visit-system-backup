@@ -15,6 +15,60 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
         }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: scale(0.9);}
+            to {opacity: 1; transform: scale(1);}
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+        }
+
+        .modal-body {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .modal-footer {
+            text-align: center;
+            margin-top: 20px;
+        }
     </style>
 
     <!-- 引入图标 -->
@@ -350,24 +404,8 @@
                         </div>
                     </section>
 
-                    <!-- 人脸验证 -->
-                    <section class="face-verify" id="faceVerify">
-                        <h3>入校验证</h3>
-                        <div class="verify-area" id="faceVerifyArea">
-                            <div class="verify-content">
-                                <i class="ri-scan-line"></i>
-                                <p>点击开始人脸验证</p>
-                                <small>请正对摄像头，保持面部清晰</small>
-                            </div>
-                            <input type="file" id="faceVerifyInput" accept="image/*" style="display: none;">
-                        </div>
-                        <div class="verify-result" id="faceVerifyResult" style="display: none;">
-                            <!-- 验证结果 -->
-                        </div>
-                    </section>
-
                     <!-- 人脸信息管理 -->
-                    <section class="face-management" id="faceManagement" style="display: none;">
+                    <section class="face-management" id="faceManagement">
                         <h3>人脸信息管理</h3>
                         <div class="face-info-card">
                             <div class="face-info-header">
@@ -407,10 +445,24 @@
                             </div>
                         </div>
                     </section>
-                </main>
-            </div>
 
-            <!-- 个人中心页面 -->
+                <!-- 人脸预览模态框 -->
+                <div class="modal" id="facePreviewModal">
+                    <div class="modal-content">
+                        <span class="close" onclick="hideFacePreviewModal()">&times;</span>
+                        <h3>人脸照片预览</h3>
+                        <div class="modal-body">
+                            <img id="modalFaceImage" alt="人脸预览" style="max-width: 100%; max-height: 400px; border-radius: 8px;">
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-outline" onclick="hideFacePreviewModal()">关闭</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 个人中心页面 -->
             <div class="page" id="profilePage">
                 <header class="page-header">
                     <h1>个人中心</h1>
@@ -446,19 +498,10 @@
                             <h3>个人信息</h3>
                             <div class="menu-item" id="editProfile">
                                 <div class="menu-icon">
-                                    <i class="ri-user-settings-line"></i>
-                                </div>
-                                <div class="menu-content">
-                                    <span>编辑资料</span>
-                                    <i class="ri-arrow-right-s-line"></i>
-                                </div>
-                            </div>
-                            <div class="menu-item" id="alumniProfile">
-                                <div class="menu-icon">
                                     <i class="ri-graduation-cap-line"></i>
                                 </div>
                                 <div class="menu-content">
-                                    <span>校友档案</span>
+                                    <span>编辑校友档案</span>
                                     <i class="ri-arrow-right-s-line"></i>
                                 </div>
                             </div>
@@ -647,31 +690,99 @@
             </div>
             <div class="modal-body">
                 <form id="editProfileForm">
-                    <div class="form-group">
-                        <label for="editRealName">真实姓名</label>
-                        <input type="text" id="editRealName" required>
+                    <!-- 基本信息部分 -->
+                    <div class="form-section">
+                        <h3>基本信息</h3>
+                        <div class="form-group">
+                            <label for="editRealName">真实姓名 *</label>
+                            <input type="text" id="editRealName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editEmail">邮箱地址 *</label>
+                            <input type="email" id="editEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editPhone">手机号码 *</label>
+                            <input type="tel" id="editPhone" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editIdCard">身份证号码</label>
+                            <input type="text" id="editIdCard" placeholder="请输入身份证号码" maxlength="18">
+                            <small class="form-help">身份证号用于访问申请时的身份验证</small>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="editEmail">邮箱地址</label>
-                        <input type="email" id="editEmail" required>
+
+                    <!-- 校友档案部分 -->
+                    <div class="form-section" id="alumniSection">
+                        <h3>校友档案</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="alumniGraduationYear">毕业年份 *</label>
+                                <input type="number" id="alumniGraduationYear" min="1950" max="2030" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="alumniStudentId">学号</label>
+                                <input type="text" id="alumniStudentId" placeholder="请输入学号">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="alumniClassName">毕业班级 *</label>
+                            <input type="text" id="alumniClassName" placeholder="如：高三（1）班" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="alumniDepartment">院系 *</label>
+                                <input type="text" id="alumniDepartment" placeholder="如：计算机科学与技术学院" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="alumniMajor">专业 *</label>
+                                <input type="text" id="alumniMajor" placeholder="如：计算机科学与技术" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="alumniContactTeacher">班主任 *</label>
+                            <input type="text" id="alumniContactTeacher" placeholder="班主任姓名" required>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="editPhone">手机号码</label>
-                        <input type="tel" id="editPhone" required>
+
+                    <!-- 联系信息部分 -->
+                    <div class="form-section">
+                        <h3>联系信息</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="alumniContactTeacherPhone">班主任电话 *</label>
+                                <input type="tel" id="alumniContactTeacherPhone" placeholder="班主任电话" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="alumniEmergencyContact">紧急联系人 *</label>
+                                <input type="text" id="alumniEmergencyContact" placeholder="紧急联系人姓名" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="alumniEmergencyPhone">紧急联系人电话 *</label>
+                                <input type="tel" id="alumniEmergencyPhone" placeholder="紧急联系人电话" required>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="editIdCard">身份证号码</label>
-                        <input type="text" id="editIdCard" placeholder="请输入身份证号码" maxlength="18">
-                        <small class="form-help">身份证号用于访问申请时的身份验证</small>
+
+                    <!-- 工作信息部分 -->
+                    <div class="form-section">
+                        <h3>工作信息</h3>
+                        <div class="form-group">
+                            <label for="alumniCompany">工作单位</label>
+                            <input type="text" id="alumniCompany" placeholder="请输入工作单位">
+                        </div>
+                        <div class="form-group">
+                            <label for="alumniPosition">职位</label>
+                            <input type="text" id="alumniPosition" placeholder="请输入职位">
+                        </div>
+                        <div class="form-group">
+                            <label for="alumniIndustry">行业</label>
+                            <input type="text" id="alumniIndustry" placeholder="请输入所属行业">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="editAlumniInfo">校友信息</label>
-                        <textarea id="editAlumniInfo" rows="3" placeholder="请输入毕业院校、专业、年级等信息（选填）"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="editWorkInfo">工作信息</label>
-                        <input type="text" id="editWorkInfo" placeholder="请输入工作单位及职位（选填）">
-                    </div>
+
                     <div class="form-actions">
                         <button type="button" class="btn btn-outline" id="cancelEditProfile">取消</button>
                         <button type="submit" class="btn btn-primary">保存修改</button>
@@ -949,82 +1060,7 @@
         </div>
     </div>
 
-    <!-- 校友档案模态框 -->
-    <div class="modal" id="alumniProfileModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>校友档案</h2>
-                <button class="modal-close" id="closeAlumniProfileModal">
-                    <i class="ri-close-line"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="alumniProfileForm">
-                    <div class="form-section">
-                        <h3>基本信息</h3>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="alumniGraduationYear">毕业年份 *</label>
-                                <input type="number" id="alumniGraduationYear" min="1950" max="2030" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="alumniStudentId">学号</label>
-                                <input type="text" id="alumniStudentId" placeholder="请输入学号">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="alumniClassName">毕业班级 *</label>
-                            <input type="text" id="alumniClassName" placeholder="如：高三（1）班" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="alumniDepartment">院系 *</label>
-                                <input type="text" id="alumniDepartment" placeholder="如：计算机科学与技术学院" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="alumniMajor">专业 *</label>
-                                <input type="text" id="alumniMajor" placeholder="如：计算机科学与技术" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="alumniIdCard">身份证号</label>
-                            <input type="text" id="alumniIdCard" placeholder="请输入身份证号码" maxlength="18">
-                        </div>
-                    </div>
-
-                    <div class="form-section">
-                        <h3>联系信息</h3>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="alumniContactTeacher">班主任 *</label>
-                                <input type="text" id="alumniContactTeacher" placeholder="班主任姓名" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="alumniContactTeacherPhone">班主任电话 *</label>
-                                <input type="tel" id="alumniContactTeacherPhone" placeholder="班主任电话" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="alumniEmergencyContact">紧急联系人 *</label>
-                                <input type="text" id="alumniEmergencyContact" placeholder="紧急联系人姓名" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="alumniEmergencyPhone">紧急联系人电话 *</label>
-                                <input type="tel" id="alumniEmergencyPhone" placeholder="紧急联系人电话" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-outline" id="cancelAlumniProfile">取消</button>
-                        <button type="submit" class="btn btn-primary">保存档案</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
+    
     <!-- Toast 提示 -->
     <div class="toast" id="toast">
         <div class="toast-content">
@@ -1036,8 +1072,8 @@
     <!-- 引入QR码生成库 -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <!-- 引入脚本 -->
-    <script src="/static/js/mobile.js?v=4.2"></script>
+    <script src="/static/js/mobile.js?v=4.4"></script>
     <!-- 引入校友卡脚本 -->
-    <script src="/static/js/alumni-card.js"></script>
+    <script src="/static/js/alumni-card.js?v=3.0"></script>
 </body>
 </html>

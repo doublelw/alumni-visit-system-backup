@@ -58,6 +58,7 @@ def create_app(config_name=None):
     from app.routes.calendar import calendar_bp, public_calendar_bp
     from app.api.organization import organization_bp
     from app.routes.roles import roles_bp
+    from app.routes.alumni import alumni_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(users_bp, url_prefix='/api/users')
@@ -72,6 +73,7 @@ def create_app(config_name=None):
     app.register_blueprint(public_calendar_bp, url_prefix='/api/public/calendar')
     app.register_blueprint(organization_bp)
     app.register_blueprint(roles_bp, url_prefix='/api/roles')
+    app.register_blueprint(alumni_bp, url_prefix='/api/alumni')
     app.register_blueprint(health_bp)
     app.register_blueprint(web_bp)
 

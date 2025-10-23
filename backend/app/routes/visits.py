@@ -5,6 +5,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, timedelta, date, time
+from sqlalchemy import func
 import json
 import uuid
 
@@ -672,6 +673,48 @@ def get_visit_record(record_id):
     except Exception as e:
         current_app.logger.error(f"获取访问记录详情失败: {str(e)}")
         return jsonify({'error': '获取访问记录详情失败'}), 500
+
+@visits_bp.route('/statistics', methods=['GET'])
+@jwt_required()
+def get_user_visit_statistics():
+    """获取当前用户访问统计"""
+    try:
+        current_user_id = int(get_jwt_identity())
+
+        # 当前用户的访问统计
+        total_visits = VisitRecord.query.filter_by(visitor_id=current_user_id).count()
+        pending_visits = VisitRecord.query.filter_by(
+            visitor_id=current_user_id,
+            status='pending'
+        ).count()
+        approved_visits = VisitRecord.query.filter_by(
+            visitor_id=current_user_id,
+            status='approved'
+        ).count()
+        completed_visits = VisitRecord.query.filter_by(
+            visitor_id=current_user_id,
+            status='completed'
+        ).count()
+
+        # 今日是否有访问
+        today = date.today()
+        today_visit = VisitRecord.query.filter(
+            VisitRecord.visitor_id == current_user_id,
+            func.date(VisitRecord.visit_date) == today
+        ).first()
+
+        return jsonify({
+            'total_visits': total_visits,
+            'pending_visits': pending_visits,
+            'approved_visits': approved_visits,
+            'completed_visits': completed_visits,
+            'has_visit_today': today_visit is not None,
+            'today_visit_status': today_visit.status if today_visit else None
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"获取用户访问统计失败: {str(e)}")
+        return jsonify({'error': '获取统计数据失败'}), 500
 
 @visits_bp.route('/records/statistics', methods=['GET'])
 @jwt_required()

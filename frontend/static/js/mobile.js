@@ -1,12 +1,14 @@
 /**
- * 移动端应用JavaScript - 版本 5.0
+ * 移动端应用JavaScript - 版本 5.1 (修复版)
  * 校友入校登记系统
- * 更新时间: 2025-01-16 11:00
+ * 更新时间: 2025-01-23 00:05
  */
+
+console.log('=== MOBILE.JS 版本 5.1 已加载 ===');
 
 // 应用配置
 const APP_CONFIG = {
-    API_BASE_URL: 'http://127.0.0.1:5000/api',
+    API_BASE_URL: window.Config?.API_BASE_URL || '/api',
     STORAGE_KEYS: {
         TOKEN: 'auth_token',
         USER: 'user_info',
@@ -1607,7 +1609,7 @@ const FacePage = {
         const reader = new FileReader();
         reader.onload = (e) => {
             const uploadArea = document.getElementById('faceUploadArea');
-            const previewContainer = document.getElementById('facePreviewContainer');
+            const previewContainer = document.getElementById('facePreview');
             const previewImage = document.getElementById('facePreviewImage');
 
             if (previewContainer && previewImage) {
@@ -1624,7 +1626,7 @@ const FacePage = {
 
     // 显示取消按钮
     showCancelButton() {
-        const previewContainer = document.getElementById('facePreviewContainer');
+        const previewContainer = document.getElementById('facePreview');
 
         // 检查是否已经有取消按钮
         let cancelBtn = document.getElementById('cancelImageBtn');
@@ -1655,7 +1657,7 @@ const FacePage = {
 
         // 隐藏预览，显示上传区域
         const uploadArea = document.getElementById('faceUploadArea');
-        const previewContainer = document.getElementById('facePreviewContainer');
+        const previewContainer = document.getElementById('facePreview');
 
         if (uploadArea && previewContainer) {
             uploadArea.style.display = 'block';
@@ -1674,27 +1676,150 @@ const FacePage = {
         try {
             const data = await Utils.request('/faces/status');
             this.updateFaceStatus(data);
+
+            // 如果已注册，加载详细信息
+            if (data.registered) {
+                await this.loadFaceInfo();
+            }
         } catch (error) {
             console.error('加载人脸状态失败:', error);
             this.updateFaceStatus({ registered: false });
         }
     },
 
+    // 加载人脸信息详情
+    async loadFaceInfo() {
+        try {
+            const data = await Utils.request('/faces/info');
+            this.updateFaceInfoDisplay(data);
+        } catch (error) {
+            console.error('加载人脸信息失败:', error);
+        }
+    },
+
+    // 更新人脸信息显示
+    updateFaceInfoDisplay(data) {
+        if (!data.registered) {
+            // 隐藏人脸信息管理区域，显示注册区域
+            const faceManagement = document.getElementById('faceManagement');
+            const faceRegister = document.getElementById('faceRegister');
+            if (faceManagement) faceManagement.style.display = 'none';
+            if (faceRegister) faceRegister.style.display = 'block';
+            return;
+        }
+
+        // 更新人脸信息显示
+        const registeredFaceImage = document.getElementById('registeredFaceImage');
+        const registrationTime = document.getElementById('faceRegistrationTime');
+        const qualityScore = document.getElementById('faceQualityScore');
+
+        if (registeredFaceImage && data.face_image_path) {
+            // 确保使用相对路径，添加时间戳防止缓存
+            let imagePath = data.face_image_path;
+            // 如果路径以/开头，直接使用；否则添加/
+            if (!imagePath.startsWith('/')) {
+                imagePath = '/' + imagePath;
+            }
+            registeredFaceImage.src = imagePath + '?t=' + Date.now();
+        }
+
+        if (registrationTime) {
+            registrationTime.textContent = data.registration_time || '-';
+        }
+
+        if (qualityScore) {
+            qualityScore.textContent = data.quality_score ? data.quality_score.toFixed(1) : '-';
+        }
+
+        // 显示人脸信息管理区域，隐藏注册区域
+        const faceManagement = document.getElementById('faceManagement');
+        const faceRegister = document.getElementById('faceRegister');
+        if (faceManagement) faceManagement.style.display = 'block';
+        if (faceRegister) faceRegister.style.display = 'none';
+    },
+
+    // 删除人脸数据
+    async deleteFaceData() {
+        if (!confirm('确定要删除人脸信息吗？删除后需要重新注册。')) {
+            return;
+        }
+
+        try {
+            Utils.showLoading('正在删除人脸信息...');
+
+            const response = await fetch('/api/faces/delete', {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${AppState.token}`
+                }
+            });
+
+            const data = await response.json();
+            Utils.hideLoading();
+
+            if (response.ok) {
+                Utils.showToast('人脸信息删除成功', 'success');
+
+                // 重新加载人脸状态
+                await this.loadFaceStatus();
+
+                // 重置文件输入
+                this.currentFile = null;
+                const fileInput = document.getElementById('faceImageInput');
+                if (fileInput) fileInput.value = '';
+            } else {
+                Utils.showToast(data.error || '删除失败', 'error');
+            }
+        } catch (error) {
+            Utils.hideLoading();
+            Utils.showToast('网络错误，请重试', 'error');
+            console.error('Delete face error:', error);
+        }
+    },
+
+    // 显示人脸预览模态框
+    showFacePreviewModal() {
+        const modal = document.getElementById('facePreviewModal');
+        const modalImage = document.getElementById('modalFaceImage');
+        const registeredImage = document.getElementById('registeredFaceImage');
+
+        if (modal && modalImage && registeredImage) {
+            modalImage.src = registeredImage.src;
+            modal.style.display = 'block';
+        }
+    },
+
+    // 隐藏人脸预览模态框
+    hideFacePreviewModal() {
+        const modal = document.getElementById('facePreviewModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    },
+
     // 更新人脸状态显示
     updateFaceStatus(data) {
-        const statusElement = document.getElementById('faceStatus');
+        const statusElement = document.getElementById('faceStatusText') || document.getElementById('faceStatus');
         const actionButton = document.getElementById('faceActionButton');
 
-        if (data.registered) {
-            statusElement.textContent = '已注册';
-            statusElement.className = 'status-registered';
-            actionButton.textContent = '重新注册';
-            actionButton.className = 'btn btn-warning';
-        } else {
-            statusElement.textContent = '未注册';
-            statusElement.className = 'status-unregistered';
-            actionButton.textContent = '开始注册';
-            actionButton.className = 'btn btn-primary';
+        if (statusElement) {
+            if (data.registered) {
+                statusElement.textContent = '已注册';
+                statusElement.className = 'status-registered';
+            } else {
+                statusElement.textContent = '未注册';
+                statusElement.className = 'status-unregistered';
+            }
+        }
+
+        if (actionButton) {
+            if (data.registered) {
+                actionButton.textContent = '重新注册';
+                actionButton.className = 'btn btn-warning';
+            } else {
+                actionButton.textContent = '开始注册';
+                actionButton.className = 'btn btn-primary';
+            }
         }
     },
 
@@ -1714,11 +1839,37 @@ const FacePage = {
         document.getElementById('submitFace')?.addEventListener('click', () => {
             this.submitFaceRegistration();
         });
+
+        // 重新拍照按钮
+        document.getElementById('retakePhoto')?.addEventListener('click', () => {
+            this.cancelImageUpload();
+        });
+
+        // 更新人脸按钮
+        document.getElementById('updateFaceBtn')?.addEventListener('click', () => {
+            this.startFaceRegistration();
+        });
+
+        // 删除人脸按钮
+        document.getElementById('deleteFaceBtn')?.addEventListener('click', () => {
+            this.deleteFaceData();
+        });
     },
 
     // 开始人脸注册
     async startFaceRegistration() {
-        // 直接显示上传区域，让用户选择图片
+        // 显示注册区域，隐藏管理区域
+        const faceRegister = document.getElementById('faceRegister');
+        const faceManagement = document.getElementById('faceManagement');
+
+        if (faceRegister) {
+            faceRegister.style.display = 'block';
+        }
+        if (faceManagement) {
+            faceManagement.style.display = 'none';
+        }
+
+        // 滚动到上传区域
         const uploadArea = document.getElementById('faceUploadArea');
         if (uploadArea) {
             uploadArea.scrollIntoView({ behavior: 'smooth' });
@@ -1743,7 +1894,7 @@ const FacePage = {
             Utils.showLoading('正在上传人脸图片...');
 
             const formData = new FormData();
-            formData.append('face_image', this.currentFile);
+            formData.append('image', this.currentFile);
 
             const response = await fetch('/api/faces/register', {
                 method: 'POST',
@@ -1758,11 +1909,24 @@ const FacePage = {
             Utils.hideLoading();
 
             if (response.ok) {
-                Utils.showToast('人脸注册成功', 'success');
+                // 检查是否有相似度信息（更新时会有）
+                if (data.similarity_score !== undefined) {
+                    Utils.showToast(`人脸更新成功，相似度${data.similarity_score.toFixed(1)}%`, 'success');
+                } else {
+                    Utils.showToast('人脸注册成功', 'success');
+                }
                 this.cancelImageUpload(); // 清理预览
                 await this.loadFaceStatus(); // 重新加载状态
             } else {
-                Utils.showToast(data.message || '人脸注册失败', 'error');
+                const errorMessage = data.error || data.message || '人脸注册失败';
+
+                // 如果是相似度验证失败，显示详细信息
+                if (data.similarity_score !== undefined && data.threshold !== undefined) {
+                    Utils.showToast(`相似度验证失败：${data.similarity_score.toFixed(1)}%（需≥${data.threshold}%）`, 'error');
+                } else {
+                    Utils.showToast(errorMessage, 'error');
+                }
+                console.error('Face registration error:', data);
             }
         } catch (error) {
             Utils.hideLoading();
@@ -1851,22 +2015,46 @@ const ProfilePage = {
     // 加载统计数据
     async loadStatistics() {
         try {
-            // 获取访问次数
-            const visitData = await Utils.request('/visits/statistics');
-            document.getElementById('visitCount').textContent = visitData.total_visits || '0';
+            // 获取访问次数 - 使用存在的接口或设置默认值
+            try {
+                const visitData = await Utils.request('/visits/statistics');
+                const visitCountElement = document.getElementById('visitCount');
+                if (visitCountElement) {
+                    visitCountElement.textContent = visitData.total_visits || '0';
+                }
+            } catch (error) {
+                console.warn('访问统计接口不可用，使用默认值');
+                const visitCountElement = document.getElementById('visitCount');
+                if (visitCountElement) {
+                    visitCountElement.textContent = '0';
+                }
+            }
 
             // 获取人脸注册状态
             try {
                 const faceData = await Utils.request('/faces/status');
-                document.getElementById('faceRegistered').textContent = faceData.registered ? '已注册' : '未注册';
+                const faceRegisteredElement = document.getElementById('faceRegistered');
+                if (faceRegisteredElement) {
+                    faceRegisteredElement.textContent = faceData.registered ? '已注册' : '未注册';
+                }
             } catch (error) {
-                document.getElementById('faceRegistered').textContent = '未知';
+                console.warn('人脸状态接口不可用，使用默认值');
+                const faceRegisteredElement = document.getElementById('faceRegistered');
+                if (faceRegisteredElement) {
+                    faceRegisteredElement.textContent = '未注册';
+                }
             }
         } catch (error) {
             console.error('加载统计数据失败:', error);
             // 设置默认值
-            document.getElementById('visitCount').textContent = '0';
-            document.getElementById('faceRegistered').textContent = '未知';
+            const visitCountElement = document.getElementById('visitCount');
+            const faceRegisteredElement = document.getElementById('faceRegistered');
+            if (visitCountElement) {
+                visitCountElement.textContent = '0';
+            }
+            if (faceRegisteredElement) {
+                faceRegisteredElement.textContent = '未注册';
+            }
         }
     },
 
@@ -1893,11 +2081,7 @@ const ProfilePage = {
             this.showEditProfileModal();
         });
 
-        // 校友档案
-        document.getElementById('alumniProfile')?.addEventListener('click', () => {
-            this.showAlumniProfileModal();
-        });
-
+  
         // 修改密码
         document.getElementById('changePassword')?.addEventListener('click', () => {
             this.showChangePasswordModal();
@@ -1958,18 +2142,7 @@ const ProfilePage = {
             this.saveProfile();
         });
 
-        // 校友档案模态框
-        document.getElementById('closeAlumniProfileModal')?.addEventListener('click', () => {
-            UI.hideModal('alumniProfileModal');
-        });
-        document.getElementById('cancelAlumniProfile')?.addEventListener('click', () => {
-            UI.hideModal('alumniProfileModal');
-        });
-        document.getElementById('alumniProfileForm')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveAlumniProfile();
-        });
-
+    
         // 修改密码模态框
         document.getElementById('closeChangePasswordModal')?.addEventListener('click', () => {
             UI.hideModal('changePasswordModal');
@@ -1995,29 +2168,113 @@ const ProfilePage = {
 
     // 显示编辑资料模态框
     showEditProfileModal() {
-        // 填充当前用户信息
-        if (AppState.user) {
-            document.getElementById('editRealName').value = AppState.user.real_name || '';
-            document.getElementById('editEmail').value = AppState.user.email || '';
-            document.getElementById('editPhone').value = AppState.user.phone || '';
-            document.getElementById('editIdCard').value = AppState.user.id_card || '';
-            document.getElementById('editAlumniInfo').value = AppState.user.alumni_info || '';
-            document.getElementById('editWorkInfo').value = AppState.user.work_info || '';
+        try {
+            console.log('开始显示编辑资料模态框');
+
+            // 检查AppState是否存在
+            if (!AppState || !AppState.user) {
+                console.error('AppState或AppState.user不存在');
+                this.showToast('用户数据未加载，请稍后重试', 'error');
+                return;
+            }
+
+            console.log('当前用户数据:', AppState.user);
+
+            // 检查模态框元素是否存在
+            const modal = document.getElementById('editProfileModal');
+            if (!modal) {
+                console.error('editProfileModal元素不存在');
+                this.showToast('页面元素缺失，请刷新页面重试', 'error');
+                return;
+            }
+
+            // 填充当前用户信息
+            // 基本信息
+            const editRealName = document.getElementById('editRealName');
+            const editEmail = document.getElementById('editEmail');
+            const editPhone = document.getElementById('editPhone');
+            const editIdCard = document.getElementById('editIdCard');
+
+            if (editRealName) editRealName.value = AppState.user.real_name || '';
+            if (editEmail) editEmail.value = AppState.user.email || '';
+            if (editPhone) editPhone.value = AppState.user.phone || '';
+            if (editIdCard) editIdCard.value = AppState.user.id_card || '';
+
+            // 校友档案信息
+            const alumniProfile = AppState.user.alumni_profile;
+            if (alumniProfile && typeof alumniProfile === 'object') {
+                console.log('校友档案数据:', alumniProfile);
+
+                const alumniGraduationYear = document.getElementById('alumniGraduationYear');
+                const alumniStudentId = document.getElementById('alumniStudentId');
+                const alumniClassName = document.getElementById('alumniClassName');
+                const alumniDepartment = document.getElementById('alumniDepartment');
+                const alumniMajor = document.getElementById('alumniMajor');
+                const alumniContactTeacher = document.getElementById('alumniContactTeacher');
+                const alumniContactTeacherPhone = document.getElementById('alumniContactTeacherPhone');
+                const alumniEmergencyContact = document.getElementById('alumniEmergencyContact');
+                const alumniEmergencyPhone = document.getElementById('alumniEmergencyPhone');
+                const alumniCompany = document.getElementById('alumniCompany');
+                const alumniPosition = document.getElementById('alumniPosition');
+                const alumniIndustry = document.getElementById('alumniIndustry');
+
+                if (alumniGraduationYear) alumniGraduationYear.value = alumniProfile.graduation_year || '';
+                if (alumniStudentId) alumniStudentId.value = alumniProfile.student_id || '';
+                if (alumniClassName) alumniClassName.value = alumniProfile.class_name || '';
+                if (alumniDepartment) alumniDepartment.value = alumniProfile.department || '';
+                if (alumniMajor) alumniMajor.value = alumniProfile.major || '';
+                if (alumniContactTeacher) alumniContactTeacher.value = alumniProfile.contact_teacher || '';
+                if (alumniContactTeacherPhone) alumniContactTeacherPhone.value = alumniProfile.contact_teacher_phone || '';
+                if (alumniEmergencyContact) alumniEmergencyContact.value = alumniProfile.emergency_contact || '';
+                if (alumniEmergencyPhone) alumniEmergencyPhone.value = alumniProfile.emergency_phone || '';
+                if (alumniCompany) alumniCompany.value = alumniProfile.company || '';
+                if (alumniPosition) alumniPosition.value = alumniProfile.position || '';
+                if (alumniIndustry) alumniIndustry.value = alumniProfile.industry || '';
+            }
+
+            console.log('准备显示模态框');
+            UI.showModal('editProfileModal');
+            console.log('编辑资料模态框显示完成');
+
+        } catch (error) {
+            console.error('显示编辑资料模态框时发生错误:', error);
+            // 显示错误提示给用户
+            this.showToast('打开编辑页面失败，请稍后重试', 'error');
         }
-        UI.showModal('editProfileModal');
     },
 
     // 保存个人资料
     async saveProfile() {
         try {
+            // 基本信息
             const formData = {
-                real_name: document.getElementById('editRealName').value,
-                email: document.getElementById('editEmail').value,
-                phone: document.getElementById('editPhone').value,
-                id_card: document.getElementById('editIdCard').value,
-                alumni_info: document.getElementById('editAlumniInfo').value,
-                work_info: document.getElementById('editWorkInfo').value
+                real_name: document.getElementById('editRealName')?.value || '',
+                email: document.getElementById('editEmail')?.value || '',
+                phone: document.getElementById('editPhone')?.value || '',
+                id_card: document.getElementById('editIdCard')?.value || ''
             };
+
+            // 校友档案信息
+            const alumniData = {
+                graduation_year: document.getElementById('alumniGraduationYear')?.value || '',
+                student_id: document.getElementById('alumniStudentId')?.value || '',
+                class_name: document.getElementById('alumniClassName')?.value || '',
+                department: document.getElementById('alumniDepartment')?.value || '',
+                major: document.getElementById('alumniMajor')?.value || '',
+                contact_teacher: document.getElementById('alumniContactTeacher')?.value || '',
+                contact_teacher_phone: document.getElementById('alumniContactTeacherPhone')?.value || '',
+                emergency_contact: document.getElementById('alumniEmergencyContact')?.value || '',
+                emergency_phone: document.getElementById('alumniEmergencyPhone')?.value || '',
+                company: document.getElementById('alumniCompany')?.value || '',
+                position: document.getElementById('alumniPosition')?.value || '',
+                industry: document.getElementById('alumniIndustry')?.value || ''
+            };
+
+            // 只有当校友信息字段不为空时才添加到请求中
+            const hasAlumniData = Object.values(alumniData).some(val => val.trim() !== '');
+            if (hasAlumniData) {
+                formData.alumni_profile = alumniData;
+            }
 
             const data = await Utils.request('/auth/profile', {
                 method: 'PUT',
@@ -2032,66 +2289,13 @@ const ProfilePage = {
             UI.updateUserInfo();
 
             UI.hideModal('editProfileModal');
-            Utils.showToast('个人资料保存成功', 'success');
-        } catch (error) {
-            Utils.showToast(error.message, 'error');
-        }
-    },
-
-    // 显示校友档案模态框
-    showAlumniProfileModal() {
-        // 填充当前校友档案信息
-        this.loadAlumniProfileData();
-        UI.showModal('alumniProfileModal');
-    },
-
-    // 加载校友档案数据
-    async loadAlumniProfileData() {
-        try {
-            const data = await Utils.request('/alumni/profile');
-            if (data.profile) {
-                const profile = data.profile;
-                document.getElementById('profileGraduationYear').value = profile.graduation_year || '';
-                document.getElementById('profileMajor').value = profile.major || '';
-                document.getElementById('profileCompany').value = profile.company || '';
-                document.getElementById('profilePosition').value = profile.position || '';
-                document.getElementById('profileIndustry').value = profile.industry || '';
-                document.getElementById('profileCity').value = profile.city || '';
-                document.getElementById('profileBio').value = profile.bio || '';
-            }
-        } catch (error) {
-            console.error('加载校友档案数据失败:', error);
-        }
-    },
-
-    // 保存校友档案
-    async saveAlumniProfile() {
-        try {
-            const formData = {
-                graduation_year: document.getElementById('profileGraduationYear').value,
-                major: document.getElementById('profileMajor').value,
-                company: document.getElementById('profileCompany').value,
-                position: document.getElementById('profilePosition').value,
-                industry: document.getElementById('profileIndustry').value,
-                city: document.getElementById('profileCity').value,
-                bio: document.getElementById('profileBio').value
-            };
-
-            await Utils.request('/alumni/profile', {
-                method: 'PUT',
-                body: JSON.stringify(formData)
-            });
-
-            UI.hideModal('alumniProfileModal');
             Utils.showToast('校友档案保存成功', 'success');
-
-            // 重新加载页面数据
-            await this.loadProfileData();
         } catch (error) {
             Utils.showToast(error.message, 'error');
         }
     },
 
+  
     // 显示修改密码模态框
     showChangePasswordModal() {
         document.getElementById('currentPassword').value = '';
@@ -2566,3 +2770,12 @@ window.App = {
     profilePage: ProfilePage,
     reviewPage: ReviewPage
 };
+
+// 全局函数，用于HTML中的onclick调用
+function showFacePreviewModal() {
+    FacePage.showFacePreviewModal();
+}
+
+function hideFacePreviewModal() {
+    FacePage.hideFacePreviewModal();
+}

@@ -67,6 +67,19 @@ def test_api():
         'backend/templates/test_api.html'
     )
 
+@web_bp.route('/uploads/<path:filename>')
+def uploaded_files(filename):
+    """上传文件服务"""
+    try:
+        # 获取项目根目录
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        upload_dir = os.path.join(root_dir, 'uploads')
+
+        return send_from_directory(upload_dir, filename)
+    except Exception as e:
+        current_app.logger.error(f"Upload file error: {e}")
+        return '', 404
+
 @web_bp.route('/favicon.ico')
 def favicon():
     """favicon服务"""
