@@ -299,6 +299,86 @@
                 opacity: 1;
             }
         }
+
+        /* 用户管理页面按钮布局优化 */
+        .page-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .search-filter {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-filter input,
+        .search-filter select {
+            min-width: 120px;
+        }
+
+        .search-filter input {
+            min-width: 200px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-xs);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons .btn {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: var(--font-size-sm);
+            white-space: nowrap;
+        }
+
+        .action-buttons .btn i {
+            margin-right: 4px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .page-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-filter {
+                justify-content: center;
+            }
+
+            .action-buttons {
+                justify-content: center;
+                margin-top: var(--spacing-sm);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-filter {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-filter input,
+            .search-filter select {
+                width: 100%;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-buttons .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 
     <!-- 引入图标 -->
@@ -540,22 +620,24 @@
                                 <option value="pending">待审核</option>
                             </select>
                         </div>
-                        <button class="btn btn-primary" id="addUserBtn">
-                            <i class="ri-add-line"></i>
-                            添加用户
-                        </button>
-                        <button class="btn btn-success" id="batchImportBtn">
-                            <i class="ri-upload-line"></i>
-                            批量导入
-                        </button>
-                        <button class="btn btn-info" id="batchExportBtn">
-                            <i class="ri-download-line"></i>
-                            批量导出
-                        </button>
-                        <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;">
-                            <i class="ri-delete-bin-line"></i>
-                            删除选中 (<span id="selectedCount">0</span>)
-                        </button>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" id="addUserBtn">
+                                <i class="ri-add-line"></i>
+                                添加用户
+                            </button>
+                            <button class="btn btn-success" id="batchImportBtn">
+                                <i class="ri-upload-line"></i>
+                                批量导入
+                            </button>
+                            <button class="btn btn-info" id="batchExportBtn">
+                                <i class="ri-download-line"></i>
+                                批量导出
+                            </button>
+                            <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;">
+                                <i class="ri-delete-bin-line"></i>
+                                删除选中 (<span id="selectedCount">0</span>)
+                            </button>
+                        </div>
                     </div>
                 </div>
 
