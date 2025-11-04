@@ -99,8 +99,16 @@ const Utils = {
         }
 
         if (!response.ok) {
-            const errorMessage = data.error || `请求失败 (${response.status})`;
+            // 尝试从多个字段获取错误信息
+            let errorMessage = data.error || data.message || `请求失败 (${response.status})`;
+
+            // 如果是401错误且没有详细错误信息，提供默认提示
+            if (response.status === 401 && !data.error && !data.message) {
+                errorMessage = '登录失败：用户名或密码错误，请检查后重试';
+            }
+
             console.log('最终错误消息:', errorMessage);
+            console.log('响应数据详情:', data);
             throw new Error(errorMessage);
         }
 
