@@ -5,7 +5,7 @@
 import uuid
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
+import bcrypt
 from app import db
 
 class User(db.Model):
@@ -19,8 +19,7 @@ class User(db.Model):
     real_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False, index=True)
     phone = db.Column(db.String(20), nullable=False)
-    user_type = db.Column(db.Enum('alumni', 'teacher', 'security', 'admin'),
-                          nullable=False, default='alumni')
+    user_type = db.Column(db.String(255), nullable=False, default='alumni', comment='用户类型，多个类型用逗号分隔')
     status = db.Column(db.Enum('active', 'inactive', 'pending'),
                        nullable=False, default='pending')
 
@@ -30,32 +29,51 @@ class User(db.Model):
     employee_id = db.Column(db.String(50), nullable=True, comment='员工编号')
     is_visitable = db.Column(db.Boolean, default=False, nullable=False, comment='是否可作为拜访对象')
 
+    # 学生和家长特有字段
+    class_id = db.Column(db.String(50), nullable=True, comment='班级ID')
+    grade = db.Column(db.String(20), nullable=True, comment='年级')
+    parent_student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, comment='家长关联的学生ID')
+    student_parent_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, comment='学生关联的家长ID')
+    wechat_openid = db.Column(db.String(100), nullable=True, comment='微信OpenID')
+    wechat_nickname = db.Column(db.String(100), nullable=True, comment='微信昵称')
+    is_class_teacher = db.Column(db.Boolean, default=False, nullable=False, comment='是否为班主任')
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # 关系
+    # 关系 - 重新启用alumni_profile关系
     alumni_profile = db.relationship('AlumniProfile', foreign_keys='AlumniProfile.user_id', backref='user', uselist=False)
-    face_data = db.relationship('FaceData', backref='user', uselist=False)
-    visit_applications = db.relationship('VisitApplication', foreign_keys='VisitApplication.applicant_id', backref='applicant')
-    approved_applications = db.relationship('VisitApplication', foreign_keys='VisitApplication.approved_by', backref='approver')
-    visit_records = db.relationship('VisitRecord', foreign_keys='VisitRecord.user_id')
-    organization = db.relationship('Organization', backref='users', foreign_keys='User.organization_id')
-    # roles关系通过UserRoleAssignment的user关系和UserRole的assignments关系间接访问
+    # face_data = db.relationship('FaceData', backref='user', uselist=False)
+    # visit_applications = db.relationship('VisitApplication', foreign_keys='VisitApplication.applicant_id', backref='applicant')
+    # approved_applications = db.relationship('VisitApplication', foreign_keys='VisitApplication.approved_by', backref='approver')
+    # visit_records = db.relationship('VisitRecord', foreign_keys='VisitRecord.user_id')
+    # organization = db.relationship('Organization', backref='users', foreign_keys='User.organization_id')
+    # # roles关系通过UserRoleAssignment的user关系和UserRole的assignments关系间接访问
+
+    # 自动生成UUID
+    def __init__(self, **kwargs):
+        super(User, self).__init__(**kwargs)
+        if not self.uuid:
+            self.uuid = str(uuid.uuid4())
 
     def set_password(self, password):
         """设置密码"""
-        self.password_hash = generate_password_hash(password)
+        salt = bcrypt.gensalt()
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
     def check_password(self, password):
         """验证密码"""
-        return check_password_hash(self.password_hash, password)
+        try:
+            return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+        except:
+            # 兼容旧的Werkzeug哈希格式
+            return False
 
     def to_dict(self, include_sensitive=False):
         """转换为字典"""
-        # 确保UUID存在
+        # 确保UUID存在（只生成，不提交数据库）
         if not hasattr(self, 'uuid') or not self.uuid:
             self.uuid = str(uuid.uuid4())
-            db.session.commit()
 
         data = {
             'id': self.id,
@@ -70,17 +88,25 @@ class User(db.Model):
             'student_id': self.student_id,
             'employee_id': self.employee_id,
             'is_visitable': self.is_visitable,
+            'class_id': self.class_id,
+            'grade': self.grade,
+            'parent_student_id': self.parent_student_id,
+            'student_parent_id': self.student_parent_id,
+            'wechat_openid': self.wechat_openid,
+            'wechat_nickname': self.wechat_nickname,
+            'is_class_teacher': self.is_class_teacher,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
         if include_sensitive:
-            data['alumni_profile'] = self.alumni_profile.to_dict() if self.alumni_profile else None
-            data['has_face_data'] = bool(self.face_data)
+            # 临时禁用关系数据
+            data['alumni_profile'] = None
+            data['has_face_data'] = False
 
-        # 包含组织信息
-        if self.organization:
-            data['organization'] = self.organization.to_dict()
+        # 临时禁用组织信息
+        # if self.organization:
+        #     data['organization'] = self.organization.to_dict()
 
         return data
 
@@ -108,7 +134,7 @@ class User(db.Model):
         return {
             'work_id': self.employee_id,
             'name': self.real_name,
-            'department': self.organization.name if self.organization else '未知部门',
+            'department': '未知部门',  # 暂时使用固定值，因为organization关系被注释掉了
             'position': '教师',
             'email': self.email,
             'phone': self.phone

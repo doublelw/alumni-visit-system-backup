@@ -43,6 +43,53 @@
             animation: slideIn 0.3s ease-in-out;
         }
 
+        /* 用户类型复选框样式 */
+        .user-type-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-secondary);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .checkbox-item:hover {
+            background-color: var(--bg-hover);
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .checkbox-item input[type="checkbox"]:checked + label {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .checkbox-item:has(input:checked) {
+            background-color: var(--primary-color);
+            background-color: rgba(65, 153, 225, 0.1);
+            border-color: var(--primary-color);
+        }
+
         .modal-header {
             display: flex;
             align-items: center;
@@ -493,9 +540,21 @@
                                 <option value="pending">待审核</option>
                             </select>
                         </div>
-                        <button class="btn btn-primary">
+                        <button class="btn btn-primary" id="addUserBtn">
                             <i class="ri-add-line"></i>
                             添加用户
+                        </button>
+                        <button class="btn btn-success" id="batchImportBtn">
+                            <i class="ri-upload-line"></i>
+                            批量导入
+                        </button>
+                        <button class="btn btn-info" id="batchExportBtn">
+                            <i class="ri-download-line"></i>
+                            批量导出
+                        </button>
+                        <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;">
+                            <i class="ri-delete-bin-line"></i>
+                            删除选中 (<span id="selectedCount">0</span>)
                         </button>
                     </div>
                 </div>
@@ -504,10 +563,14 @@
                     <table class="data-table" id="usersTable">
                         <thead>
                             <tr>
-                                <th>用户名</th>
+                                <th style="width: 50px;">
+                                    <input type="checkbox" id="selectAllUsers" title="全选/取消全选">
+                                </th>
+                                <th style="width: 60px;">序号</th>
+                                <th style="width: 100px;">用户名</th>
                                 <th>真实姓名</th>
-                                <th>类型</th>
-                                <th>邮箱</th>
+                                <th style="width: 140px;">类型</th>
+                                <th style="width: 160px;">邮箱</th>
                                 <th>手机号</th>
                                 <th>状态</th>
                                 <th>可拜访</th>
@@ -1138,7 +1201,7 @@
 
                     <div class="chart-card">
                         <div class="chart-header">
-                            <h3>院系分布统计</h3>
+                            <h3>校部分布统计</h3>
                         </div>
                         <div class="chart-content">
                             <canvas id="departmentChart"></canvas>
@@ -1894,14 +1957,94 @@
         </div>
     </div>
 
+    <!-- 批量导入用户模态框 -->
+    <div class="modal" id="batchImportModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>批量导入用户</h3>
+                <button class="modal-close" onclick="UsersPage.hideBatchImportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="import-steps">
+                    <!-- 步骤1：文件上传 -->
+                    <div class="import-step" id="uploadStep">
+                        <h4>步骤1：选择文件</h4>
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-content">
+                                <i class="ri-upload-cloud-line upload-icon"></i>
+                                <p>拖拽Excel文件到此处，或点击选择文件</p>
+                                <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">
+                                    选择文件
+                                </button>
+                                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                            </div>
+                        </div>
+                        <div class="upload-info">
+                            <p><strong>支持的文件格式：</strong>Excel (.xlsx, .xls)</p>
+                            <p><strong>文件大小限制：</strong>最大10MB</p>
+                        </div>
+                    </div>
+
+                    <!-- 步骤2：数据预览 -->
+                    <div class="import-step" id="previewStep" style="display: none;">
+                        <h4>步骤2：数据预览</h4>
+                        <div class="preview-info">
+                            <p>检测到 <strong id="previewCount">0</strong> 条用户数据</p>
+                            <p>请检查数据是否正确，然后确认导入</p>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table" id="previewTable">
+                                <thead>
+                                    <tr>
+                                        <th>用户名</th>
+                                        <th>真实姓名</th>
+                                        <th>用户类型</th>
+                                        <th>邮箱</th>
+                                        <th>手机号</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previewTableBody">
+                                    <!-- 动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 步骤3：导入结果 -->
+                    <div class="import-step" id="resultStep" style="display: none;">
+                        <h4>导入结果</h4>
+                        <div class="import-summary" id="importSummary">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="UsersPage.hideBatchImportModal()">取消</button>
+                <button class="btn btn-info" id="downloadTemplateBtn" onclick="UsersPage.downloadUserTemplate()">
+                    <i class="ri-download-line"></i>
+                    下载模板
+                </button>
+                <button class="btn btn-success" id="confirmImportBtn" onclick="UsersPage.confirmBatchImport()" style="display: none;">
+                    <i class="ri-check-line"></i>
+                    确认导入
+                </button>
+                <button class="btn btn-primary" id="closeImportResultBtn" onclick="UsersPage.hideBatchImportModal()" style="display: none;">
+                    完成
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 引入Chart.js -->
     <script src="/static/vendor/chart.js"></script>
 
     <!-- 引入配置 -->
-    <script src="/static/js/config.js"></script>
+    <script src="/static/js/config.js?v=2.3"></script>
 
     <!-- 引入脚本 -->
-    <script src="/static/js/admin.js"></script>
+    <script src="/static/js/admin.js?v=4.2"></script>
 <!-- 拜访对象模态框 -->
 <div class="modal" id="targetPersonModal">
     <div class="modal-content">
@@ -1969,23 +2112,115 @@
     </div>
 </div>
 
-    <!-- 用户编辑模态框 -->
   
-  <!-- 用户编辑对话框 -->
+    <!-- 添加用户模态框 -->
+    <div class="modal" id="addUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>添加新用户</h3>
+                <button class="modal-close" onclick="UsersPage.hideAddUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="form-group">
+                        <label for="addUsername">用户名 *</label>
+                        <input type="text" id="addUsername" class="form-control" required>
+                        <small class="form-hint">用于登录系统的唯一标识</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addPassword">密码 *</label>
+                        <div class="password-input-container">
+                            <input type="password" id="addPassword" class="form-control" required>
+                            <button type="button" class="password-toggle-btn" onclick="UsersPage.togglePasswordVisibility('addPassword')">
+                                <i class="ri-eye-line" id="addPasswordToggleIcon"></i>
+                            </button>
+                        </div>
+                        <small class="form-hint">密码规则：至少6位字符，包含字母和数字</small>
+                        <div class="password-strength-indicator" id="passwordStrength">
+                            <div class="strength-bar"></div>
+                            <span class="strength-text">密码强度：弱</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addRealName">真实姓名 *</label>
+                        <input type="text" id="addRealName" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addEmail">邮箱 *</label>
+                        <input type="email" id="addEmail" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addPhone">手机号</label>
+                        <input type="tel" id="addPhone" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addUserType">用户类型 *</label>
+                        <select id="addUserType" class="form-control" required>
+                            <option value="teacher">教师</option>
+                            <option value="student">学生</option>
+                            <option value="parent">家长</option>
+                            <option value="alumni">校友</option>
+                            <option value="security">保安</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="addStudentIdGroup">
+                        <label for="addStudentId">学号</label>
+                        <input type="text" id="addStudentId" class="form-control">
+                    </div>
+
+                    <div class="form-group" id="addEmployeeIdGroup">
+                        <label for="addEmployeeId">工号</label>
+                        <input type="text" id="addEmployeeId" class="form-control">
+                    </div>
+
+                    <div class="form-group" id="addClassIdGroup">
+                        <label for="addClassId">班级</label>
+                        <input type="text" id="addClassId" class="form-control">
+                    </div>
+
+                    <div class="form-group" id="addGradeGroup">
+                        <label for="addGrade">年级</label>
+                        <input type="text" id="addGrade" class="form-control">
+                    </div>
+
+                    <div class="form-group" id="addIsClassTeacherGroup">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="addIsClassTeacher">
+                            <span class="checkmark"></span>
+                            是否班主任
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="UsersPage.hideAddUserModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="UsersPage.addUser()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑用户模态框 -->
     <div class="modal" id="editUserModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>编辑用户信息</h3>
-                <button class="modal-close" onclick="UsersPage.hideEditModal()">&times;</button>
+                <h3>编辑用户</h3>
+                <button class="modal-close" onclick="UsersPage.hideEditUserModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="editUserForm">
-                    <input type="hidden" id="editUserId">
+                    <input type="hidden" id="editUserId" name="id">
 
                     <div class="form-group">
-                        <label for="editUsername">用户名</label>
-                        <input type="text" id="editUsername" readonly class="form-control">
-                        <small class="form-hint">用户名不可修改</small>
+                        <label for="editUsername">用户名 *</label>
+                        <input type="text" id="editUsername" class="form-control" required>
+                        <small class="form-hint">用于登录系统的唯一标识</small>
                     </div>
 
                     <div class="form-group">
@@ -1994,84 +2229,101 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="editEmail">邮箱</label>
-                        <input type="email" id="editEmail" class="form-control">
+                        <label for="editEmail">邮箱 *</label>
+                        <input type="email" id="editEmail" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="editPhone">电话</label>
+                        <label for="editPhone">手机号</label>
                         <input type="tel" id="editPhone" class="form-control">
                     </div>
 
                     <div class="form-group">
-                        <label for="editUserType">用户类型</label>
-                        <select id="editUserType" class="form-control">
-                            <option value="alumni">校友</option>
-                            <option value="teacher">教师</option>
-                            <option value="student">学生</option>
-                            <option value="admin">管理员</option>
-                            <option value="security">保安</option>
-                        </select>
+                        <label>用户类型 *</label>
+                        <div class="user-type-checkboxes" id="editUserTypes">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeTeacher" value="teacher">
+                                <label for="editTypeTeacher">教师</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeStudent" value="student">
+                                <label for="editTypeStudent">学生</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeParent" value="parent">
+                                <label for="editTypeParent">家长</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeAlumni" value="alumni">
+                                <label for="editTypeAlumni">校友</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeSecurity" value="security">
+                                <label for="editTypeSecurity">保安</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeAdmin" value="admin">
+                                <label for="editTypeAdmin">管理员</label>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="editStatus">状态</label>
-                        <select id="editStatus" class="form-control">
-                            <option value="active">活跃</option>
-                            <option value="inactive">非活跃</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group" id="studentIdGroup">
+                    <div class="form-group" id="editStudentIdGroup">
                         <label for="editStudentId">学号</label>
                         <input type="text" id="editStudentId" class="form-control">
                     </div>
 
-                    <div class="form-group" id="employeeIdGroup">
+                    <div class="form-group" id="editEmployeeIdGroup">
                         <label for="editEmployeeId">工号</label>
                         <input type="text" id="editEmployeeId" class="form-control">
                     </div>
 
-                    <div class="form-group" id="visitableGroup" style="display: none;">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="editIsVisitable">
-                            <span class="checkmark"></span>
-                            可拜访教师
-                        </label>
-                        <small class="form-hint">勾选后，该教师可以作为被拜访对象</small>
+                    <div class="form-group" id="editClassIdGroup">
+                        <label for="editClassId">班级</label>
+                        <input type="text" id="editClassId" class="form-control">
                     </div>
 
-                    <!-- 角色权限管理 -->
+                    <div class="form-group" id="editGradeGroup">
+                        <label for="editGrade">年级</label>
+                        <input type="text" id="editGrade" class="form-control">
+                    </div>
+
+                    <div class="form-group" id="editIsClassTeacherGroup">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="editIsClassTeacher">
+                            <span class="checkmark"></span>
+                            是否班主任
+                        </label>
+                    </div>
+
                     <div class="form-group">
-                        <div class="roles-section">
-                            <div class="section-header">
-                                <h4>角色权限管理</h4>
-                                <button type="button" class="btn btn-sm btn-outline" onclick="UsersPage.refreshUserRoles()">
-                                    <i class="ri-refresh-line"></i>
-                                    刷新
-                                </button>
-                            </div>
-
-                            <div class="current-roles-section">
-                                <h5>当前角色</h5>
-                                <div id="editCurrentRoles" class="roles-list">
-                                    <!-- 当前角色将在这里显示 -->
-                                </div>
-                            </div>
-
-                            <div class="available-roles-section">
-                                <h5>可分配角色</h5>
-                                <div id="editAvailableRoles" class="roles-list">
-                                    <!-- 可分配角色将在这里显示 -->
-                                </div>
-                            </div>
+                        <label for="editPassword">新密码</label>
+                        <div class="password-input-container">
+                            <input type="password" id="editPassword" class="form-control" placeholder="留空表示不修改密码">
+                            <button type="button" class="password-toggle-btn" onclick="UsersPage.togglePasswordVisibility('editPassword')">
+                                <i class="ri-eye-line" id="editPasswordToggleIcon"></i>
+                            </button>
                         </div>
+                        <small class="form-hint">留空则不修改原密码</small>
+                        <div class="password-strength-indicator" id="editPasswordStrength">
+                            <div class="strength-bar"></div>
+                            <span class="strength-text">密码强度：未输入</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editStatus">用户状态</label>
+                        <select id="editStatus" class="form-control">
+                            <option value="active">正常</option>
+                            <option value="inactive">禁用</option>
+                        </select>
+                        <small class="form-hint">禁用后用户将无法登录系统</small>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="UsersPage.hideEditModal()">取消</button>
-                <button type="button" class="btn btn-primary" onclick="UsersPage.saveUser()">保存</button>
+                <button type="button" class="btn btn-secondary" onclick="UsersPage.hideEditUserModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="UsersPage.saveEditUser()">保存修改</button>
             </div>
         </div>
     </div>

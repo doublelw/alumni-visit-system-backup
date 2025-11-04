@@ -5,7 +5,7 @@
 
 // 应用配置
 const ADMIN_CONFIG = {
-    API_BASE_URL: '/api',
+    API_BASE_URL: window.Config ? window.Config.API_BASE_URL + '/api' : '/api',
     STORAGE_KEYS: {
         TOKEN: 'admin_token',
         USER: 'admin_user'
@@ -66,7 +66,27 @@ const AdminUtils = {
         if (!response.ok) {
             // 如果是401错误，说明token过期或无效
             if (response.status === 401) {
-                // 清除过期的认证信息
+                console.error('401错误 - Token无效或过期');
+                console.error('响应数据:', data);
+                console.error('当前AdminState.token:', AdminState.token ? AdminState.token.substring(0, 50) + '...' : 'null');
+
+                // 不要立即logout，先尝试检查token是否真的过期
+                try {
+                    // 检查token是否可以解析
+                    const tokenParts = AdminState.token ? AdminState.token.split('.') : [];
+                    if (tokenParts.length === 3) {
+                        const payload = JSON.parse(atob(tokenParts[1]));
+                        const now = Math.floor(Date.now() / 1000);
+                        if (payload.exp && payload.exp > now) {
+                            console.log('Token还未过期，可能是其他认证问题');
+                            throw new Error('认证失败，但token未过期: ' + (data.error || '未知错误'));
+                        }
+                    }
+                } catch (tokenError) {
+                    console.error('Token解析失败:', tokenError);
+                }
+
+                console.log('Token确实过期或无效，执行logout');
                 AdminAuth.logout();
                 throw new Error('Token has expired');
             }
@@ -120,6 +140,7 @@ const AdminUtils = {
 
     // 格式化时间
     formatTime(timeString) {
+        if (!timeString) return '-';
         return timeString.slice(0, 5);
     },
 
@@ -157,11 +178,22 @@ const AdminUtils = {
     // 获取用户类型文本
     getUserTypeText(type) {
         const typeMap = {
+            student: '学生',
+            parent: '家长',
             alumni: '校友',
             teacher: '教师',
             security: '保安',
             admin: '管理员'
         };
+
+        if (!type) return type;
+
+        // 处理多类型（逗号分隔的字符串）
+        if (typeof type === 'string' && type.includes(',')) {
+            const types = type.split(',').map(t => t.trim());
+            return types.map(t => typeMap[t] || t).join('、');
+        }
+
         return typeMap[type] || type;
     },
 
@@ -709,6 +741,88 @@ const UsersPage = {
 
     // 绑定事件
     bindEvents() {
+        // 添加用户按钮
+        const addUserBtn = document.querySelector('[onclick="UsersPage.showAddUserModal()"]');
+        if (!addUserBtn) {
+            // 如果没有onclick属性，查找包含"添加用户"文本的按钮
+            const allButtons = document.querySelectorAll('button');
+            allButtons.forEach(btn => {
+                if (btn.textContent.includes('添加用户')) {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        console.log('添加用户按钮被点击');
+                        console.log('UsersPage对象:', UsersPage);
+                        console.log('showAddUserModal方法:', typeof UsersPage.showAddUserModal);
+
+                        if (typeof UsersPage.showAddUserModal === 'function') {
+                            UsersPage.showAddUserModal();
+                        } else {
+                            // 备用方法：直接显示模态框
+                            const modal = document.getElementById('addUserModal');
+                            if (modal) {
+                                modal.classList.add('show');
+                                modal.style.display = 'flex';
+                                modal.style.visibility = 'visible';
+                                modal.style.opacity = '1';
+                                document.body.style.overflow = 'hidden';
+                                // 清空表单
+                                if (typeof AdminUtils.resetAddUserForm === 'function') {
+                                    AdminUtils.resetAddUserForm();
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // 绑定全选复选框事件
+        this.bindSelectAllEvent();
+
+        // 绑定添加用户按钮（通过ID）
+        const addUserBtnById = document.getElementById('addUserBtn');
+        if (addUserBtnById) {
+            addUserBtnById.addEventListener('click', () => {
+                if (typeof AdminUtils.showAddUserModal === 'function') {
+                    AdminUtils.showAddUserModal();
+                } else {
+                    // 备用方法
+                    const modal = document.getElementById('addUserModal');
+                    if (modal) {
+                        modal.classList.add('show');
+                        modal.style.display = 'flex';
+                        modal.style.visibility = 'visible';
+                        modal.style.opacity = '1';
+                        document.body.style.overflow = 'hidden';
+                    }
+                }
+            });
+        }
+
+        // 绑定批量删除按钮
+        const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+        if (batchDeleteBtn) {
+            batchDeleteBtn.addEventListener('click', () => {
+                this.batchDeleteUsers();
+            });
+        }
+
+        // 绑定批量导入按钮
+        const batchImportBtn = document.getElementById('batchImportBtn');
+        if (batchImportBtn) {
+            batchImportBtn.addEventListener('click', () => {
+                this.showBatchImportModal();
+            });
+        }
+
+        // 绑定批量导出按钮
+        const batchExportBtn = document.getElementById('batchExportBtn');
+        if (batchExportBtn) {
+            batchExportBtn.addEventListener('click', () => {
+                this.batchExportUsers();
+            });
+        }
+
         // 搜索
         const searchInput = document.getElementById('userSearch');
         if (searchInput) {
@@ -739,18 +853,20 @@ const UsersPage = {
             });
         }
 
-        // 用户类型变化时显示/隐藏可拜访选项
-        const userTypeSelect = document.getElementById('editUserType');
-        if (userTypeSelect) {
-            userTypeSelect.addEventListener('change', () => {
+        // 编辑模态框用户类型变化时显示/隐藏可拜访选项
+        const editUserTypeSelect = document.getElementById('editUserType');
+        if (editUserTypeSelect) {
+            editUserTypeSelect.addEventListener('change', () => {
                 const visitableGroup = document.getElementById('visitableGroup');
-                if (userTypeSelect.value === 'teacher') {
+                if (editUserTypeSelect.value === 'teacher') {
                     visitableGroup.style.display = 'block';
                 } else {
                     visitableGroup.style.display = 'none';
                 }
             });
         }
+
+        // 添加用户模态框用户类型变化事件绑定在showAddUserModal中
 
         // 模态框外部点击关闭
         const userEditModal = document.getElementById('userEditModal');
@@ -763,21 +879,309 @@ const UsersPage = {
         }
     },
 
+    // 添加新用户
+    async addUser() {
+        console.log('🚀🚀🚀 UsersPage.addUser开始执行');
+
+        try {
+            // 收集表单数据
+            const formData = {
+                username: document.getElementById('addUsername')?.value?.trim(),
+                password: document.getElementById('addPassword')?.value?.trim(),
+                real_name: document.getElementById('addRealName')?.value?.trim(),
+                email: document.getElementById('addEmail')?.value?.trim(),
+                phone: document.getElementById('addPhone')?.value?.trim(),
+                user_type: document.getElementById('addUserType')?.value || 'teacher',
+                student_id: document.getElementById('addStudentId')?.value?.trim(),
+                employee_id: document.getElementById('addEmployeeId')?.value?.trim(),
+                class_id: document.getElementById('addClassId')?.value?.trim(),
+                grade: document.getElementById('addGrade')?.value?.trim(),
+                is_class_teacher: document.getElementById('addIsClassTeacher')?.checked
+            };
+
+            console.log('📍 收集到的表单数据:', formData);
+
+            // 验证必填字段
+            const requiredFields = ['username', 'password', 'real_name', 'email', 'user_type'];
+            for (const field of requiredFields) {
+                if (!formData[field]) {
+                    AdminUtils.showToast(`请填写${this.getFieldName(field)}`, 'error');
+                    return;
+                }
+            }
+
+            console.log('✅ 必填字段验证通过');
+
+            // 验证邮箱格式
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email)) {
+                AdminUtils.showToast('请填写有效的邮箱地址', 'error');
+                return;
+            }
+
+            // 验证密码长度
+            if (formData.password.length < 6) {
+                AdminUtils.showToast('密码长度至少6位', 'error');
+                return;
+            }
+
+            console.log('✅ 所有验证通过');
+
+            // 使用直接的fetch请求，绕过有问题的AdminUtils.request
+            const token = AdminState.token || localStorage.getItem('admin_token');
+            if (!token) {
+                AdminUtils.showToast('未找到认证token，请重新登录', 'error');
+                return;
+            }
+
+            console.log('📍 Token存在，准备发送请求...');
+
+            const requestData = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(formData)
+            };
+
+            console.log('📍 发送请求配置:', requestData);
+
+            const response = await fetch(ADMIN_CONFIG.API_BASE_URL + '/admin/users', requestData);
+            console.log('📍 响应状态:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `请求失败 (${response.status})`);
+            }
+
+            const data = await response.json();
+            console.log('📍 响应数据:', data);
+
+            if (data.message) {
+                AdminUtils.showToast('用户创建成功', 'success');
+                this.hideAddUserModal();
+                this.loadUsers(); // 重新加载用户列表
+            } else {
+                AdminUtils.showToast('用户创建失败: ' + (data.error || '未知错误'), 'error');
+            }
+
+        } catch (error) {
+            console.error('❌ UsersPage.addUser执行失败:', error);
+            AdminUtils.showToast('创建用户失败: ' + error.message, 'error');
+        }
+    },
+
+    // 检查密码强度
+    checkPasswordStrength(password) {
+        const strengthIndicator = document.getElementById('passwordStrength');
+        const strengthBar = strengthIndicator.querySelector('.strength-bar');
+        const strengthText = strengthIndicator.querySelector('.strength-text');
+        let strength = 0;
+        let strengthLevel = 'weak';
+        let strengthTextContent = '密码强度：弱';
+
+        // 检查长度
+        if (password.length >= 8) strength++;
+        if (password.length >= 12) strength++;
+
+        // 检查复杂度
+        if (/[a-z]/.test(password)) strength++; // 小写字母
+        if (/[A-Z]/.test(password)) strength++; // 大写字母
+        if (/\d/.test(password)) strength++; // 数字
+        if (/[^a-zA-Z\d]/.test(password)) strength++; // 特殊字符
+
+        // 根据强度等级设置样式
+        if (strength <= 2) {
+            strengthLevel = 'weak';
+            strengthTextContent = '密码强度：弱';
+        } else if (strength <= 4) {
+            strengthLevel = 'medium';
+            strengthTextContent = '密码强度：中';
+        } else {
+            strengthLevel = 'strong';
+            strengthTextContent = '密码强度：强';
+        }
+
+        // 更新样式
+        strengthIndicator.className = `password-strength-indicator strength-${strengthLevel}`;
+        strengthText.textContent = strengthTextContent;
+    },
+
+    // 获取字段中文名
+    getFieldName(field) {
+        const fieldNames = {
+            username: '用户名',
+            password: '密码',
+            real_name: '真实姓名',
+            email: '邮箱',
+            user_type: '用户类型'
+        };
+        return fieldNames[field] || field;
+    },
+
+    // 显示添加用户模态框
+    showAddUserModal() {
+        const modal = document.getElementById('addUserModal');
+        if (modal) {
+            modal.classList.add('show');
+            // 强制设置显示样式，确保模态框可见
+            modal.style.display = 'flex';
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            document.body.style.overflow = 'hidden';
+            // 清空表单
+            this.resetAddUserForm();
+
+            // 绑定用户类型变化事件
+            this.bindAddUserTypeChange();
+        }
+    },
+
+    // 隐藏添加用户模态框
+    hideAddUserModal() {
+        const modal = document.getElementById('addUserModal');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.style.visibility = 'hidden';
+            modal.style.opacity = '0';
+        }
+        document.body.style.overflow = '';
+    },
+
+    // 重置添加用户表单
+    resetAddUserForm() {
+        document.getElementById('addUsername').value = '';
+        document.getElementById('addPassword').value = '';
+        document.getElementById('addRealName').value = '';
+        document.getElementById('addEmail').value = '';
+        document.getElementById('addPhone').value = '';
+        document.getElementById('addUserType').value = 'teacher';
+        document.getElementById('addStudentId').value = '';
+        document.getElementById('addEmployeeId').value = '';
+        document.getElementById('addClassId').value = '';
+        document.getElementById('addGrade').value = '';
+        document.getElementById('addIsClassTeacher').checked = false;
+    },
+
+    // 绑定添加用户模态框的用户类型变化事件
+    bindAddUserTypeChange() {
+        const addUserTypeSelect = document.getElementById('addUserType');
+        if (!addUserTypeSelect) return;
+
+        // 移除旧的事件监听器
+        const newSelect = addUserTypeSelect.cloneNode(true);
+        addUserTypeSelect.parentNode.replaceChild(newSelect, addUserTypeSelect);
+
+        // 添加新的事件监听器
+        newSelect.addEventListener('change', () => {
+            const userType = newSelect.value;
+            this.updateAddUserFieldsVisibility(userType);
+        });
+
+        // 绑定密码输入事件
+        const passwordInput = document.getElementById('addPassword');
+        if (passwordInput) {
+            passwordInput.addEventListener('input', (e) => {
+                this.checkPasswordStrength(e.target.value);
+            });
+        }
+
+        // 初始化字段可见性
+        this.updateAddUserFieldsVisibility(newSelect.value);
+    },
+
+    // 更新添加用户字段的可见性
+    updateAddUserFieldsVisibility(userType) {
+        const studentIdGroup = document.getElementById('addStudentIdGroup');
+        const employeeIdGroup = document.getElementById('addEmployeeIdGroup');
+        const classIdGroup = document.getElementById('addClassIdGroup');
+        const gradeGroup = document.getElementById('addGradeGroup');
+        const isClassTeacherGroup = document.getElementById('addIsClassTeacherGroup');
+
+        // 隐藏所有可选字段
+        if (studentIdGroup) studentIdGroup.style.display = 'none';
+        if (employeeIdGroup) employeeIdGroup.style.display = 'none';
+        if (classIdGroup) classIdGroup.style.display = 'none';
+        if (gradeGroup) gradeGroup.style.display = 'none';
+        if (isClassTeacherGroup) isClassTeacherGroup.style.display = 'none';
+
+        // 根据用户类型显示相应字段
+        switch (userType) {
+            case 'student':
+                if (studentIdGroup) studentIdGroup.style.display = 'block';
+                if (classIdGroup) classIdGroup.style.display = 'block';
+                if (gradeGroup) gradeGroup.style.display = 'block';
+                break;
+            case 'teacher':
+                if (employeeIdGroup) employeeIdGroup.style.display = 'block';
+                if (classIdGroup) classIdGroup.style.display = 'block';
+                if (isClassTeacherGroup) isClassTeacherGroup.style.display = 'block';
+                break;
+            case 'parent':
+                // 家长通常不需要这些字段
+                break;
+            case 'alumni':
+                if (studentIdGroup) studentIdGroup.style.display = 'block';
+                break;
+            case 'security':
+                if (employeeIdGroup) employeeIdGroup.style.display = 'block';
+                break;
+            case 'admin':
+                if (employeeIdGroup) employeeIdGroup.style.display = 'block';
+                break;
+        }
+    },
+
     // 加载用户列表
     async loadUsers() {
         try {
+            console.log('📍 UsersPage.loadUsers 开始执行');
+
             const params = new URLSearchParams({
                 page: this.currentPage,
                 per_page: 20,
                 ...this.filters
             });
 
-            const data = await AdminUtils.request(`/admin/users?${params}`);
-            this.renderUsers(data.users);
-            this.renderPagination(data.pagination);
+            console.log('📍 查询参数:', params.toString());
+
+            const token = AdminState.token || localStorage.getItem('admin_token');
+            if (!token) {
+                console.error('❌ 未找到认证token');
+                AdminUtils.showToast('未找到认证token，请重新登录', 'error');
+                return;
+            }
+
+            const response = await fetch(ADMIN_CONFIG.API_BASE_URL + `/admin/users?${params}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('📍 用户列表响应状态:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `请求失败 (${response.status})`);
+            }
+
+            const data = await response.json();
+            console.log('📍 用户列表数据:', data);
+
+            if (data.users && data.pagination) {
+                this.renderUsers(data.users);
+                this.renderPagination(data.pagination);
+            } else {
+                console.error('❌ 用户列表数据格式不正确:', data);
+                AdminUtils.showToast('用户列表数据格式错误', 'error');
+            }
         } catch (error) {
-            console.error('加载用户列表失败:', error);
-            AdminUtils.showToast('加载用户列表失败', 'error');
+            console.error('❌ 加载用户列表失败:', error);
+            AdminUtils.showToast('加载用户列表失败: ' + error.message, 'error');
         }
     },
 
@@ -786,9 +1190,17 @@ const UsersPage = {
         const tbody = document.querySelector('#usersTable tbody');
         if (!tbody) return;
 
-        tbody.innerHTML = users.map(user => {
+        // 计算序号的起始值
+        const startIndex = (this.currentPage - 1) * 20 + 1;
+
+        tbody.innerHTML = users.map((user, index) => {
+            const serialNumber = startIndex + index;
             return `
             <tr>
+                <td>
+                    <input type="checkbox" class="user-checkbox" data-user-id="${user.id}" title="选择用户">
+                </td>
+                <td>${serialNumber}</td>
                 <td>${user.username}</td>
                 <td>${user.real_name}</td>
                 <td>${AdminUtils.getUserTypeText(user.user_type)}</td>
@@ -796,13 +1208,11 @@ const UsersPage = {
                 <td>${user.phone}</td>
                 <td><span class="status-badge ${user.status}">${AdminUtils.getStatusText(user.status)}</span></td>
                 <td>
-                    ${user.user_type === 'teacher' ? `
-                        <label class="switch">
-                            <input type="checkbox" ${user.is_visitable ? 'checked' : ''}
-                                   onchange="UsersPage.toggleVisitable(${user.id}, this.checked)">
-                            <span class="slider"></span>
-                        </label>
-                    ` : '-'}
+                    ${user.user_type.includes('teacher') ? `
+                        <span class="visitable-badge ${user.is_visitable ? 'visitable' : 'not-visitable'}">
+                            ${user.is_visitable ? '自动可拜访' : '不可拜访'}
+                        </span>
+                    ` : user.is_visitable ? '<span class="visitable-badge visitable">可拜访</span>' : '-'}
                 </td>
                 <td>${AdminUtils.formatDate(user.created_at)}</td>
                 <td>
@@ -813,11 +1223,17 @@ const UsersPage = {
                         <button class="btn btn-sm btn-outline" onclick="UsersPage.toggleStatus(${user.id}, '${user.status}')" title="${user.status === 'active' ? '禁用' : '启用'}">
                             <i class="ri-${user.status === 'active' ? 'disable' : 'enable'}-line"></i>
                         </button>
+                        <button class="btn btn-sm btn-outline btn-danger" onclick="UsersPage.deleteUser(${user.id}, '${user.username}')" title="删除">
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
         `;
         }).join('');
+
+        // 绑定全选复选框事件
+        this.bindSelectAllEvent();
     },
 
     // 渲染分页
@@ -845,40 +1261,455 @@ const UsersPage = {
         this.loadUsers();
     },
 
-    // 编辑用户
-    async editUser(userId) {
+    // 绑定全选复选框事件
+    bindSelectAllEvent() {
+        const selectAllCheckbox = document.getElementById('selectAllUsers');
+        const userCheckboxes = document.querySelectorAll('.user-checkbox');
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                userCheckboxes.forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                });
+            });
+        }
+
+        // 为每个用户复选框添加事件监听
+        userCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                this.updateSelectAllCheckbox();
+            });
+        });
+    },
+
+    // 更新全选复选框状态
+    updateSelectAllCheckbox() {
+        const selectAllCheckbox = document.getElementById('selectAllUsers');
+        const userCheckboxes = document.querySelectorAll('.user-checkbox');
+        const checkedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
+        const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+        const selectedCount = document.getElementById('selectedCount');
+
+        if (selectAllCheckbox) {
+            if (userCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCheckboxes.length === userCheckboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+
+        // 更新批量删除按钮状态
+        if (batchDeleteBtn && selectedCount) {
+            const count = checkedCheckboxes.length;
+            selectedCount.textContent = count;
+
+            if (count > 0) {
+                batchDeleteBtn.style.display = 'inline-flex';
+            } else {
+                batchDeleteBtn.style.display = 'none';
+            }
+        }
+    },
+
+    // 获取选中的用户ID列表
+    getSelectedUserIds() {
+        const checkedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
+        return Array.from(checkedCheckboxes).map(checkbox =>
+            parseInt(checkbox.dataset.userId)
+        );
+    },
+
+    // 获取选中的用户数量
+    getSelectedUsersCount() {
+        return document.querySelectorAll('.user-checkbox:checked').length;
+    },
+
+    // 隐藏添加用户模态框
+    hideAddUserModal() {
+        const modal = document.getElementById('addUserModal');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.style.visibility = 'hidden';
+            modal.style.opacity = '0';
+        }
+        document.body.style.overflow = '';
+    },
+
+    // 切换密码可见性
+    togglePasswordVisibility(fieldId) {
+        const passwordField = document.getElementById(fieldId);
+        const toggleIcon = document.getElementById(fieldId + 'ToggleIcon');
+
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleIcon.className = 'ri-eye-off-line';
+        } else {
+            passwordField.type = 'password';
+            toggleIcon.className = 'ri-eye-line';
+        }
+    },
+
+    // 检查密码强度
+    checkPasswordStrength(password) {
+        const strengthIndicator = document.getElementById('passwordStrength');
+        const strengthBar = strengthIndicator.querySelector('.strength-bar');
+        const strengthText = strengthIndicator.querySelector('.strength-text');
+
+        let strength = 0;
+        let strengthLevel = 'weak';
+        let strengthTextContent = '密码强度：弱';
+
+        // 检查长度
+        if (password.length >= 8) strength++;
+        if (password.length >= 12) strength++;
+
+        // 检查复杂度
+        if (/[a-z]/.test(password)) strength++; // 小写字母
+        if (/[A-Z]/.test(password)) strength++; // 大写字母
+        if (/\d/.test(password)) strength++; // 数字
+        if (/[^a-zA-Z\d]/.test(password)) strength++; // 特殊字符
+
+        // 根据强度等级设置样式
+        if (strength <= 2) {
+            strengthLevel = 'weak';
+            strengthTextContent = '密码强度：弱';
+        } else if (strength <= 4) {
+            strengthLevel = 'medium';
+            strengthTextContent = '密码强度：中';
+        } else {
+            strengthLevel = 'strong';
+            strengthTextContent = '密码强度：强';
+        }
+
+        // 更新样式
+        strengthIndicator.className = `password-strength-indicator strength-${strengthLevel}`;
+        strengthText.textContent = strengthTextContent;
+    },
+
+    // 显示批量导入模态框
+    showBatchImportModal() {
+        const modal = document.getElementById('batchImportModal');
+        if (modal) {
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            document.body.style.overflow = 'hidden';
+            this.resetBatchImportForm();
+            this.bindBatchImportEvents();
+        }
+    },
+
+    // 隐藏批量导入模态框
+    hideBatchImportModal() {
+        const modal = document.getElementById('batchImportModal');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.style.visibility = 'hidden';
+            modal.style.opacity = '0';
+        }
+        document.body.style.overflow = '';
+    },
+
+    // 重置批量导入表单
+    resetBatchImportForm() {
+        document.getElementById('fileInput').value = '';
+        document.getElementById('uploadStep').style.display = 'block';
+        document.getElementById('previewStep').style.display = 'none';
+        document.getElementById('resultStep').style.display = 'none';
+        document.getElementById('confirmImportBtn').style.display = 'none';
+        document.getElementById('downloadTemplateBtn').style.display = 'inline-flex';
+        document.getElementById('closeImportResultBtn').style.display = 'none';
+        document.getElementById('previewTableBody').innerHTML = '';
+        document.getElementById('importSummary').innerHTML = '';
+    },
+
+    // 绑定批量导入事件
+    bindBatchImportEvents() {
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+
+        // 文件选择事件
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.handleFileUpload(file);
+            }
+        });
+
+        // 拖拽事件
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                this.handleFileUpload(file);
+            }
+        });
+    },
+
+    // 处理文件上传
+    async handleFileUpload(file) {
         try {
-            const data = await AdminUtils.request(`/admin/users/${userId}`);
-            if (data.success) {
-                const user = data.user;
+            // 检查文件类型
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                AdminUtils.showToast('请选择Excel文件 (.xlsx 或 .xls)', 'error');
+                return;
+            }
 
-                // 填充表单
-                document.getElementById('editUserId').value = user.id;
-                document.getElementById('editUsername').value = user.username;
-                document.getElementById('editRealName').value = user.real_name;
-                document.getElementById('editEmail').value = user.email;
-                document.getElementById('editPhone').value = user.phone;
-                document.getElementById('editUserType').value = user.user_type;
-                document.getElementById('editStatus').value = user.status;
-                document.getElementById('editStudentId').value = user.student_id || '';
-                document.getElementById('editEmployeeId').value = user.employee_id || '';
-                document.getElementById('editIsVisitable').checked = user.is_visitable || false;
+            // 检查文件大小 (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                AdminUtils.showToast('文件大小不能超过10MB', 'error');
+                return;
+            }
 
-                // 显示/隐藏可拜访选项
-                const visitableGroup = document.getElementById('visitableGroup');
-                if (user.user_type === 'teacher') {
-                    visitableGroup.style.display = 'block';
-                } else {
-                    visitableGroup.style.display = 'none';
-                }
+            // 创建FormData
+            const formData = new FormData();
+            formData.append('file', file);
 
-                // 加载用户角色信息
-                this.loadEditUserRoles(user.id);
+            // 发送到服务器进行解析
+            const response = await fetch('/admin/users/import-preview', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                },
+                body: formData
+            });
 
-                this.showEditModal();
+            if (!response.ok) {
+                throw new Error('文件上传失败');
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showImportPreview(result.data);
+            } else {
+                AdminUtils.showToast('文件解析失败: ' + (result.message || '未知错误'), 'error');
             }
         } catch (error) {
-            AdminUtils.showToast('获取用户信息失败', 'error');
+            console.error('文件上传失败:', error);
+            AdminUtils.showToast('文件上传失败: ' + error.message, 'error');
+        }
+    },
+
+    // 显示导入预览
+    showImportPreview(data) {
+        document.getElementById('uploadStep').style.display = 'none';
+        document.getElementById('previewStep').style.display = 'block';
+        document.getElementById('confirmImportBtn').style.display = 'inline-flex';
+        document.getElementById('downloadTemplateBtn').style.display = 'none';
+
+        // 更新预览数量
+        document.getElementById('previewCount').textContent = data.users.length;
+
+        // 生成预览表格
+        const tbody = document.getElementById('previewTableBody');
+        tbody.innerHTML = data.users.map(user => `
+            <tr>
+                <td>${user.username}</td>
+                <td>${user.real_name}</td>
+                <td>${AdminUtils.getUserTypeText(user.user_type)}</td>
+                <td>${user.email}</td>
+                <td>${user.phone || '-'}</td>
+                <td><span class="status-badge ${user.valid ? 'success' : 'error'}">${user.valid ? '正常' : '错误'}</span></td>
+            </tr>
+        `).join('');
+
+        // 存储预览数据供确认时使用
+        this.importPreviewData = data;
+    },
+
+    // 确认批量导入
+    async confirmBatchImport() {
+        try {
+            AdminUtils.showLoading('正在导入用户...');
+
+            const response = await AdminUtils.request('/admin/users/import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    users: this.importPreviewData.users
+                })
+            });
+
+            if (response.success) {
+                this.showImportResult(response.data);
+                // 重新加载用户列表
+                await this.loadUsers();
+            } else {
+                AdminUtils.showToast('导入失败: ' + (response.message || '未知错误'), 'error');
+            }
+        } catch (error) {
+            console.error('批量导入失败:', error);
+            AdminUtils.showToast('批量导入失败: ' + error.message, 'error');
+        } finally {
+            AdminUtils.hideLoading();
+        }
+    },
+
+    // 显示导入结果
+    showImportResult(data) {
+        document.getElementById('previewStep').style.display = 'none';
+        document.getElementById('resultStep').style.display = 'block';
+        document.getElementById('confirmImportBtn').style.display = 'none';
+        document.getElementById('closeImportResultBtn').style.display = 'inline-flex';
+
+        const summary = document.getElementById('importSummary');
+        summary.innerHTML = `
+            <h4>导入完成</h4>
+            <p>总数：<strong>${data.total}</strong></p>
+            <p>成功：<span class="success-count">${data.success}</span></p>
+            <p>失败：<span class="error-count">${data.failed}</span></p>
+            ${data.warnings > 0 ? `<p>警告：<span class="warning-count">${data.warnings}</span></p>` : ''}
+            ${data.errors && data.errors.length > 0 ? `
+                <div class="error-details">
+                    <h5>错误详情：</h5>
+                    <ul>
+                        ${data.errors.map(error => `<li>${error}</li>`).join('')}
+                    </ul>
+                </div>
+            ` : ''}
+        `;
+    },
+
+    // 下载用户模板
+    async downloadUserTemplate() {
+        try {
+            const response = await fetch('/admin/users/template', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('下载模板失败');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = '用户导入模板.xlsx';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            AdminUtils.showToast('模板下载成功', 'success');
+        } catch (error) {
+            console.error('下载模板失败:', error);
+            AdminUtils.showToast('下载模板失败: ' + error.message, 'error');
+        }
+    },
+
+    // 批量导出用户
+    async batchExportUsers() {
+        try {
+            AdminUtils.showLoading('正在导出用户数据...');
+
+            // 获取当前筛选条件
+            const params = new URLSearchParams();
+            if (this.filters.search) params.append('search', this.filters.search);
+            if (this.filters.user_type) params.append('user_type', this.filters.user_type);
+            if (this.filters.status) params.append('status', this.filters.status);
+
+            const response = await fetch(`/admin/users/export?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('导出失败');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `用户数据_${new Date().toISOString().split('T')[0]}.xlsx`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            AdminUtils.showToast('导出成功', 'success');
+        } catch (error) {
+            console.error('批量导出失败:', error);
+            AdminUtils.showToast('导出失败: ' + error.message, 'error');
+        } finally {
+            AdminUtils.hideLoading();
+        }
+    },
+
+    // 批量删除用户
+    async batchDeleteUsers() {
+        const selectedIds = this.getSelectedUserIds();
+
+        if (selectedIds.length === 0) {
+            AdminUtils.showToast('请选择要删除的用户', 'warning');
+            return;
+        }
+
+        // 确认删除
+        const confirmed = confirm(`确定要删除选中的 ${selectedIds.length} 个用户吗？此操作不可恢复！`);
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            // 发送删除请求
+            const response = await AdminUtils.request('/admin/users/batch-delete', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_ids: selectedIds
+                })
+            });
+
+            if (response.success) {
+                AdminUtils.showToast(`成功删除 ${selectedIds.length} 个用户`, 'success');
+
+                // 清空选择状态
+                document.getElementById('selectAllUsers').checked = false;
+                document.getElementById('selectAllUsers').indeterminate = false;
+
+                // 重新加载用户列表
+                await this.loadUsers();
+            } else {
+                AdminUtils.showToast('删除失败: ' + (response.message || '未知错误'), 'error');
+            }
+        } catch (error) {
+            console.error('批量删除用户失败:', error);
+            AdminUtils.showToast('删除失败: ' + error.message, 'error');
         }
     },
 
@@ -886,20 +1717,34 @@ const UsersPage = {
     async saveUser() {
         try {
             const userId = document.getElementById('editUserId').value;
+
+            // 获取选中的用户类型
+            const selectedTypes = [];
+            const checkboxes = document.querySelectorAll('#editUserTypes input[type="checkbox"]:checked');
+            checkboxes.forEach(cb => selectedTypes.push(cb.value));
+
+            if (selectedTypes.length === 0) {
+                AdminUtils.showToast('请至少选择一个用户类型', 'error');
+                return;
+            }
+
             const formData = {
                 real_name: document.getElementById('editRealName').value.trim(),
                 email: document.getElementById('editEmail').value.trim(),
                 phone: document.getElementById('editPhone').value.trim(),
-                user_type: document.getElementById('editUserType').value,
+                user_type: selectedTypes.join(','), // 将数组转为逗号分隔的字符串
                 status: document.getElementById('editStatus').value,
                 student_id: document.getElementById('editStudentId').value.trim(),
                 employee_id: document.getElementById('editEmployeeId').value.trim()
             };
 
-            // 如果是教师，添加可拜访权限
-            if (formData.user_type === 'teacher') {
+            // 如果包含教师类型，添加可拜访权限
+            if (selectedTypes.includes('teacher')) {
                 formData.is_visitable = document.getElementById('editIsVisitable').checked;
             }
+
+            console.log('📍 准备保存的用户数据:', formData);
+            console.log('📍 选中的用户类型:', selectedTypes);
 
             // 验证必填字段
             if (!formData.real_name || !formData.email || !formData.phone) {
@@ -911,6 +1756,8 @@ const UsersPage = {
                 method: 'PUT',
                 body: JSON.stringify(formData)
             });
+
+            console.log('📍 保存响应:', data);
 
             if (data.success) {
                 AdminUtils.showToast('用户信息更新成功', 'success');
@@ -1111,8 +1958,600 @@ const UsersPage = {
         } catch (error) {
             AdminUtils.showToast('角色取消分配失败', 'error');
         }
+    },
+
+    // 编辑用户
+    async editUser(userId) {
+        console.log('📍 开始编辑用户，ID:', userId);
+        try {
+            // 直接从API获取用户最新数据
+            const token = AdminState.token || localStorage.getItem('admin_token');
+            if (!token) {
+                AdminUtils.showToast('未找到认证token，请重新登录', 'error');
+                return;
+            }
+
+            console.log('📍 从API获取用户最新信息');
+
+            // 直接使用单个用户API获取用户最新数据
+            const userResponse = await fetch(ADMIN_CONFIG.API_BASE_URL + `/admin/users/${userId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!userResponse.ok) {
+                throw new Error(`获取用户信息失败: ${userResponse.status}`);
+            }
+
+            const userResult = await userResponse.json();
+            const user = userResult.user || userResult;
+            console.log('📍 获取到用户最新信息:', user);
+            console.log('📍 用户类型详情:', user.user_type, typeof user.user_type);
+
+            if (!user) {
+                throw new Error('用户不存在');
+            }
+
+            // 填充编辑表单
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUsername').value = user.username;
+            document.getElementById('editRealName').value = user.real_name;
+            document.getElementById('editEmail').value = user.email;
+            document.getElementById('editPhone').value = user.phone;
+
+            // 设置用户类型 - 处理多选复选框
+            console.log('📍 填充表单用户类型:', user.user_type);
+
+            // 清空所有复选框
+            const checkboxes = document.querySelectorAll('#editUserTypes input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+
+            // 解析用户类型（支持字符串和数组格式）
+            let userTypes = [];
+            if (typeof user.user_type === 'string') {
+                if (user.user_type.includes(',')) {
+                    userTypes = user.user_type.split(',').map(t => t.trim());
+                } else {
+                    userTypes = [user.user_type];
+                }
+            } else if (Array.isArray(user.user_type)) {
+                userTypes = user.user_type;
+            }
+
+            // 设置选中的复选框
+            userTypes.forEach(type => {
+                const checkbox = document.getElementById(`editType${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+
+            console.log('📍 设置的用户类型:', userTypes);
+            console.log('📍 选中的复选框:', Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value));
+
+            document.getElementById('editStatus').value = user.status;
+            console.log('📍 状态设置:', user.status, '表单状态值:', document.getElementById('editStatus').value);
+
+            // 填充可选字段
+            document.getElementById('editStudentId').value = user.student_id || '';
+            document.getElementById('editEmployeeId').value = user.employee_id || '';
+            document.getElementById('editClassId').value = user.class_id || '';
+            document.getElementById('editGrade').value = user.grade || '';
+            document.getElementById('editIsClassTeacher').checked = user.is_class_teacher || false;
+
+            // 根据用户类型显示相应字段
+            this.updateEditUserFieldsVisibility(user.user_type);
+
+            // 移除标志，允许change事件处理器执行
+            setTimeout(() => {
+                // 不再需要userTypeElement，因为我们使用复选框
+                console.log('📍 用户类型设置完成，change事件已启用');
+            }, 100);
+
+            // 显示编辑模态框
+            this.showEditUserModal();
+
+        } catch (error) {
+            console.error('❌ 编辑用户失败:', error);
+            AdminUtils.showToast('编辑用户失败: ' + error.message, 'error');
+        }
+    },
+
+    // 显示编辑用户模态框
+    showEditUserModal() {
+        const modal = document.getElementById('editUserModal');
+        if (modal) {
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            document.body.style.overflow = 'hidden';
+
+            // 绑定用户类型变化事件
+            this.bindEditUserTypeChange();
+        }
+    },
+
+    // 隐藏编辑用户模态框
+    hideEditUserModal() {
+        const modal = document.getElementById('editUserModal');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.style.visibility = 'hidden';
+            modal.style.opacity = '0';
+        }
+        document.body.style.overflow = '';
+    },
+
+    // 绑定编辑用户模态框的用户类型变化事件
+    bindEditUserTypeChange() {
+        const editUserTypeSelect = document.getElementById('editUserType');
+        if (!editUserTypeSelect) return;
+
+        // 移除旧的事件监听器
+        const newSelect = editUserTypeSelect.cloneNode(true);
+        editUserTypeSelect.parentNode.replaceChild(newSelect, editUserTypeSelect);
+
+        // 添加新的事件监听器
+        newSelect.addEventListener('change', () => {
+            const userType = newSelect.value;
+            this.updateEditUserFieldsVisibility(userType);
+        });
+
+        // 初始化字段可见性
+        this.updateEditUserFieldsVisibility(newSelect.value);
+    },
+
+    // 更新编辑用户字段的可见性
+    updateEditUserFieldsVisibility(userType) {
+        const editStudentIdGroup = document.getElementById('editStudentIdGroup');
+        const editEmployeeIdGroup = document.getElementById('editEmployeeIdGroup');
+        const editClassIdGroup = document.getElementById('editClassIdGroup');
+        const editGradeGroup = document.getElementById('editGradeGroup');
+        const editIsClassTeacherGroup = document.getElementById('editIsClassTeacherGroup');
+
+        // 隐藏所有可选字段
+        if (editStudentIdGroup) editStudentIdGroup.style.display = 'none';
+        if (editEmployeeIdGroup) editEmployeeIdGroup.style.display = 'none';
+        if (editClassIdGroup) editClassIdGroup.style.display = 'none';
+        if (editGradeGroup) editGradeGroup.style.display = 'none';
+        if (editIsClassTeacherGroup) editIsClassTeacherGroup.style.display = 'none';
+
+        // 根据用户类型显示相应字段
+        switch (userType) {
+            case 'student':
+                if (editStudentIdGroup) editStudentIdGroup.style.display = 'block';
+                if (editClassIdGroup) editClassIdGroup.style.display = 'block';
+                if (editGradeGroup) editGradeGroup.style.display = 'block';
+                break;
+            case 'teacher':
+                if (editEmployeeIdGroup) editEmployeeIdGroup.style.display = 'block';
+                if (editClassIdGroup) editClassIdGroup.style.display = 'block';
+                if (editIsClassTeacherGroup) editIsClassTeacherGroup.style.display = 'block';
+                break;
+            case 'parent':
+                break;
+            case 'alumni':
+                if (editStudentIdGroup) editStudentIdGroup.style.display = 'block';
+                break;
+            case 'security':
+                if (editEmployeeIdGroup) editEmployeeIdGroup.style.display = 'block';
+                break;
+            case 'admin':
+                if (editEmployeeIdGroup) editEmployeeIdGroup.style.display = 'block';
+                break;
+        }
+    },
+
+    // 保存编辑的用户信息
+    async saveEditUser() {
+        console.log('📍 开始保存编辑的用户信息');
+        try {
+            const userId = document.getElementById('editUserId').value;
+
+            // 获取选中的用户类型
+            const selectedTypes = [];
+            const checkboxes = document.querySelectorAll('#editUserTypes input[type="checkbox"]:checked');
+            checkboxes.forEach(cb => selectedTypes.push(cb.value));
+            const userTypeValue = selectedTypes.length > 0 ? selectedTypes.join(',') : 'teacher';
+
+            console.log('📍 选中的用户类型复选框:', selectedTypes);
+            console.log('📍 最终用户类型值:', userTypeValue);
+
+            const formData = {
+                username: document.getElementById('editUsername')?.value?.trim(),
+                real_name: document.getElementById('editRealName')?.value?.trim(),
+                email: document.getElementById('editEmail')?.value?.trim(),
+                phone: document.getElementById('editPhone')?.value?.trim(),
+                user_type: userTypeValue,
+                status: document.getElementById('editStatus')?.value || 'active',
+                student_id: document.getElementById('editStudentId')?.value?.trim(),
+                employee_id: document.getElementById('editEmployeeId')?.value?.trim(),
+                class_id: document.getElementById('editClassId')?.value?.trim(),
+                grade: document.getElementById('editGrade')?.value?.trim(),
+                is_class_teacher: document.getElementById('editIsClassTeacher')?.checked
+            };
+
+            console.log('📍 编辑的用户数据:', formData);
+
+            // 验证必填字段
+            const requiredFields = ['username', 'real_name', 'email'];
+            for (const field of requiredFields) {
+                if (!formData[field]) {
+                    AdminUtils.showToast(`请填写${this.getFieldName(field)}`, 'error');
+                    return;
+                }
+            }
+
+            const token = AdminState.token || localStorage.getItem('admin_token');
+            if (!token) {
+                AdminUtils.showToast('未找到认证token，请重新登录', 'error');
+                return;
+            }
+
+            const response = await fetch(ADMIN_CONFIG.API_BASE_URL + `/admin/users/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `更新用户失败 (${response.status})`);
+            }
+
+            const data = await response.json();
+            console.log('📍 更新响应:', data);
+
+            if (data.message) {
+                AdminUtils.showToast('用户信息更新成功', 'success');
+                this.hideEditUserModal();
+                this.loadUsers(); // 重新加载用户列表
+            } else {
+                AdminUtils.showToast('用户信息更新失败: ' + (data.error || '未知错误'), 'error');
+            }
+
+        } catch (error) {
+            console.error('❌ 保存编辑用户失败:', error);
+            AdminUtils.showToast('保存编辑用户失败: ' + error.message, 'error');
+        }
+    },
+
+    // 删除用户
+    async deleteUser(userId, username) {
+        console.log('📍 开始删除用户，ID:', userId, '用户名:', username);
+
+        // 确认删除
+        if (!confirm(`确定要删除用户 "${username}" 吗？此操作不可恢复。`)) {
+            return;
+        }
+
+        try {
+            const token = AdminState.token || localStorage.getItem('admin_token');
+            if (!token) {
+                AdminUtils.showToast('未找到认证token，请重新登录', 'error');
+                return;
+            }
+
+            const response = await fetch(ADMIN_CONFIG.API_BASE_URL + `/admin/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `删除用户失败 (${response.status})`);
+            }
+
+            const data = await response.json();
+            console.log('📍 删除响应:', data);
+
+            if (data.message) {
+                AdminUtils.showToast('用户删除成功', 'success');
+                this.loadUsers(); // 重新加载用户列表
+            } else {
+                AdminUtils.showToast('用户删除失败: ' + (data.error || '未知错误'), 'error');
+            }
+
+        } catch (error) {
+            console.error('❌ 删除用户失败:', error);
+            AdminUtils.showToast('删除用户失败: ' + error.message, 'error');
+        }
+    },
+
+    // 批量删除用户
+    async batchDeleteUsers() {
+        console.log('📍 开始批量删除用户');
+
+        const userIds = this.getSelectedUserIds();
+        if (userIds.length === 0) {
+            AdminUtils.showToast('请先选择要删除的用户', 'warning');
+            return;
+        }
+
+        if (!confirm(`确定要删除选中的 ${userIds.length} 个用户吗？此操作不可恢复。`)) {
+            return;
+        }
+
+        try {
+            const token = AdminState.token || localStorage.getItem('admin_token');
+            if (!token) {
+                AdminUtils.showToast('未找到认证token，请重新登录', 'error');
+                return;
+            }
+
+            const response = await fetch(ADMIN_CONFIG.API_BASE_URL + '/admin/users/batch-delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ user_ids: userIds })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `批量删除失败 (${response.status})`);
+            }
+
+            const data = await response.json();
+            console.log('📍 批量删除响应:', data);
+
+            if (data.message) {
+                AdminUtils.showToast(`成功删除 ${userIds.length} 个用户`, 'success');
+                this.loadUsers(); // 重新加载用户列表
+            } else {
+                AdminUtils.showToast('批量删除失败: ' + (data.error || '未知错误'), 'error');
+            }
+
+        } catch (error) {
+            console.error('❌ 批量删除用户失败:', error);
+            AdminUtils.showToast('批量删除失败: ' + error.message, 'error');
+        }
+    },
+
+    // 切换用户状态
+    async toggleStatus(userId, currentStatus) {
+        console.log('📍 切换用户状态，ID:', userId, '当前状态:', currentStatus);
+
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        const actionText = newStatus === 'active' ? '启用' : '禁用';
+
+        if (!confirm(`确定要${actionText}该用户吗？`)) {
+            return;
+        }
+
+        try {
+            const token = AdminState.token || localStorage.getItem('admin_token');
+            if (!token) {
+                AdminUtils.showToast('未找到认证token，请重新登录', 'error');
+                return;
+            }
+
+            const response = await fetch(ADMIN_CONFIG.API_BASE_URL + `/admin/users/${userId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `${actionText}用户失败 (${response.status})`);
+            }
+
+            const data = await response.json();
+            console.log('📍 状态切换响应:', data);
+
+            if (data.message) {
+                AdminUtils.showToast(`用户${actionText}成功`, 'success');
+                this.loadUsers(); // 重新加载用户列表
+            } else {
+                AdminUtils.showToast(`${actionText}用户失败: ` + (data.error || '未知错误'), 'error');
+            }
+
+        } catch (error) {
+            console.error('❌ 切换用户状态失败:', error);
+            AdminUtils.showToast(`${actionText}用户失败: ` + error.message, 'error');
+        }
+    },
+
+    // 切换教师可访问状态
+    async toggleVisitable(userId, isVisitable) {
+        console.log('📍 切换教师可访问状态，ID:', userId, '新状态:', isVisitable);
+
+        try {
+            const token = AdminState.token || localStorage.getItem('admin_token');
+            if (!token) {
+                AdminUtils.showToast('未找到认证token，请重新登录', 'error');
+                return;
+            }
+
+            const response = await fetch(ADMIN_CONFIG.API_BASE_URL + `/admin/users/${userId}/visitable`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ is_visitable: isVisitable })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `更新访问权限失败 (${response.status})`);
+            }
+
+            const data = await response.json();
+            console.log('📍 访问权限更新响应:', data);
+
+            if (data.message) {
+                AdminUtils.showToast('访问权限更新成功', 'success');
+                this.loadUsers(); // 重新加载用户列表
+            } else {
+                AdminUtils.showToast('访问权限更新失败: ' + (data.error || '未知错误'), 'error');
+            }
+
+        } catch (error) {
+            console.error('❌ 切换访问权限失败:', error);
+            AdminUtils.showToast('切换访问权限失败: ' + error.message, 'error');
+        }
+    },
+
+    // 初始化事件监听器
+    initEventListeners() {
+        console.log('🔧 UsersPage.initEventListeners() 初始化用户管理页面事件监听器');
+
+        // 添加用户按钮
+        const addUserBtn = document.getElementById('addUserBtn');
+        if (addUserBtn) {
+            addUserBtn.addEventListener('click', () => {
+                console.log('🚀 点击添加用户按钮');
+                this.showAddUserModal();
+            });
+            console.log('✅ 添加用户按钮事件监听器已绑定');
+        } else {
+            console.log('❌ 找不到添加用户按钮');
+        }
+
+        // 批量删除按钮
+        const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+        if (batchDeleteBtn) {
+            batchDeleteBtn.addEventListener('click', () => {
+                console.log('🚀 点击批量删除按钮');
+                this.batchDeleteUsers();
+            });
+            console.log('✅ 批量删除按钮事件监听器已绑定');
+        } else {
+            console.log('❌ 找不到批量删除按钮');
+        }
+
+        // 编辑用户表单提交
+        const editUserForm = document.getElementById('editUserForm');
+        if (editUserForm) {
+            editUserForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                console.log('🚀 提交编辑用户表单');
+                this.saveEditUser();
+            });
+            console.log('✅ 编辑用户表单提交事件监听器已绑定');
+        } else {
+            console.log('❌ 找不到编辑用户表单');
+        }
+
+        // 编辑用户类型变化事件 - 绑定到复选框
+        const editUserTypesContainer = document.getElementById('editUserTypes');
+        if (editUserTypesContainer) {
+            editUserTypesContainer.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    console.log('🚀 编辑用户类型变化:', e.target.value, e.target.checked);
+
+                    // 获取当前选中的所有用户类型
+                    const selectedTypes = [];
+                    const checkboxes = editUserTypesContainer.querySelectorAll('input[type="checkbox"]:checked');
+                    checkboxes.forEach(cb => selectedTypes.push(cb.value));
+
+                    this.updateEditUserFieldsVisibility(selectedTypes.join(','));
+                }
+            });
+            console.log('✅ 编辑用户类型复选框变化事件监听器已绑定');
+        } else {
+            console.log('❌ 找不到编辑用户类型复选框容器');
+        }
+
+        // 编辑密码强度检查
+        const editPassword = document.getElementById('editPassword');
+        if (editPassword) {
+            editPassword.addEventListener('input', () => {
+                this.checkPasswordStrength('editPassword', 'editPassword-strength-fill', 'editPassword-strength-text');
+            });
+            console.log('✅ 编辑密码强度检查事件监听器已绑定');
+        } else {
+            console.log('❌ 找不到编辑密码输入框');
+        }
+
+        console.log('✅ UsersPage 事件监听器初始化完成');
+    },
+
+    // 更新编辑用户字段可见性
+    updateEditUserFieldsVisibility(userTypeString) {
+        console.log('🚀 更新编辑用户字段可见性:', userTypeString);
+
+        // 解析用户类型字符串，支持多类型
+        let userTypes = [];
+        if (typeof userTypeString === 'string') {
+            if (userTypeString.includes(',')) {
+                userTypes = userTypeString.split(',').map(t => t.trim());
+            } else if (userTypeString) {
+                userTypes = [userTypeString];
+            }
+        } else if (Array.isArray(userTypeString)) {
+            userTypes = userTypeString;
+        }
+
+        console.log('📍 解析的用户类型:', userTypes);
+
+        // 安全地获取和隐藏所有角色特定字段
+        const fields = [
+            'editStudentIdGroup',
+            'editEmployeeIdGroup',
+            'editClassIdGroup',
+            'editGradeGroup',
+            'editIsClassTeacherGroup'
+        ];
+
+        // 隐藏所有可选字段
+        fields.forEach(fieldId => {
+            const element = document.getElementById(fieldId);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
+
+        // 根据用户类型显示相应字段 - 支持多用户类型
+        userTypes.forEach(userType => {
+            switch (userType) {
+                case 'student':
+                    this.showField('editStudentIdGroup');
+                    this.showField('editClassIdGroup');
+                    this.showField('editGradeGroup');
+                    break;
+                case 'teacher':
+                    this.showField('editEmployeeIdGroup');
+                    this.showField('editClassIdGroup');
+                    this.showField('editGradeGroup');
+                    this.showField('editIsClassTeacherGroup');
+                    break;
+                case 'alumni':
+                    this.showField('editStudentIdGroup');
+                    this.showField('editClassIdGroup');
+                    this.showField('editGradeGroup');
+                    break;
+            }
+        });
+    },
+
+    // 辅助方法：安全显示字段
+    showField(fieldId) {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.style.display = 'block';
+        } else {
+            console.warn(`⚠️ 字段元素不存在: ${fieldId}`);
+        }
     }
-};
+  };
 
 // 校友审核页面
 const AlumniApprovePage = {
@@ -1802,9 +3241,164 @@ const VisitApplicationsPage = {
         });
     },
 
-    viewDetails(applicationId) {
-        // 显示详情模态框
-        AdminUtils.showToast('查看详情功能开发中', 'info');
+    async viewDetails(applicationId) {
+        try {
+            const data = await AdminUtils.request(`/visits/applications/${applicationId}`);
+            const application = data.data;
+
+            const modalHtml = `
+                <div class="modal" id="visitApplicationDetailModal">
+                    <div class="modal-content large">
+                        <div class="modal-header">
+                            <h3>访问申请详情</h3>
+                            <button class="modal-close" onclick="VisitApplicationsPage.closeDetailModal()">
+                                <i class="ri-close-line"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="application-detail">
+                                <div class="detail-section">
+                                    <h4>申请人信息</h4>
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <label>姓名：</label>
+                                            <span>${application.user ? application.user.real_name : '未知用户'}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>电话：</label>
+                                            <span>${application.user ? application.user.phone : '无'}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>邮箱：</label>
+                                            <span>${application.user ? application.user.email : '无'}</span>
+                                        </div>
+                                        ${application.alumni_profile ? `
+                                        <div class="detail-item">
+                                            <label>院系班级：</label>
+                                            <span>${application.alumni_profile.division} - ${application.alumni_profile.class_name}</span>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+
+                                <div class="detail-section">
+                                    <h4>访问信息</h4>
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <label>访问日期：</label>
+                                            <span>${AdminUtils.formatDate(application.visit_date)}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>访问时间：</label>
+                                            <span>${AdminUtils.formatTime(application.time_start)} - ${AdminUtils.formatTime(application.time_end)}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>访问事由：</label>
+                                            <span>${application.visit_purpose}</span>
+                                        </div>
+                                        <div class="detail-item full-width">
+                                            <label>申请状态：</label>
+                                            <span class="status-badge ${application.application_status}">
+                                                ${AdminUtils.getStatusText(application.application_status)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                ${application.vehicle ? `
+                                <div class="detail-section">
+                                    <h4>车辆信息</h4>
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <label>车牌号：</label>
+                                            <span>${application.vehicle.plate_number}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>车辆类型：</label>
+                                            <span>${application.vehicle.vehicle_type}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+
+                                ${application.remarks ? `
+                                <div class="detail-section">
+                                    <h4>备注信息</h4>
+                                    <p>${application.remarks}</p>
+                                </div>
+                                ` : ''}
+
+                                <div class="detail-section">
+                                    <h4>申请信息</h4>
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <label>申请时间：</label>
+                                            <span>${AdminUtils.formatDateTime(application.created_at)}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>申请ID：</label>
+                                            <span>${application.id}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-outline" onclick="VisitApplicationsPage.closeDetailModal()">关闭</button>
+                            ${application.application_status === 'pending' ? `
+                                <button class="btn btn-success" onclick="VisitApplicationsPage.approve(${application.id})">
+                                    <i class="ri-check-line"></i>
+                                    通过申请
+                                </button>
+                                <button class="btn btn-danger" onclick="VisitApplicationsPage.reject(${application.id})">
+                                    <i class="ri-close-line"></i>
+                                    拒绝申请
+                                </button>
+                            ` : ''}
+                            ${application.application_status === 'approved' ? `
+                                <button class="btn btn-warning" onclick="VisitApplicationsPage.cancel(${application.id})">
+                                    <i class="ri-close-line"></i>
+                                    取消申请
+                                </button>
+                            ` : ''}
+                            ${application.application_status === 'rejected' ? `
+                                <button class="btn btn-success" onclick="VisitApplicationsPage.reapprove(${application.id})">
+                                    <i class="ri-refresh-line"></i>
+                                    重新审核
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 移除现有模态框
+            const existingModal = document.getElementById('visitApplicationDetailModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // 添加新模态框
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // 显示模态框
+            const modal = document.getElementById('visitApplicationDetailModal');
+            if (modal) {
+                // 添加active类来显示模态框
+                modal.classList.add('active');
+            }
+
+        } catch (error) {
+            console.error('Error loading application details:', error);
+            AdminUtils.showToast('加载申请详情失败', 'error');
+        }
+    },
+
+    closeDetailModal() {
+        const modal = document.getElementById('visitApplicationDetailModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
     },
 
     filterByStatus(status) {
@@ -1842,7 +3436,7 @@ const VisitApplicationsPage = {
 
         AdminUtils.showConfirm(`确定要批量审核选中的 ${this.selectedApplications.size} 个申请吗？`, async () => {
             try {
-                const data = await AdminUtils.request('/admin/batch-approve', {
+                const data = await AdminUtils.request('/visits/batch-approve', {
                     method: 'POST',
                     body: JSON.stringify({
                         application_ids: Array.from(this.selectedApplications),
@@ -2399,11 +3993,22 @@ const VisitRecordsPage = {
 
     getUserTypeText(userType) {
         const types = {
+            'student': '学生',
+            'parent': '家长',
             'alumni': '校友',
             'teacher': '教师',
             'security': '保安',
             'admin': '管理员'
         };
+
+        if (!userType) return userType;
+
+        // 处理多类型（逗号分隔的字符串）
+        if (typeof userType === 'string' && userType.includes(',')) {
+            const typeArray = userType.split(',').map(t => t.trim());
+            return typeArray.map(t => types[t] || t).join('、');
+        }
+
         return types[userType] || userType;
     },
 
@@ -2414,8 +4019,11 @@ const VisitRecordsPage = {
             'manual': '人工核验'
         };
         return methods[method] || method;
-    }
-};
+    },
+
+    
+  
+  };
 
 // 车辆管理页面
 const VehiclesPage = {
@@ -2798,6 +4406,8 @@ const CalendarPage = {
 
     renderPagination(pagination) {
         const container = document.getElementById('calendarPagination');
+        if (!container) return;
+
         let html = '';
 
         html += `<button ${pagination.has_prev ? '' : 'disabled'} onclick="CalendarPage.goToPage(${pagination.page - 1})">上一页</button>`;
@@ -4463,6 +6073,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 加载默认页面
     console.log('Loading default page...');
     AdminPageManager.switchPage(ADMIN_CONFIG.PAGES.DASHBOARD);
+
+    // 初始化用户管理页面事件监听器
+    UsersPage.initEventListeners();
 
     // 处理窗口大小变化
     window.addEventListener('resize', AdminUtils.debounce(() => {

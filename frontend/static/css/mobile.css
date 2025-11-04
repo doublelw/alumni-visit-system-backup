@@ -283,6 +283,15 @@ body {
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
     cursor: pointer;
+    border: 1px solid var(--border-light);
+    text-decoration: none;
+    color: inherit;
+}
+
+.action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
 }
 
 .action-card:active {
@@ -300,17 +309,32 @@ body {
     justify-content: center;
     color: white;
     font-size: var(--font-size-xl);
+    flex-shrink: 0;
+}
+
+.action-content {
+    flex: 1;
+    min-width: 0;
 }
 
 .action-content h4 {
     font-size: var(--font-size-md);
     margin-bottom: var(--spacing-xs);
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
 }
 
 .action-content p {
     font-size: var(--font-size-xs);
     color: var(--text-secondary);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
 }
 
 /* 最近申请 */
@@ -380,6 +404,19 @@ body {
 
 .review-hint i {
     color: var(--primary-color);
+}
+
+/* 删除操作区域 */
+.delete-action {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--border);
+    text-align: right;
+}
+
+.delete-action .btn {
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
 }
 
 /* 历史申请样式 */
@@ -453,6 +490,18 @@ body {
     color: var(--text-primary);
 }
 
+.application-type {
+    font-size: var(--font-size-xs);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    background-color: #e3f2fd;
+    color: #1565c0;
+    max-width: 60px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
 .application-status {
     font-size: var(--font-size-xs);
     padding: 2px 8px;
@@ -483,6 +532,12 @@ body {
 .application-purpose {
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.application-time {
+    font-size: var(--font-size-xs);
+    color: var(--text-disabled);
     margin-bottom: var(--spacing-xs);
 }
 
@@ -665,6 +720,39 @@ body {
     font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--text-primary);
+}
+
+/* 学生信息显示卡片 */
+.student-info-card {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 8px;
+}
+
+.student-info-card .info-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.student-info-card .info-item:last-child {
+    border-bottom: none;
+}
+
+.student-info-card .label {
+    font-weight: 600;
+    color: #495057;
+    min-width: 60px;
+    font-size: 14px;
+}
+
+.student-info-card .value {
+    color: #212529;
+    font-size: 15px;
+    font-weight: 500;
 }
 
 .companion-form {
@@ -1385,6 +1473,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
 .modal-header h2 {
@@ -3033,4 +3122,546 @@ body {
     .carousel-btn {
         border-width: 2px;
     }
+}
+
+/* QR码模态框关闭按钮样式 */
+#qrCodeModal .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1001;
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+}
+
+#qrCodeModal .modal-close:hover {
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+/* 无二维码模态框关闭按钮样式 */
+#noQRCodeModal .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1001;
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+}
+
+#noQRCodeModal .modal-close:hover {
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+/* QR码模态框内容样式 */
+#qrCodeModal #qrCodeContainer {
+    text-align: center;
+    padding: 20px;
+}
+
+#qrCodeModal canvas {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
+}
+
+/* 申请详情模态框样式 */
+.application-detail {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.detail-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.detail-section h4 {
+    margin: 0 0 10px 0;
+    color: var(--primary-color);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: var(--font-size-sm);
+}
+
+.detail-item label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 80px;
+}
+
+.detail-item span {
+    color: var(--text-primary);
+    text-align: right;
+    flex: 1;
+}
+
+.status-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-badge.pending {
+    background: var(--warning-color);
+    color: white;
+}
+
+.status-badge.approved {
+    background: var(--success-color);
+    color: white;
+}
+
+.status-badge.rejected {
+    background: var(--danger-color);
+    color: white;
+}
+
+/* 申请详情模态框关闭按钮样式 */
+#applicationDetailModal .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1001;
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+}
+
+#applicationDetailModal .modal-close:hover {
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+/* 左滑删除功能 */
+.recent-application-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.swipe-delete {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100%;
+    background: linear-gradient(135deg, #ff4757, #ff6348);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 10;
+}
+
+.swipe-delete .delete-icon {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+.recent-application-card.swipeable {
+    position: relative;
+    z-index: 20;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.recent-application-card.swipeable.delete-shake {
+    animation: shake 0.5s ease-in-out infinite;
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(-100px) scale(0.95);
+    }
+    25% {
+        transform: translateX(-105px) scale(0.93);
+    }
+    50% {
+        transform: translateX(-95px) scale(0.97);
+    }
+    75% {
+        transform: translateX(-105px) scale(0.93);
+    }
+}
+
+/* 确保删除区域在移动设备上可点击 */
+@media (hover: none) {
+    .swipe-delete {
+        transform: translateX(100px);
+    }
+}
+
+.recent-application-card.swipeable:active {
+    cursor: grabbing;
+}
+
+/* 编辑校友档案表单样式优化 - 左对齐 */
+#editProfileModal .modal-body {
+    text-align: left !important;
+}
+
+#editProfileModal .form-section {
+    text-align: left !important;
+}
+
+#editProfileModal .form-section h3 {
+    text-align: left !important;
+}
+
+#editProfileModal .form-group {
+    text-align: left !important;
+}
+
+#editProfileModal .form-group label {
+    text-align: left !important;
+}
+
+#editProfileModal .form-group input,
+#editProfileModal .form-group select,
+#editProfileModal .form-group textarea {
+    text-align: left !important;
+}
+
+#editProfileModal .form-help {
+    text-align: left !important;
+}
+
+/* 修改密码模态框也保持左对齐 */
+#changePasswordModal .modal-body {
+    text-align: left !important;
+}
+
+#changePasswordModal .form-group {
+    text-align: left !important;
+}
+
+#changePasswordModal .form-group label {
+    text-align: left !important;
+}
+
+#changePasswordModal .form-group input {
+    text-align: left !important;
+}
+
+#changePasswordModal .form-help {
+    text-align: left !important;
+}
+
+/* 学生出校申请模态框样式 */
+#studentExitApplicationModal .modal-body {
+    text-align: left !important;
+}
+
+#studentExitApplicationModal .modal-body h3,
+#studentExitApplicationModal .modal-body h4,
+#studentExitApplicationModal .modal-body h5,
+#studentExitApplicationModal .modal-body h6 {
+    text-align: left !important;
+}
+
+#studentExitApplicationModal .modal-body p,
+#studentExitApplicationModal .modal-body label,
+#studentExitApplicationModal .modal-body span,
+#studentExitApplicationModal .modal-body div {
+    text-align: left !important;
+}
+
+#studentExitApplicationModal .form-group {
+    text-align: left !important;
+}
+
+#studentExitApplicationModal .form-group label {
+    text-align: left !important;
+}
+
+#studentExitApplicationModal .student-info {
+    text-align: left !important;
+}
+
+/* 受访者验证状态样式 */
+.validation-status {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    transition: all 0.3s ease;
+}
+
+.validation-status.info {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+.validation-status.success {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.validation-status.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.validation-status.loading {
+    background-color: #fff8e1;
+    color: #f57c00;
+    border: 1px solid #ffecb3;
+}
+
+/* 用户列表复选框样式 */
+#selectAllUsers,
+.user-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+#selectAllUsers:hover,
+.user-checkbox:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+/* 序号列样式 */
+#usersTable th:nth-child(2),
+#usersTable td:nth-child(2) {
+    text-align: center;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* 复选框列样式 */
+#usersTable th:nth-child(1),
+#usersTable td:nth-child(1) {
+    text-align: center;
+    width: 50px;
+}
+
+/* 复选框选中状态高亮 */
+#usersTable tr:has(.user-checkbox:checked) {
+    background-color: rgba(25, 118, 210, 0.05);
+}
+
+/* 密码输入框样式 */
+.password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+    background-color: var(--bg-secondary);
+    color: var(--primary-color);
+}
+
+.password-input-container input {
+    padding-right: 40px;
+}
+
+/* 密码强度指示器 */
+.password-strength-indicator {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.strength-bar {
+    flex: 1;
+    height: 4px;
+    background-color: var(--border-color);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.strength-bar::before {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 0;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.strength-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 70px;
+}
+
+/* 密码强度等级 */
+.strength-weak .strength-bar::before {
+    width: 33%;
+    background-color: var(--error-color);
+}
+
+.strength-medium .strength-bar::before {
+    width: 66%;
+    background-color: var(--warning-color);
+}
+
+.strength-strong .strength-bar::before {
+    width: 100%;
+    background-color: var(--accent-color);
+}
+
+/* 批量导入样式 */
+.import-steps {
+    min-height: 400px;
+}
+
+.import-step {
+    margin-bottom: 20px;
+}
+
+.upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 40px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(25, 118, 210, 0.05);
+}
+
+.upload-area.dragover {
+    border-color: var(--primary-color);
+    background-color: rgba(25, 118, 210, 0.1);
+}
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.upload-icon {
+    font-size: 48px;
+    color: var(--primary-color);
+}
+
+.upload-info {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.preview-info {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.import-summary {
+    padding: 20px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.import-summary .success-count {
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+.import-summary .error-count {
+    color: var(--error-color);
+    font-weight: bold;
+}
+
+.import-summary .warning-count {
+    color: var(--warning-color);
+    font-weight: bold;
+}
+
+/* 可拜访状态标识样式 */
+.visitable-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    min-width: 70px;
+}
+
+.visitable-badge.visitable {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.visitable-badge.not-visitable {
+    background-color: var(--text-disabled);
+    color: var(--text-primary);
+}
+
+.visitable-badge.auto-visitable {
+    background-color: var(--primary-color);
+    color: white;
+    position: relative;
+}
+
+.visitable-badge.auto-visitable::after {
+    content: " ✓";
+    margin-left: 4px;
 }
