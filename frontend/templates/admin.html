@@ -379,6 +379,131 @@
                 justify-content: center;
             }
         }
+
+        /* 关系管理特定样式 */
+        .relationship-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-secondary);
+        }
+
+        .relationship-section h4 {
+            margin: 0 0 15px 0;
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .relationship-section .form-group {
+            margin-bottom: 15px;
+        }
+
+        .relationship-section .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .user-list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .user-list-item:hover {
+            background-color: var(--bg-hover);
+            border-color: var(--primary-color);
+        }
+
+        .user-list-item.selected {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .user-list-item .user-info {
+            flex: 1;
+        }
+
+        .user-list-item .user-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .user-list-item .user-details {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .user-list-item .user-checkbox {
+            margin-right: 12px;
+        }
+
+        .user-list-item .user-type {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .user-list-item.selected .user-type {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .teacher-selection-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .teacher-selection-list .user-list-item {
+            cursor: pointer;
+        }
+
+        .teacher-selection-list .user-list-item:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .teacher-selection-list .user-list-item.selected {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .special-fields-group {
+            background-color: var(--bg-secondary);
+            padding: 20px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .special-fields-group .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .special-fields-group .form-row .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 768px) {
+            .special-fields-group .form-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+
+            .relationship-section {
+                padding: 15px;
+            }
+        }
     </style>
 
     <!-- 引入图标 -->
@@ -843,6 +968,10 @@
                             <span class="table-count" id="orgTotalCount">共 0 条记录</span>
                         </div>
                         <div class="table-actions">
+                            <button class="btn btn-sm btn-primary" id="addOrganizationBtn">
+                                <i class="ri-add-line"></i>
+                                添加组织
+                            </button>
                             <button class="btn btn-sm btn-outline" id="exportOrgData">
                                 <i class="ri-download-line"></i>
                                 导出数据
@@ -1969,6 +2098,39 @@
                         <label>地址</label>
                         <input type="text" id="orgAddress">
                     </div>
+
+                    <!-- 班级和社团特有字段 -->
+                    <div id="orgSpecialFields">
+                        <!-- 班级字段 -->
+                        <div id="classFields" style="display: none;">
+                            <h4 style="margin-top: 20px; margin-bottom: 10px; color: var(--primary-color);">班级设置</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>班主任</label>
+                                    <select id="classTeacherId">
+                                        <option value="">请选择班主任</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>年级组长</label>
+                                    <select id="headTeacherId">
+                                        <option value="">请选择年级组长</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 社团字段 -->
+                        <div id="clubFields" style="display: none;">
+                            <h4 style="margin-top: 20px; margin-bottom: 10px; color: var(--primary-color);">社团设置</h4>
+                            <div class="form-group">
+                                <label>社团负责人</label>
+                                <select id="leaderId">
+                                    <option value="">请选择社团负责人</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -2127,6 +2289,7 @@
 
     <!-- 引入脚本 -->
     <script src="/static/js/admin.js?v=4.2"></script>
+    <script src="/static/js/relationship-management.js?v=1.0"></script>
 <!-- 拜访对象模态框 -->
 <div class="modal" id="targetPersonModal">
     <div class="modal-content">
@@ -2406,6 +2569,85 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="UsersPage.hideEditUserModal()">取消</button>
                 <button type="button" class="btn btn-primary" onclick="UsersPage.saveEditUser()">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户关系管理模态对话框 -->
+    <div class="modal" id="userRelationshipModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 id="userRelationshipModalTitle">用户关系管理</h3>
+                <button class="modal-close" onclick="UserRelationshipPage.closeModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 用户基本信息 -->
+                <div class="info-section" style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--primary-color);">用户信息</h4>
+                    <div id="userInfo" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                        <!-- 动态加载用户信息 -->
+                    </div>
+                </div>
+
+                <!-- 家长-学生关系配置 -->
+                <div id="parentStudentRelationships" style="display: none;">
+                    <div class="relationship-section">
+                        <h4 style="margin: 0 0 15px 0; color: var(--primary-color);">
+                            <i class="ri-group-line"></i> 家长-学生关系配置
+                        </h4>
+                        <div class="relationship-content">
+                            <div class="available-users">
+                                <label>可关联的<span id="relationshipTargetType">学生</span>：</label>
+                                <div id="availableUsersList" class="checkbox-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                                    <!-- 动态加载可选用户 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 组织关系配置 -->
+                <div class="relationship-section">
+                    <h4 style="margin: 20px 0 15px 0; color: var(--primary-color);">
+                        <i class="ri-building-line"></i> 组织关系
+                    </h4>
+                    <div class="form-group">
+                        <label>所属组织</label>
+                        <select id="userOrganizationId">
+                            <option value="">请选择组织</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="UserRelationshipPage.closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="UserRelationshipPage.saveRelationships()">保存关系</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 组织教师选择模态对话框 -->
+    <div class="modal" id="teacherSelectionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>选择教师</h3>
+                <button class="modal-close" onclick="OrganizationPage.closeTeacherSelectionModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <input type="text" id="teacherSearchInput" placeholder="搜索教师姓名..." onkeyup="OrganizationPage.filterTeachers()">
+                </div>
+                <div id="teacherList" style="max-height: 400px; overflow-y: auto;">
+                    <!-- 动态加载教师列表 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="OrganizationPage.closeTeacherSelectionModal()">取消</button>
+                <button class="btn btn-primary" onclick="OrganizationPage.selectTeacher()">确定</button>
             </div>
         </div>
     </div>

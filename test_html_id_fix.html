@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTML ID冲突修复测试</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>HTML ID冲突修复验证</h1>
+
+    <div class="test-result" id="testResult"></div>
+
+    <script>
+        console.log('🔧 开始验证HTML ID冲突修复...');
+
+        // 检查是否存在重复的editUserModal元素
+        const editUserModals = document.querySelectorAll('#editUserModal');
+        const editUserForms = document.querySelectorAll('#editUserForm');
+        const editUserIds = document.querySelectorAll('#editUserId');
+        const editUsernames = document.querySelectorAll('#editUsername');
+
+        let issues = [];
+
+        if (editUserModals.length > 1) {
+            issues.push(`发现 ${editUserModals.length} 个 editUserModal 元素`);
+        }
+
+        if (editUserForms.length > 1) {
+            issues.push(`发现 ${editUserForms.length} 个 editUserForm 元素`);
+        }
+
+        if (editUserIds.length > 1) {
+            issues.push(`发现 ${editUserIds.length} 个 editUserId 元素`);
+        }
+
+        if (editUsernames.length > 1) {
+            issues.push(`发现 ${editUsernames.length} 个 editUsername 元素`);
+        }
+
+        const resultDiv = document.getElementById('testResult');
+
+        if (issues.length === 0) {
+            console.log('✅ HTML ID冲突已修复');
+            resultDiv.innerHTML = `
+                <h2 style="color: green;">✅ 修复成功</h2>
+                <p>HTML ID冲突问题已解决</p>
+                <ul>
+                    <li>editUserModal: ${editUserModals.length} 个</li>
+                    <li>editUserForm: ${editUserForms.length} 个</li>
+                    <li>editUserId: ${editUserIds.length} 个</li>
+                    <li>editUsername: ${editUsernames.length} 个</li>
+                </ul>
+                <p><a href="/admin-login" style="color: blue; text-decoration: underline;">点击这里测试管理界面</a></p>
+            `;
+        } else {
+            console.log('❌ 仍存在HTML ID冲突');
+            resultDiv.innerHTML = `
+                <h2 style="color: red;">❌ 仍存在问题</h2>
+                <p>以下HTML ID冲突未解决：</p>
+                <ul>
+                    ${issues.map(issue => `<li style="color: red;">${issue}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        console.log('🔍 验证完成');
+    </script>
+</body>
+</html>

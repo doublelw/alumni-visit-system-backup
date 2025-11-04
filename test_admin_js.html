@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Admin JavaScript</title>
+</head>
+<body>
+    <h1>Testing Admin JavaScript Functions</h1>
+    <button onclick="testFunction()">Test showAddUserModal Function</button>
+    <div id="result"></div>
+
+    <script src="/static/js/admin.js"></script>
+    <script>
+        function testFunction() {
+            try {
+                // Check if UsersPage object exists
+                if (typeof UsersPage !== 'undefined') {
+                    document.getElementById('result').innerHTML =
+                        "<p style='color: green;'>✅ UsersPage object found</p>";
+
+                    // Check if showAddUserModal method exists
+                    if (typeof UsersPage.showAddUserModal === 'function') {
+                        document.getElementById('result').innerHTML +=
+                            "<p style='color: green;'>✅ showAddUserModal method found in UsersPage</p>";
+
+                        // Try to call the function (it will fail but we can catch the error)
+                        try {
+                            UsersPage.showAddUserModal();
+                            document.getElementById('result').innerHTML +=
+                                "<p style='color: green;'>✅ showAddUserModal function called successfully</p>";
+                        } catch (e) {
+                            document.getElementById('result').innerHTML +=
+                                "<p style='color: orange;'>⚠️ showAddUserModal function exists but modal not found (expected)</p>";
+                        }
+                    } else {
+                        document.getElementById('result').innerHTML +=
+                            "<p style='color: red;'>❌ showAddUserModal method NOT found in UsersPage</p>";
+                    }
+                } else {
+                    document.getElementById('result').innerHTML =
+                        "<p style='color: red;'>❌ UsersPage object not found</p>";
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML =
+                    `<p style='color: red;'>❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# .claude_env - Claude 的专属工具集
+
+# 代码搜索神器,比 grep 快多了
+alias search='rg --hidden --no-ignore --color=always'
+
+# 跑关键测试就行,全跑太慢了
+alias fasttest='npm test -- --watch=false --coverage=false'
+
+# 快速看看有哪些分支
+alias branches='git branch -a --sort=-committerdate | head -10'
+
+# 检查某个用户的权限配置
+check_user_perms() {
+echo"查询用户 $1 的权限..."
+  ./scripts/check-permissions.sh $1
+}

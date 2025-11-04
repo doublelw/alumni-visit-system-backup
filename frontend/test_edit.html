@@ -77,7 +77,21 @@
     </div>
 
     <script>
-        const BASE_URL = 'http://localhost:5000/api';
+        // 动态获取API地址
+        const getApiBaseUrl = () => {
+            const protocol = window.location.protocol;
+            const hostname = window.location.hostname;
+            const currentPort = window.location.port;
+
+            let apiPort = currentPort;
+            if (currentPort === '8080' || !currentPort) {
+                apiPort = '5000';
+            }
+
+            return `${protocol}//${hostname}:${apiPort}/api`;
+        };
+
+        const BASE_URL = getApiBaseUrl();
         let authToken = '';
 
         function showResult(elementId, content, isError = false) {

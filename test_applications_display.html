@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>申请数据显示测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .application { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+        .student-exit { background-color: #e3f2fd; }
+        .visit { background-color: #f3e5f5; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>学生出校申请数据测试</h1>
+    <button onclick="testAPI()">测试API获取申请数据</button>
+    <button onclick="clearData()">清空数据</button>
+
+    <div id="results"></div>
+
+    <script>
+        async function testAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>正在获取数据...</p>';
+
+            try {
+                // 1. 登录
+                const loginResponse = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: 'student001',
+                        password: 'test123456'
+                    })
+                });
+
+                const loginData = await loginResponse.json();
+                const token = loginData.access_token;
+
+                if (!token) {
+                    resultsDiv.innerHTML = '<p style="color: red;">登录失败</p>';
+                    return;
+                }
+
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+
+                // 2. 获取学生出校申请
+                const studentExitResponse = await fetch('/api/student-exit/applications/recent', {
+                    headers: headers
+                });
+
+                const studentExitData = await studentExitResponse.json();
+
+                // 3. 获取访问申请
+                const visitResponse = await fetch('/api/visits/applications?per_page=3', {
+                    headers: headers
+                });
+
+                const visitData = await visitResponse.json();
+
+                // 4. 合并数据
+                const allApplications = [];
+
+                // 添加学生出校申请
+                if (studentExitData.success && studentExitData.applications) {
+                    studentExitData.applications.forEach(app => {
+                        allApplications.push({
+                            ...app,
+                            application_type: 'student_exit',
+                            mapped_purpose: app.reason,
+                            mapped_date: app.exit_date,
+                            mapped_time: app.exit_time
+                        });
+                    });
+                }
+
+                // 添加访问申请
+                if (visitData.applications) {
+                    visitData.applications.forEach(app => {
+                        allApplications.push({
+                            ...app,
+                            application_type: 'visit',
+                            mapped_purpose: app.visit_purpose,
+                            mapped_date: app.visit_date,
+                            mapped_time: app.visit_time
+                        });
+                    });
+                }
+
+                // 5. 显示结果
+                let html = `<h2>API返回的原始数据</h2>`;
+                html += `<h3>学生出校申请 (${studentExitData.applications?.length || 0}个)</h3>`;
+                html += `<pre>${JSON.stringify(studentExitData, null, 2)}</pre>`;
+
+                html += `<h3>访问申请 (${visitData.applications?.length || 0}个)</h3>`;
+                html += `<pre>${JSON.stringify(visitData, null, 2)}</pre>`;
+
+                html += `<h2>合并后的数据 (${allApplications.length}个)</h2>`;
+                allApplications.forEach((app, index) => {
+                    const isStudentExit = app.application_type === 'student_exit';
+                    const className = isStudentExit ? 'student-exit' : 'visit';
+                    const typeText = isStudentExit ? '学生出校' : '访问申请';
+
+                    html += `<div class="application ${className}">`;
+                    html += `<strong>${index + 1}. [${typeText}] ID: ${app.id}</strong><br>`;
+                    html += `申请状态: ${app.application_status || app.status}<br>`;
+                    html += `申请人: ${app.applicant_name || app.student_name || 'N/A'}<br>`;
+                    html += `原原因字段: ${app.reason || app.visit_purpose || 'N/A'}<br>`;
+                    html += `映射后purpose: ${app.mapped_purpose || 'N/A'}<br>`;
+                    html += `原日期字段: ${app.exit_date || app.visit_date || 'N/A'}<br>`;
+                    html += `映射后日期: ${app.mapped_date || 'N/A'}<br>`;
+                    html += `原时间字段: ${app.exit_time || app.visit_time || 'N/A'}<br>`;
+                    html += `映射后时间: ${app.mapped_time || 'N/A'}<br>`;
+                    html += `创建时间: ${app.created_at || 'N/A'}`;
+                    html += `</div>`;
+                });
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: red;">错误: ${error.message}</p>`;
+            }
+        }
+
+        function clearData() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

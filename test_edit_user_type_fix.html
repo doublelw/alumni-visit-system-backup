@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>编辑用户类型切换修复测试</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>编辑用户类型切换修复验证</h1>
+
+    <div class="test-instructions">
+        <h2>测试步骤</h2>
+        <ol>
+            <li>访问 <a href="/admin-login" target="_blank">管理登录页面</a></li>
+            <li>使用管理员账号登录 (用户名: admin, 密码: admin123)</li>
+            <li>进入用户管理页面</li>
+            <li>点击任意用户的"编辑"按钮</li>
+            <li>在编辑用户模态框中，尝试切换用户类型：
+                <ul>
+                    <li>从教师切换到学生</li>
+                    <li>从学生切换到教师</li>
+                    <li>从学生切换到校友</li>
+                </ul>
+            </li>
+            <li>观察控制台输出和表单字段变化</li>
+        </ol>
+    </div>
+
+    <div class="expected-results">
+        <h2>预期结果</h2>
+        <ul>
+            <li>✅ 用户类型选择框可以正常切换</li>
+            <li>✅ 表单字段根据用户类型动态显示/隐藏</li>
+            <li>✅ 控制台显示 "🚀 更新编辑用户字段可见性: [用户类型]" 日志</li>
+            <li>✅ 不出现 JavaScript 错误</li>
+            <li>✅ 不会显示 "字段元素不存在" 警告（除非字段确实缺失）</li>
+        </ul>
+    </div>
+
+    <div class="field-display-rules">
+        <h2>字段显示规则</h2>
+        <table border="1" cellpadding="5" cellspacing="0">
+            <tr>
+                <th>用户类型</th>
+                <th>学号</th>
+                <th>工号</th>
+                <th>班级</th>
+                <th>年级</th>
+                <th>班主任</th>
+            </tr>
+            <tr>
+                <td>学生 (student)</td>
+                <td>✅ 显示</td>
+                <td>❌ 隐藏</td>
+                <td>✅ 显示</td>
+                <td>✅ 显示</td>
+                <td>❌ 隐藏</td>
+            </tr>
+            <tr>
+                <td>教师 (teacher)</td>
+                <td>❌ 隐藏</td>
+                <td>✅ 显示</td>
+                <td>✅ 显示</td>
+                <td>✅ 显示</td>
+                <td>✅ 显示</td>
+            </tr>
+            <tr>
+                <td>校友 (alumni)</td>
+                <td>✅ 显示</td>
+                <td>❌ 隐藏</td>
+                <td>✅ 显示</td>
+                <td>✅ 显示</td>
+                <td>❌ 隐藏</td>
+            </tr>
+            <tr>
+                <td>家长 (parent)</td>
+                <td>❌ 隐藏</td>
+                <td>❌ 隐藏</td>
+                <td>❌ 隐藏</td>
+                <td>❌ 隐藏</td>
+                <td>❌ 隐藏</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="troubleshooting">
+        <h2>故障排除</h2>
+        <p>如果仍然遇到问题：</p>
+        <ul>
+            <li>检查浏览器控制台是否有错误信息</li>
+            <li>尝试硬刷新页面 (Ctrl+F5)</li>
+            <li>清除浏览器缓存</li>
+            <li>使用无痕模式测试</li>
+        </ul>
+    </div>
+
+    <script>
+        console.log('🔧 编辑用户类型切换修复测试页面已加载');
+        console.log('📋 请按照上述步骤进行测试');
+    </script>
+</body>
+</html>

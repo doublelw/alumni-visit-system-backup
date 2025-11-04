@@ -297,9 +297,35 @@
         </form>
 
         <div class="default-account">
-            <strong>默认管理员账户：</strong><br>
-            用户名：<code>admin</code><br>
-            密码：<code>admin123</code>
+            <strong>🎓 管理测试账号（点击自动填充）：</strong><br>
+
+            <!-- 管理员账号 -->
+            <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="test-account-btn"
+                        onclick="fillTestAccount('admin', 'admin123')"
+                        style="padding: 6px 12px; background: linear-gradient(135deg, #ffebee, #ffcdd2); color: #b71c1c;
+                               border: 1px solid #ef9a9a; border-radius: 6px; cursor: pointer;
+                               font-size: 11px; font-weight: 500;">
+                    <i class="ri-admin-line"></i> 超级管理员
+                </button>
+
+                <button type="button" class="test-account-btn"
+                        onclick="fillTestAccount('teacher001', 'test123456')"
+                        style="padding: 6px 12px; background: linear-gradient(135deg, #fff3e0, #ffe0b2); color: #e65100;
+                               border: 1px solid #ffcc80; border-radius: 6px; cursor: pointer;
+                               font-size: 11px; font-weight: 500;">
+                    <i class="ri-user-settings-line"></i> 教师-管理员
+                </button>
+            </div>
+
+            <!-- 功能说明 -->
+            <div style="margin-top: 12px; padding: 8px; background: #f8f9fa; border-radius: 4px; border-left: 3px solid #007bff; font-size: 11px;">
+                <p style="margin: 0; color: #6c757d;">
+                    💡 <strong>权限说明：</strong><br>
+                    👑 超级管理员：完整系统管理权限<br>
+                    👨‍🏫 教师-管理员：学生管理、审批权限
+                </p>
+            </div>
         </div>
 
         <div class="login-footer">
@@ -307,7 +333,29 @@
         </div>
     </div>
 
+    <!-- 引入配置 -->
+    <script src="/static/js/config.js?v=2.3"></script>
+
     <script>
+        // 测试账号自动填充函数
+        function fillTestAccount(username, password) {
+            // 填充登录表单
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+
+            // 高亮显示填充的输入框
+            const usernameField = document.getElementById('username');
+            const passwordField = document.getElementById('password');
+
+            usernameField.style.backgroundColor = '#e8f5e8';
+            passwordField.style.backgroundColor = '#e8f5e8';
+
+            setTimeout(() => {
+                usernameField.style.backgroundColor = '';
+                passwordField.style.backgroundColor = '';
+            }, 1000);
+        }
+
         // DOM 元素
         const loginForm = document.getElementById('loginForm');
         const loginButton = document.getElementById('loginButton');

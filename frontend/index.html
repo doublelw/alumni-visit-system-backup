@@ -109,7 +109,7 @@
                                     <i class="ri-qr-code-line"></i>
                                 </div>
                                 <div class="action-content">
-                                    <h4>我的二维码</h4>
+                                    <h4>访问凭证二维码</h4>
                                     <p>出示访问凭证</p>
                                 </div>
                             </div>
@@ -486,7 +486,7 @@
                                     <i class="ri-qr-code-line"></i>
                                 </div>
                                 <div class="menu-content">
-                                    <span>我的二维码</span>
+                                    <span>访问凭证二维码</span>
                                     <i class="ri-arrow-right-s-line"></i>
                                 </div>
                             </div>
@@ -940,6 +940,23 @@
         </div>
     </div>
 
+    <!-- QR码模态框 -->
+    <div class="modal" id="qrCodeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>访问凭证二维码</h3>
+                <button class="modal-close" onclick="UI.hideModal('qrCodeModal')">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="qrCodeContainer">
+                    <!-- QR码将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast 提示 -->
     <div class="toast" id="toast">
         <div class="toast-content">
@@ -948,7 +965,10 @@
         </div>
     </div>
 
+    <!-- 引入qrcode.js库 -->
+    <script src="https://cdn.staticfile.org/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <!-- 引入脚本 -->
-    <script src="/static/js/mobile-new.js?v=5.0&t=202501161100"></script>
+    <script src="/static/js/mobile.js?v=5.4&t=202501162300"></script>
 </body>
 </html>

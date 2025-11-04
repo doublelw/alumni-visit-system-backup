@@ -7,23 +7,31 @@
 const getEnvironmentConfig = () => {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
+    const currentPort = window.location.port;
 
-    // 根据当前域名自动确定API地址
+    // 开发环境智能配置 - 使用当前访问的端口作为API端口
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        // 开发环境
+        // 开发环境 - 直接使用当前端口，无需特殊处理
+        const apiPort = currentPort || '5000';
+        const apiProtocol = protocol === 'https:' ? 'https' : 'http';
+
         return {
-            API_BASE_URL: `${protocol}//${hostname}:5000/api`,
-            FRONTEND_BASE_URL: `${protocol}//${hostname}:8080`,
-            WS_BASE_URL: `ws://${hostname}:5000`,
-            environment: 'development'
+            API_BASE_URL: `${apiProtocol}://${hostname}:${apiPort}`,
+            FRONTEND_BASE_URL: `${protocol}//${hostname}:${currentPort}`,
+            WS_BASE_URL: `${apiProtocol === 'https' ? 'wss' : 'ws'}://${hostname}:${apiPort}`,
+            environment: 'development',
+            API_PORT: apiPort,
+            CURRENT_PORT: currentPort || '5000'
         };
     } else {
-        // 生产环境 - 使用当前域名
+        // 生产环境 - 使用当前域名和协议
         return {
-            API_BASE_URL: `${protocol}//${hostname}/api`,
+            API_BASE_URL: `${protocol}//${hostname}`,
             FRONTEND_BASE_URL: `${protocol}//${hostname}`,
-            WS_BASE_URL: `wss://${hostname}/ws`,
-            environment: 'production'
+            WS_BASE_URL: `${protocol === 'https:' ? 'wss' : 'ws'}://${hostname}/ws`,
+            environment: 'production',
+            API_PORT: currentPort || '443',
+            CURRENT_PORT: currentPort || '443'
         };
     }
 };
@@ -90,6 +98,8 @@ window.Config = {
 if (config.environment === 'development') {
     console.log('=== 系统配置 ===');
     console.log('环境:', config.environment);
+    console.log('当前端口:', config.CURRENT_PORT);
+    console.log('API端口:', config.API_PORT);
     console.log('API地址:', window.Config.API_BASE_URL);
     console.log('前端地址:', window.Config.FRONTEND_BASE_URL);
     console.log('================');

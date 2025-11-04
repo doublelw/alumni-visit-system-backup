@@ -13,6 +13,7 @@ from app.models.alumni_profile import AlumniProfile
 from app.models.visit_application import VisitApplication
 from app.models.visit_record import VisitRecord
 from app.models.student_exit_application import StudentExitApplication
+from app.models.organization import Organization
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -1396,3 +1397,359 @@ def export_users():
     except Exception as e:
         current_app.logger.error(f"导出用户数据失败: {str(e)}")
         return jsonify({'error': '导出失败', 'details': str(e)}), 500
+
+
+# ===================== 组织管理API =====================
+
+@admin_bp.route('/organizations', methods=['GET'])
+def get_organizations():
+    """获取组织列表"""
+    try:
+        # 获取查询参数
+        search = request.args.get('search', '')
+        org_type = request.args.get('org_type', '')
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 20))
+
+        # 构建查询
+        query = Organization.query
+        if search:
+            query = query.filter(
+                Organization.name.contains(search) |
+                Organization.code.contains(search) |
+                Organization.description.contains(search)
+            )
+        if org_type:
+            query = query.filter(Organization.org_type == org_type)
+
+        # 按层级和排序排列
+        query = query.order_by(Organization.level, Organization.sort_order, Organization.name)
+
+        # 分页
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        organizations = pagination.items
+
+        return jsonify({
+            'organizations': [org.to_dict(include_children=False, include_users=True) for org in organizations],
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'has_prev': pagination.has_prev,
+                'has_next': pagination.has_next
+            }
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"获取组织列表失败: {str(e)}")
+        return jsonify({'error': '获取组织列表失败', 'details': str(e)}), 500
+
+
+@admin_bp.route('/organizations/tree', methods=['GET'])
+def get_organization_tree():
+    """获取组织树结构"""
+    try:
+        # 获取所有活跃组织
+        organizations = Organization.query.filter_by(status='active').order_by(Organization.level, Organization.sort_order, Organization.name).all()
+
+        # 构建树结构
+        def build_tree(orgs, parent_id=None):
+            tree = []
+            for org in orgs:
+                if org.parent_id == parent_id:
+                    node = org.to_dict(include_children=False, include_users=True)
+                    children = build_tree(orgs, org.id)
+                    if children:
+                        node['children'] = children
+                    tree.append(node)
+            return tree
+
+        tree = build_tree(organizations)
+
+        return jsonify({
+            'tree': tree,
+            'total': len(organizations)
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"获取组织树失败: {str(e)}")
+        return jsonify({'error': '获取组织树失败', 'details': str(e)}), 500
+
+
+@admin_bp.route('/organizations', methods=['POST'])
+def create_organization():
+    """创建组织"""
+    try:
+        data = request.get_json()
+
+        # 验证必需字段
+        required_fields = ['name', 'code', 'org_type']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({'error': f'缺少必需字段: {field}'}), 400
+
+        # 检查代码是否重复
+        existing_org = Organization.query.filter_by(code=data['code']).first()
+        if existing_org:
+            return jsonify({'error': '组织代码已存在'}), 400
+
+        # 创建组织
+        organization = Organization(
+            name=data['name'],
+            code=data['code'],
+            org_type=data['org_type'],
+            description=data.get('description', ''),
+            parent_id=data.get('parent_id'),
+            contact_person=data.get('contact_person'),
+            contact_phone=data.get('contact_phone'),
+            contact_email=data.get('contact_email'),
+            address=data.get('address'),
+            status=data.get('status', 'active'),
+            sort_order=data.get('sort_order', 0),
+            created_by=get_jwt_identity()
+        )
+
+        # 设置路径和层级
+        organization.before_save()
+
+        db.session.add(organization)
+        db.session.commit()
+
+        return jsonify({
+            'message': '组织创建成功',
+            'organization': organization.to_dict(include_children=False, include_users=True)
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"创建组织失败: {str(e)}")
+        return jsonify({'error': '创建组织失败', 'details': str(e)}), 500
+
+
+@admin_bp.route('/organizations/<int:org_id>', methods=['GET'])
+def get_organization(org_id):
+    """获取组织详情"""
+    try:
+        organization = Organization.query.get_or_404(org_id)
+
+        return jsonify({
+            'organization': organization.to_dict(include_children=True, include_users=True)
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"获取组织详情失败: {str(e)}")
+        return jsonify({'error': '获取组织详情失败', 'details': str(e)}), 500
+
+
+@admin_bp.route('/organizations/<int:org_id>', methods=['PUT'])
+def update_organization(org_id):
+    """更新组织"""
+    try:
+        organization = Organization.query.get_or_404(org_id)
+        data = request.get_json()
+
+        # 更新基本信息
+        if 'name' in data:
+            organization.name = data['name']
+        if 'description' in data:
+            organization.description = data['description']
+        if 'contact_person' in data:
+            organization.contact_person = data['contact_person']
+        if 'contact_phone' in data:
+            organization.contact_phone = data['contact_phone']
+        if 'contact_email' in data:
+            organization.contact_email = data['contact_email']
+        if 'address' in data:
+            organization.address = data['address']
+        if 'status' in data:
+            organization.status = data['status']
+        if 'sort_order' in data:
+            organization.sort_order = data['sort_order']
+
+        # 更新关系字段
+        if 'class_teacher_id' in data:
+            organization.class_teacher_id = data['class_teacher_id']
+        if 'head_teacher_id' in data:
+            organization.head_teacher_id = data['head_teacher_id']
+        if 'leader_id' in data:
+            organization.leader_id = data['leader_id']
+
+        # 如果更改了父组织，更新路径和层级
+        if 'parent_id' in data and organization.parent_id != data['parent_id']:
+            organization.parent_id = data['parent_id']
+            organization.before_save()
+
+        organization.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'message': '组织更新成功',
+            'organization': organization.to_dict(include_children=False, include_users=True)
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"更新组织失败: {str(e)}")
+        return jsonify({'error': '更新组织失败', 'details': str(e)}), 500
+
+
+@admin_bp.route('/organizations/<int:org_id>', methods=['DELETE'])
+def delete_organization(org_id):
+    """删除组织"""
+    try:
+        organization = Organization.query.get_or_404(org_id)
+
+        # 检查是否有子组织
+        children = Organization.query.filter_by(parent_id=org_id).all()
+        if children:
+            return jsonify({'error': '无法删除包含子组织的组织'}), 400
+
+        # 检查是否有关联用户
+        users = User.query.filter_by(organization_id=org_id).all()
+        if users:
+            return jsonify({'error': '无法删除包含用户的组织'}), 400
+
+        db.session.delete(organization)
+        db.session.commit()
+
+        return jsonify({'message': '组织删除成功'})
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"删除组织失败: {str(e)}")
+        return jsonify({'error': '删除组织失败', 'details': str(e)}), 500
+
+
+@admin_bp.route('/organizations/<int:org_id>/available-teachers', methods=['GET'])
+def get_available_teachers(org_id):
+    """获取可选择的教师列表"""
+    try:
+        # 获取当前组织
+        organization = Organization.query.get_or_404(org_id)
+
+        # 获取所有教师用户
+        teachers = User.query.filter_by(user_type='teacher', status='active').all()
+
+        # 构建教师列表
+        teacher_list = []
+        for teacher in teachers:
+            teacher_info = teacher.to_dict()
+            # 标记当前已选中的教师
+            teacher_info['is_selected'] = {
+                'class_teacher': teacher.id == organization.class_teacher_id,
+                'head_teacher': teacher.id == organization.head_teacher_id,
+                'leader': teacher.id == organization.leader_id
+            }
+            teacher_list.append(teacher_info)
+
+        return jsonify({
+            'teachers': teacher_list,
+            'current_assignments': {
+                'class_teacher_id': organization.class_teacher_id,
+                'head_teacher_id': organization.head_teacher_id,
+                'leader_id': organization.leader_id
+            }
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"获取教师列表失败: {str(e)}")
+        return jsonify({'error': '获取教师列表失败', 'details': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/relationships', methods=['GET'])
+def get_user_relationships(user_id):
+    """获取用户关系信息"""
+    try:
+        user = User.query.get_or_404(user_id)
+
+        # 获取详细关系信息
+        user_data = user.to_dict(include_sensitive=True)
+
+        # 获取可关联的用户列表
+        potential_relationships = {}
+
+        if user.user_type == 'parent':
+            # 获取可关联的学生
+            available_students = User.query.filter_by(user_type='student', status='active').all()
+            potential_relationships['students'] = [
+                {
+                    'id': student.id,
+                    'name': student.real_name,
+                    'student_id': student.student_id,
+                    'is_related': student.id in [child.id for child in user.parent_students] if hasattr(user, 'parent_students') else False
+                }
+                for student in available_students
+            ]
+
+        elif user.user_type == 'student':
+            # 获取可关联的家长
+            available_parents = User.query.filter_by(user_type='parent', status='active').all()
+            potential_relationships['parents'] = [
+                {
+                    'id': parent.id,
+                    'name': parent.real_name,
+                    'phone': parent.phone,
+                    'is_related': parent.id in [par.id for par in user.student_parents] if hasattr(user, 'student_parents') else False
+                }
+                for parent in available_parents
+            ]
+
+        return jsonify({
+            'user': user_data,
+            'potential_relationships': potential_relationships
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"获取用户关系失败: {str(e)}")
+        return jsonify({'error': '获取用户关系失败', 'details': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/relationships', methods=['PUT'])
+def update_user_relationships(user_id):
+    """更新用户关系"""
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.get_json()
+
+        # 更新家长-学生关系
+        if user.user_type == 'parent' and 'student_ids' in data:
+            # 清除现有关系
+            if hasattr(user, 'parent_students'):
+                for student in user.parent_students:
+                    student.student_parent_id = None
+
+            # 建立新关系
+            for student_id in data['student_ids']:
+                student = User.query.get(student_id)
+                if student and student.user_type == 'student':
+                    student.student_parent_id = user.id
+
+        elif user.user_type == 'student' and 'parent_ids' in data:
+            # 清除现有关系
+            if hasattr(user, 'student_parents'):
+                for parent in user.student_parents:
+                    parent.parent_student_id = None
+
+            # 建立新关系
+            for parent_id in data['parent_ids']:
+                parent = User.query.get(parent_id)
+                if parent and parent.user_type == 'parent':
+                    parent.parent_student_id = user.id
+
+        # 更新用户组织关系
+        if 'organization_id' in data:
+            user.organization_id = data['organization_id']
+
+        user.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'message': '用户关系更新成功',
+            'user': user.to_dict(include_sensitive=True)
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"更新用户关系失败: {str(e)}")
+        return jsonify({'error': '更新用户关系失败', 'details': str(e)}), 500

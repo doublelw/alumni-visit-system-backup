@@ -21,10 +21,18 @@ def generate_visit_qr_code(visit_application):
     """为访问申请生成二维码"""
     try:
         # 准备二维码数据
+        # 安全获取访客信息
+        visitor_name = ''
+        if visit_application.visitor_info:
+            if isinstance(visit_application.visitor_info, dict):
+                visitor_name = visit_application.visitor_info.get('name', '')
+            else:
+                visitor_name = str(visit_application.visitor_info)
+
         qr_data = {
             'type': 'visit_application',
             'id': visit_application.id,
-            'visitor_name': visit_application.visitor_info.get('name', '') if visit_application.visitor_info else '',
+            'visitor_name': visitor_name,
             'visit_date': visit_application.visit_date.strftime('%Y-%m-%d'),
             'visit_time_start': visit_application.visit_time_start,
             'visit_time_end': visit_application.visit_time_end,
@@ -161,12 +169,20 @@ def generate_visit_qr_base64(application_id):
         qr_img.seek(0)
         img_base64 = base64.b64encode(qr_img.getvalue()).decode('utf-8')
 
+        # 安全获取访客姓名
+        visitor_name = ''
+        if visit_application.visitor_info:
+            if isinstance(visit_application.visitor_info, dict):
+                visitor_name = visit_application.visitor_info.get('name', '')
+            else:
+                visitor_name = str(visit_application.visitor_info)
+
         return jsonify({
             'qr_code': f"data:image/png;base64,{img_base64}",
             'application_id': application_id,
             'visit_date': visit_application.visit_date.strftime('%Y-%m-%d'),
             'visit_time': f"{visit_application.visit_time_start}-{visit_application.visit_time_end}",
-            'visitor_name': visit_application.visitor_info.get('name', '') if visit_application.visitor_info else ''
+            'visitor_name': visitor_name
         })
 
     except Exception as e:
@@ -194,17 +210,27 @@ def verify_visit_qr(application_id):
         now = datetime.utcnow()
         visit_datetime = datetime.combine(
             visit_application.visit_date,
-            datetime.strptime(visit_application.visit_time_start, '%H:%M').time()
+            visit_application.visit_time_start
         )
 
         # 如果访问时间已过，检查是否在当天有效期内
         if now > visit_datetime:
             visit_end_datetime = datetime.combine(
                 visit_application.visit_date,
-                datetime.strptime(visit_application.visit_time_end, '%H:%M').time()
+                visit_application.visit_time_end
             )
             if now > visit_end_datetime:
                 return jsonify({'error': '访问时间已过期'}), 400
+
+        # 安全获取访客信息
+        visitor_name = ''
+        visitor_phone = ''
+        if visit_application.visitor_info:
+            if isinstance(visit_application.visitor_info, dict):
+                visitor_name = visit_application.visitor_info.get('name', '')
+                visitor_phone = visit_application.visitor_info.get('phone', '')
+            else:
+                visitor_name = str(visit_application.visitor_info)
 
         # 返回验证结果
         return jsonify({
@@ -212,8 +238,8 @@ def verify_visit_qr(application_id):
             'message': '访问申请有效',
             'application': {
                 'id': visit_application.id,
-                'visitor_name': visit_application.visitor_info.get('name', '') if visit_application.visitor_info else '',
-                'visitor_phone': visit_application.visitor_info.get('phone', '') if visit_application.visitor_info else '',
+                'visitor_name': visitor_name,
+                'visitor_phone': visitor_phone,
                 'visit_date': visit_application.visit_date.strftime('%Y-%m-%d'),
                 'visit_time_start': visit_application.visit_time_start,
                 'visit_time_end': visit_application.visit_time_end,
@@ -253,17 +279,24 @@ def get_my_qr_codes():
         qr_codes = []
         for visit in approved_visits:
             # 检查访问时间是否还有效
-            visit_end_time = datetime.strptime(visit.visit_time_end, '%H:%M').time()
-            visit_datetime = datetime.combine(visit.visit_date, visit_end_time)
+            visit_datetime = datetime.combine(visit.visit_date, visit.visit_time_end)
 
             if datetime.utcnow() <= visit_datetime:
+                # 安全获取访客姓名
+                visitor_name = ''
+                if visit.visitor_info:
+                    if isinstance(visit.visitor_info, dict):
+                        visitor_name = visit.visitor_info.get('name', '')
+                    else:
+                        visitor_name = str(visit.visitor_info)
+
                 qr_codes.append({
                     'id': visit.id,
                     'visit_date': visit.visit_date.strftime('%Y-%m-%d'),
                     'visit_time': f"{visit.visit_time_start}-{visit.visit_time_end}",
                     'visit_purpose': visit.visit_purpose,
                     'target_person': visit.target_person,
-                    'visitor_name': visit.visitor_info.get('name', '') if visit.visitor_info else '',
+                    'visitor_name': visitor_name,
                     'is_today': visit.visit_date == datetime.utcnow().date()
                 })
 

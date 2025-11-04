@@ -15,7 +15,8 @@ class Config:
 class DevelopmentConfig(Config):
     """开发环境配置"""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///alumni_system_dev.db'
+    # 使用绝对路径确保数据库文件能被正确找到
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(os.path.dirname(os.path.dirname(__file__)), "instance", "alumni_system_dev.db")}'
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'dev-alumni-jwt-secret-key-2025'
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)  # 开发环境24小时，方便测试
     UPLOAD_FOLDER = 'uploads'

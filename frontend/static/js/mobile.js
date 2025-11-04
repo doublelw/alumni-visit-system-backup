@@ -1,10 +1,13 @@
 /**
- * 移动端应用JavaScript - 版本 5.1 (修复版)
+ * 移动端应用JavaScript - 版本 5.3 (电子校友卡风格访问二维码)
  * 校友入校登记系统
- * 更新时间: 2025-01-23 00:05
+ * 更新时间: 2025-01-29 06:40
  */
 
-console.log('=== MOBILE.JS 版本 5.1 已加载 ===');
+console.log('=== MOBILE.JS 版本 5.3 已加载 ===');
+
+// 模态框操作状态跟踪
+let isModalOperationInProgress = false;
 
 // 应用配置
 const APP_CONFIG = {
@@ -20,6 +23,10 @@ const APP_CONFIG = {
         VISIT: 'visit',
         FACE: 'face',
         PROFILE: 'profile'
+    },
+    // 事件绑定标志
+    EVENTS_BOUND: {
+        QUICK_ACTIONS: false
     }
 };
 
@@ -61,9 +68,17 @@ const Utils = {
             fetchOptions.credentials = 'omit'; // 不发送cookies以避免证书问题
         }
 
+        const fullUrl = APP_CONFIG.API_BASE_URL + url;
+        console.log('=== 请求调试信息 ===');
+        console.log('完整URL:', fullUrl);
+        console.log('请求方法:', fetchOptions.method || 'GET');
+        console.log('请求头:', fetchOptions.headers);
+        console.log('请求体:', fetchOptions.body);
+
         let response;
         try {
-            response = await fetch(APP_CONFIG.API_BASE_URL + url, fetchOptions);
+            response = await fetch(fullUrl, fetchOptions);
+            console.log('响应状态:', response.status, response.statusText);
         } catch (fetchError) {
             // 简化错误处理 - 开发环境使用HTTP模式
             console.warn('API请求失败:', fetchError.message);
@@ -73,8 +88,10 @@ const Utils = {
         let data;
         try {
             data = await response.json();
+            console.log('响应数据:', data);
         } catch (jsonError) {
             // 如果响应不是JSON格式，使用默认错误消息
+            console.warn('JSON解析失败:', jsonError.message);
             if (!response.ok) {
                 throw new Error(`请求失败 (${response.status})`);
             }
@@ -82,7 +99,9 @@ const Utils = {
         }
 
         if (!response.ok) {
-            throw new Error(data.error || `请求失败 (${response.status})`);
+            const errorMessage = data.error || `请求失败 (${response.status})`;
+            console.log('最终错误消息:', errorMessage);
+            throw new Error(errorMessage);
         }
 
         return data;
@@ -354,7 +373,7 @@ const Auth = {
     // 登录
     async login(username, password) {
         try {
-            const data = await Utils.request('/auth/login', {
+            const data = await Utils.request('/api/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ username, password })
             });
@@ -368,6 +387,15 @@ const Auth = {
             localStorage.setItem(APP_CONFIG.STORAGE_KEYS.TOKEN, data.access_token);
             localStorage.setItem(APP_CONFIG.STORAGE_KEYS.USER, JSON.stringify(data.user));
 
+            // 如果是学生、家长或班主任，加载学生出校申请
+            if (["student", "parent", "teacher"].includes(data.user.user_type)) {
+                setTimeout(() => {
+                    if (typeof window.studentExitApp !== 'undefined') {
+                        window.studentExitApp.updateApplicationSectionsByUserType(data.user);
+                    }
+                }, 500);
+            }
+
             Utils.showToast('登录成功', 'success');
             return data;
         } catch (error) {
@@ -379,7 +407,7 @@ const Auth = {
     // 注册
     async register(userData) {
         try {
-            const data = await Utils.request('/auth/register', {
+            const data = await Utils.request('/api/auth/register', {
                 method: 'POST',
                 body: JSON.stringify(userData)
             });
@@ -394,6 +422,18 @@ const Auth = {
 
     // 退出登录
     logout() {
+        // 防止重复调用
+        if (window.isLoggingOut) {
+            console.log('退出登录已在进行中，跳过重复调用');
+            return;
+        }
+
+        console.log('=== 开始退出登录 ===');
+
+        // 设置全局退出标志，防止其他逻辑重新显示登录模态框
+        window.isLoggingOut = true;
+        isModalOperationInProgress = false;
+
         AppState.token = null;
         AppState.user = null;
         AppState.isAuthenticated = false;
@@ -402,11 +442,29 @@ const Auth = {
         localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.TOKEN);
         localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.USER);
 
-        // 不显示提示，避免在初始化时显示
-        // Utils.showToast('已退出登录', 'info');
+        // 清除所有可能的定时器和异步操作
+        if (window.logoutTimer) {
+            clearTimeout(window.logoutTimer);
+        }
 
-        // 跳转到登录页面
-        UI.showLoginModal();
+        // 显示退出提示
+        Utils.showToast('已退出登录', 'info');
+
+        // 立即显示登录模态框
+        const modal = document.getElementById('loginModal');
+        if (modal) {
+            console.log('退出登录：显示登录模态框');
+            // 直接调用showModal，绕过showLoginModal的检查
+            UI.showModal('loginModal');
+            UI.restoreRememberedCredentials();
+        }
+
+        // 重置退出标志
+        setTimeout(() => {
+            window.isLoggingOut = false;
+        }, 200);
+
+        console.log('=== 退出登录完成 ===');
     },
 
     // 初始化认证状态
@@ -422,7 +480,7 @@ const Auth = {
                 // 验证token是否仍然有效
                 try {
                     // 使用获取用户信息接口来验证token
-                    await Utils.request('/auth/profile', {
+                    await Utils.request('/api/auth/profile', {
                         method: 'GET'
                     });
 
@@ -452,7 +510,7 @@ const Auth = {
 
     // 检查认证状态
     checkAuth() {
-        if (!AppState.isAuthenticated) {
+        if (!AppState.isAuthenticated && !window.isLoggingOut) {
             UI.showLoginModal();
             return false;
         }
@@ -591,18 +649,182 @@ const UI = {
 
     // 显示模态框
     showModal(modalId) {
-        document.getElementById(modalId).classList.add('active');
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.error(`模态框 #${modalId} 不存在`);
+            return;
+        }
+
+        // 检查模态框是否已经可见，避免重复显示
+        if (modal.classList.contains('active') && modal.classList.contains('visible')) {
+            console.log(`模态框 #${modalId} 已经可见，跳过重复显示`);
+            return;
+        }
+
+        console.log(`显示模态框 #${modalId}:`, modal);
+
+        // 强制滚动到页面顶部
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+
+        // 将模态框移到body的最后面，确保它在最上层
+        if (modal.parentNode !== document.body) {
+            document.body.appendChild(modal);
+        }
+
+        // 移除隐藏类，添加激活类
+        modal.classList.remove('hidden', 'fade-out');
+        modal.classList.add('active', 'visible');
+
+        // 设置正常的显示样式
+        modal.style.cssText = `
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 9999 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(5px) !important;
+            transform: translateZ(0) !important;
+            padding: 20px !important;
+            box-sizing: border-box !important;
+        `;
+
+        // 强制模态框内容也可见
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.style.cssText = `
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                background: white !important;
+                position: relative !important;
+                z-index: 10000 !important;
+                margin: auto !important;
+                max-width: 90% !important;
+                max-height: 90% !important;
+                overflow: auto !important;
+                border-radius: 8px !important;
+            `;
+        }
+
+        // 防止页面滚动
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+
+        // 强制重绘
+        modal.offsetHeight;
+
+        console.log(`模态框 #${modalId} 已强制显示，位置:`, {
+            offsetTop: modal.offsetTop,
+            offsetLeft: modal.offsetLeft,
+            offsetWidth: modal.offsetWidth,
+            offsetHeight: modal.offsetHeight,
+            computedZIndex: window.getComputedStyle(modal).zIndex,
+            position: window.getComputedStyle(modal).position
+        });
+
+        // 添加模态框点击事件监听（点击背景关闭）
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                console.log(`点击模态框背景，关闭 #${modalId}`);
+                this.hideModal(modalId);
+            }
+        });
+
+        // 添加ESC键关闭
+        const handleEscape = (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                console.log(`按ESC键关闭模态框 #${modalId}`);
+                this.hideModal(modalId);
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+
+        // 延迟检查
+        setTimeout(() => {
+            const rect = modal.getBoundingClientRect();
+            console.log(`模态框 #${modalId} 位置检查:`, {
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height,
+                isVisible: rect.width > 0 && rect.height > 0
+            });
+
+            // 强制显示在视口中心
+            if (rect.top < 0 || rect.left < 0) {
+                modal.style.top = '0px';
+                modal.style.left = '0px';
+                console.log('强制调整模态框位置到视口顶部');
+            }
+        }, 100);
     },
 
     // 隐藏模态框
     hideModal(modalId) {
-        document.getElementById(modalId).classList.remove('active');
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.error(`模态框 #${modalId} 不存在`);
+            return;
+        }
+
+        console.log(`隐藏模态框 #${modalId}`);
+
+        // 移除激活类，添加隐藏类
+        modal.classList.remove('active', 'visible');
+        modal.classList.add('hidden', 'fade-out');
+
+        // 恢复页面滚动
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+
+        // 立即隐藏元素（不等待动画）
+        modal.style.display = 'none';
+        modal.style.visibility = 'hidden';
+        modal.style.opacity = '0';
+        modal.style.zIndex = '';
+
+        // 移除所有强制样式
+        modal.style.cssText = '';
+
+        // 移除模态框内容样式
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.style.cssText = '';
+        }
+
+        // 移除调试样式
+        const debugStyles = document.getElementById('forceModalDebugStyles');
+        if (debugStyles) {
+            debugStyles.remove();
+        }
+
+        console.log(`模态框 #${modalId} 已完全隐藏`);
     },
 
     // 显示登录模态框
     showLoginModal() {
+        // 防止重复调用和退出状态冲突
+        if (isModalOperationInProgress || window.isLoggingOut) {
+            console.log('登录模态框操作已在进行中或正在退出，跳过重复调用');
+            return;
+        }
+
+        isModalOperationInProgress = true;
         this.showModal('loginModal');
         this.restoreRememberedCredentials();
+
+        // 重置操作状态
+        setTimeout(() => {
+            isModalOperationInProgress = false;
+        }, 200);
     },
 
     // 恢复记住的凭据
@@ -653,6 +875,93 @@ const UI = {
                     reviewManagementItem.style.display = 'block';
                 } else {
                     reviewManagementItem.style.display = 'none';
+                }
+            }
+
+            // 根据用户类型显示快捷操作
+            const quickVisit = document.getElementById('quickVisit');
+            const studentExitApplication = document.getElementById('studentExitApplication');
+            const parentApplyForExit = document.getElementById('parentApplyForExit');
+            const teacherApproval = document.getElementById('teacherApproval');
+            const quickFace = document.getElementById('quickFace');
+            const quickQR = document.getElementById('quickQR');
+            const studentExitQRCode = document.getElementById('studentExitQRCode');
+            const quickAlumniCard = document.getElementById('quickAlumniCard');
+
+            // 如果用户未登录，显示基础按钮
+            if (!AppState.user) {
+                // 未登录用户可以看到基础功能，点击时会提示登录
+                if (quickVisit) quickVisit.style.display = 'block';
+                if (quickFace) quickFace.style.display = 'block';
+                if (studentExitApplication) studentExitApplication.style.display = 'block';
+
+                // 隐藏需要登录的功能
+                if (quickQR) quickQR.style.display = 'none';
+                if (studentExitQRCode) studentExitQRCode.style.display = 'none';
+                if (quickAlumniCard) quickAlumniCard.style.display = 'none';
+                if (parentApplyForExit) parentApplyForExit.style.display = 'none';
+                if (teacherApproval) teacherApproval.style.display = 'none';
+                return;
+            }
+
+            // 已登录用户的显示逻辑
+            // 快速申请 - 所有用户都可以看到
+            if (quickVisit) {
+                quickVisit.style.display = 'block';
+            }
+
+            // 人脸注册 - 所有用户都可以看到
+            if (quickFace) {
+                quickFace.style.display = 'block';
+            }
+
+            // 访问二维码 - 已登录用户可以看到
+            if (quickQR) {
+                quickQR.style.display = 'block';
+            }
+
+            // 电子校友卡 - 校友和学生用户可以看到
+            if (quickAlumniCard) {
+                if (["alumni", "student"].includes(AppState.user.user_type)) {
+                    quickAlumniCard.style.display = 'block';
+                } else {
+                    quickAlumniCard.style.display = 'none';
+                }
+            }
+
+            // 学生出校申请 - 学生、家长、教师可以看到
+            if (studentExitApplication) {
+                if (["student", "parent", "teacher"].includes(AppState.user.user_type)) {
+                    studentExitApplication.style.display = 'block';
+                } else {
+                    studentExitApplication.style.display = 'none';
+                }
+            }
+
+            // 离校验证码 - 学生、家长、教师可以看到
+            if (studentExitQRCode) {
+                if (["student", "parent", "teacher"].includes(AppState.user.user_type)) {
+                    studentExitQRCode.style.display = 'block';
+                } else {
+                    studentExitQRCode.style.display = 'none';
+                }
+            }
+
+            // 为孩子申请出校 - 家长可以看到
+            if (parentApplyForExit) {
+                if (AppState.user.user_type === 'parent') {
+                    parentApplyForExit.style.display = 'block';
+                } else {
+                    parentApplyForExit.style.display = 'none';
+                }
+            }
+
+            // 审批管理 - 教师、管理员可以看到
+            if (teacherApproval) {
+                if (AppState.user.user_type === 'teacher' || AppState.user.user_type === 'admin') {
+                    teacherApproval.style.display = 'block';
+                } else {
+                    teacherApproval.style.display = 'none';
                 }
             }
         }
@@ -725,17 +1034,85 @@ const HomePage = {
                 return;
             }
 
-            // 根据用户类型调整API请求
-            let apiUrl = '/visits/applications?per_page=3';
-            if (AppState.user.user_type === 'teacher' || AppState.user.user_type === 'admin') {
-                // 教师和管理员优先显示待审核的申请
-                apiUrl = '/visits/applications?status=pending&per_page=3';
+            const container = document.getElementById('recentApplications');
+            let allApplications = [];
+
+            try {
+                // 1. 加载访问申请
+                let visitApiUrl = '/api/visits/applications?per_page=3';
+                if (AppState.user.user_type === 'teacher' || AppState.user.user_type === 'admin') {
+                    // 教师和管理员优先显示待审核的申请
+                    visitApiUrl = '/api/visits/applications?status=pending&per_page=3';
+                }
+
+                const visitData = await Utils.request(visitApiUrl);
+                if (visitData.applications && visitData.applications.length > 0) {
+                    // 为访问申请添加类型标识
+                    const visitApplications = visitData.applications.map(app => ({
+                        ...app,
+                        application_type: 'visit',
+                        application_status: app.application_status || app.status
+                    }));
+                    allApplications = allApplications.concat(visitApplications);
+                }
+            } catch (error) {
+                console.warn('加载访问申请失败:', error);
             }
 
-            const data = await Utils.request(apiUrl);
-            const container = document.getElementById('recentApplications');
+            try {
+                // 2. 加载学生出校申请
+                console.log('正在加载学生出校申请...');
+                const studentExitResponse = await fetch('/api/student-exit/applications/recent', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${AppState.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-            if (data.applications.length === 0) {
+                console.log('学生出校API响应状态:', studentExitResponse.status, studentExitResponse.statusText);
+
+                if (studentExitResponse.ok) {
+                    const studentExitData = await studentExitResponse.json();
+                    console.log('学生出校API响应数据:', {
+                        success: studentExitData.success,
+                        applicationCount: studentExitData.applications?.length || 0,
+                        applications: studentExitData.applications
+                    });
+
+                    if (studentExitData.success && studentExitData.applications && studentExitData.applications.length > 0) {
+                        // 为学生出校申请添加类型标识
+                        const studentExitApplications = studentExitData.applications.map(app => {
+                            console.log('处理学生出校申请:', app);
+                            return {
+                                ...app,
+                                application_type: 'student_exit',
+                                application_status: app.status || app.application_status,
+                                applicant_name: app.student_name || app.applicant_name,
+                                visit_date: app.exit_date,
+                                visit_time: app.exit_time,
+                                purpose: app.reason
+                            };
+                        });
+                        allApplications = allApplications.concat(studentExitApplications);
+                        console.log(`成功添加${studentExitApplications.length}个学生出校申请`);
+                    } else {
+                        console.log('没有找到学生出校申请或API返回格式错误');
+                    }
+                } else {
+                    const errorText = await studentExitResponse.text();
+                    console.error('学生出校API调用失败:', {
+                        status: studentExitResponse.status,
+                        statusText: studentExitResponse.statusText,
+                        errorText: errorText
+                    });
+                }
+            } catch (error) {
+                console.error('加载学生出校申请异常:', error);
+            }
+
+            // 如果没有任何申请
+            if (allApplications.length === 0) {
                 if (AppState.user.user_type === 'teacher' || AppState.user.user_type === 'admin') {
                     container.innerHTML = '<p class="text-center text-secondary">暂无待审核申请</p>';
                 } else {
@@ -744,12 +1121,36 @@ const HomePage = {
                 return;
             }
 
-            container.innerHTML = data.applications.map(app => this.renderRecentApplication(app)).join('');
+            // 按时间排序（最新的在前）
+            allApplications.sort((a, b) => {
+                const dateA = new Date(a.created_at || a.application_date || 0);
+                const dateB = new Date(b.created_at || b.application_date || 0);
+                return dateB - dateA;
+            });
 
-            // 绑定点击事件（如果是教师/管理员）
-            if (AppState.user.user_type === 'teacher' || AppState.user.user_type === 'admin') {
-                this.bindApplicationClickEvents();
+            console.log(`总共加载了${allApplications.length}个申请，开始渲染...`);
+
+            // 按时间排序（最新的在前）
+            allApplications.sort((a, b) => {
+                const dateA = new Date(a.created_at || a.application_date || 0);
+                const dateB = new Date(b.created_at || b.application_date || 0);
+                return dateB - dateA;
+            });
+
+            // 只显示前3个
+            const displayApplications = allApplications.slice(0, 3);
+            console.log(`将显示前${displayApplications.length}个申请:`, displayApplications);
+
+            if (displayApplications.length === 0) {
+                container.innerHTML = '<p class="text-center text-secondary">暂无申请记录</p>';
+            } else {
+                const htmlContent = displayApplications.map(app => this.renderRecentApplication(app)).join('');
+                console.log('生成的HTML内容:', htmlContent);
+                container.innerHTML = htmlContent;
             }
+
+            // 绑定点击事件（包括删除按钮）
+            this.bindApplicationClickEvents();
         } catch (error) {
             console.error('加载最近申请失败:', error);
             const container = document.getElementById('recentApplications');
@@ -765,7 +1166,7 @@ const HomePage = {
     async loadCalendarEvents() {
         try {
             console.log('加载校历活动...');
-            const data = await Utils.request('/public/calendar/events');
+            const data = await Utils.request('/api/public/calendar/events');
             const container = document.getElementById('eventsContainer');
             const prevBtn = document.getElementById('eventsPrevBtn');
             const nextBtn = document.getElementById('eventsNextBtn');
@@ -919,39 +1320,66 @@ const HomePage = {
         const statusClass = Utils.getStatusClass(app.application_status);
         const statusText = Utils.getStatusText(app.application_status);
 
+        // 检查是否可以删除（只能删除自己的申请，且状态为pending或cancelled）
+        const canDelete = AppState.user &&
+                           (AppState.user.id === app.applicant_id || AppState.user.id === app.user_id) &&
+                           ['pending', 'cancelled'].includes(app.application_status);
+
+        // 根据申请类型确定显示信息
+        const isStudentExit = app.application_type === 'student_exit';
+        const applicationTypeText = isStudentExit ? '学生出校' : '访问申请';
+        const displayDate = Utils.formatDate(isStudentExit ? app.visit_date : app.visit_date);
+        const displayPurpose = isStudentExit ? app.purpose : app.visit_purpose;
+        const displayTime = isStudentExit ? (app.visit_time || '') : (app.visit_time || '');
+
         return `
-            <div class="application-item recent-application-card ${isTeacherOrAdmin ? 'clickable' : ''}"
-                 data-id="${app.id}" data-status="${app.application_status}">
-                <div class="application-header">
-                    <span class="application-date">${Utils.formatDate(app.visit_date)}</span>
-                    <span class="application-status ${statusClass}">
-                        ${statusText}
-                    </span>
+            <div class="recent-application-container" data-id="${app.id}" data-type="${app.application_type || 'visit'}">
+                <div class="application-item recent-application-card ${isTeacherOrAdmin ? 'clickable' : ''}"
+                     data-id="${app.id}" data-status="${app.application_status}" data-type="${app.application_type || 'visit'}">
+                    <div class="application-header">
+                        <span class="application-type">${applicationTypeText}</span>
+                        <span class="application-date">${displayDate}</span>
+                        <span class="application-status ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </div>
+                    <div class="application-purpose">${displayPurpose}</div>
+                    ${displayTime ? `<div class="application-time">时间: ${displayTime}</div>` : ''}
+                    <div class="application-target">
+                        ${isStudentExit ?
+                            (app.applicant_name ? `学生: ${app.applicant_name}` : '') :
+                            (isTeacherOrAdmin && app.applicant ?
+                                `申请人: ${app.applicant.real_name}` :
+                                (app.target_person ? `拜访对象: ${app.target_person}` : '')
+                            )
+                        }
+                    </div>
+                    ${isTeacherOrAdmin && app.application_status === 'pending' ? `
+                    <div class="quick-review-actions">
+                        <button class="btn btn-success btn-sm quick-approve-btn" data-id="${app.id}">
+                            <i class="ri-check-line"></i>
+                            通过
+                        </button>
+                        <button class="btn btn-danger btn-sm quick-reject-btn" data-id="${app.id}">
+                            <i class="ri-close-line"></i>
+                            拒绝
+                        </button>
+                    </div>
+                    ` : ''}
+                    ${canDelete ? `
+                    <div class="delete-action">
+                        <button class="btn btn-danger btn-sm delete-application-btn" data-id="${app.id}">
+                            <i class="ri-delete-bin-line"></i>
+                            删除
+                        </button>
+                    </div>
+                    ` : ''}
+                    ${isTeacherOrAdmin ? `
+                    <div class="review-hint">
+                        <small><i class="ri-arrow-right-line"></i> 点击查看详情或进入审核页面</small>
+                    </div>
+                    ` : ''}
                 </div>
-                <div class="application-purpose">${app.visit_purpose}</div>
-                <div class="application-target">
-                    ${isTeacherOrAdmin && app.applicant ?
-                        `申请人: ${app.applicant.real_name}` :
-                        (app.target_person ? `拜访对象: ${app.target_person}` : '')
-                    }
-                </div>
-                ${isTeacherOrAdmin && app.application_status === 'pending' ? `
-                <div class="quick-review-actions">
-                    <button class="btn btn-success btn-sm quick-approve-btn" data-id="${app.id}">
-                        <i class="ri-check-line"></i>
-                        通过
-                    </button>
-                    <button class="btn btn-danger btn-sm quick-reject-btn" data-id="${app.id}">
-                        <i class="ri-close-line"></i>
-                        拒绝
-                    </button>
-                </div>
-                ` : ''}
-                ${isTeacherOrAdmin ? `
-                <div class="review-hint">
-                    <small><i class="ri-arrow-right-line"></i> 点击查看详情或进入审核页面</small>
-                </div>
-                ` : ''}
             </div>
         `;
     },
@@ -962,7 +1390,8 @@ const HomePage = {
         document.querySelectorAll('.recent-application-card').forEach(card => {
             card.addEventListener('click', (e) => {
                 // 如果点击的是按钮，不触发卡片点击事件
-                if (e.target.closest('.quick-review-actions')) {
+                if (e.target.closest('.quick-review-actions') ||
+                    e.target.closest('.delete-action')) {
                     return;
                 }
 
@@ -996,12 +1425,32 @@ const HomePage = {
                 await this.quickReviewApplication(id, false, reason.trim());
             });
         });
+
+        // 删除申请按钮
+        document.querySelectorAll('.delete-application-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.id;
+                await this.deleteApplication(id);
+            });
+        });
     },
 
     // 快速审核申请
     async quickReviewApplication(id, approve, note = '') {
         try {
-            await Utils.request(`/visits/applications/${id}/approve`, {
+            // 需要确定申请类型，使用不同的API端点
+            const applicationElement = document.querySelector(`[data-id="${id}"]`);
+            const applicationType = applicationElement?.dataset.type || 'visit';
+
+            let endpoint;
+            if (applicationType === 'student_exit') {
+                endpoint = `/api/student-exit/applications/${id}/approve`;
+            } else {
+                endpoint = `/api/visits/applications/${id}/approve`;
+            }
+
+            await Utils.request(endpoint, {
                 method: 'POST',
                 body: JSON.stringify({
                     approve: approve,
@@ -1015,6 +1464,66 @@ const HomePage = {
             await this.loadRecentApplications();
         } catch (error) {
             Utils.showToast(error.message, 'error');
+        }
+    },
+
+    // 绑定左滑删除事件
+    
+    // 删除申请
+    async deleteApplication(applicationId, container = null) {
+        try {
+            // 如果没有提供container，通过ID查找
+            if (!container) {
+                container = document.querySelector(`.recent-application-container[data-id="${applicationId}"]`);
+            }
+
+            if (!container) {
+                Utils.showToast('找不到要删除的申请记录', 'error');
+                return;
+            }
+
+            // 确认删除
+            const confirmed = confirm('确定要删除这个申请记录吗？此操作不可恢复。');
+            if (!confirmed) {
+                return;
+            }
+
+            Utils.showLoading('删除申请中...');
+
+            await Utils.request(`/api/visits/applications/${applicationId}/cancel`, {
+                method: 'POST'
+            });
+
+            Utils.showToast('申请已删除', 'success');
+
+            // 添加删除动画
+            const card = container.querySelector('.recent-application-card');
+            card.style.transition = 'all 0.3s ease';
+            card.style.transform = 'translateX(-100%) scale(0)';
+            card.style.opacity = '0';
+
+            // 移除元素
+            setTimeout(() => {
+                container.remove();
+
+                // 如果没有申请了，显示空状态
+                const remainingApps = document.querySelectorAll('.recent-application-container');
+                if (remainingApps.length === 0) {
+                    const container = document.getElementById('recentApplications');
+                    if (container) {
+                        container.innerHTML = '<p class="text-center text-secondary">暂无申请记录</p>';
+                    }
+                }
+            }, 300);
+
+        } catch (error) {
+            Utils.showToast(error.message, 'error');
+            // 恢复卡片状态
+            const card = container.querySelector('.recent-application-card');
+            card.style.transform = 'translateX(0)';
+            card.style.opacity = '1';
+        } finally {
+            Utils.hideLoading();
         }
     },
 
@@ -1048,22 +1557,551 @@ const HomePage = {
 
     // 绑定快捷操作
     bindQuickActions() {
+        // 防止重复绑定
+        if (APP_CONFIG.EVENTS_BOUND.QUICK_ACTIONS) {
+            console.log('=== 快捷操作已绑定，跳过 ===');
+            return;
+        }
+
+        console.log('=== 开始绑定快捷操作 ===');
+
         // 快速申请
-        document.getElementById('quickVisit')?.addEventListener('click', () => {
-            PageManager.switchPage(APP_CONFIG.PAGES.VISIT);
-        });
+        const quickVisit = document.getElementById('quickVisit');
+        console.log('quickVisit元素:', quickVisit);
+        if (quickVisit) {
+            quickVisit.addEventListener('click', (e) => {
+                console.log('quickVisit点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                if (!Auth.checkAuth()) {
+                    Utils.showToast('请先登录', 'warning');
+                    PageManager.switchPage(APP_CONFIG.PAGES.LOGIN);
+                    return;
+                }
+                PageManager.switchPage(APP_CONFIG.PAGES.VISIT);
+            });
+            console.log('quickVisit事件绑定成功');
+        }
 
         // 人脸注册
-        document.getElementById('quickFace')?.addEventListener('click', () => {
-            PageManager.switchPage(APP_CONFIG.PAGES.FACE);
-        });
+        const quickFace = document.getElementById('quickFace');
+        console.log('quickFace元素:', quickFace);
+        if (quickFace) {
+            quickFace.addEventListener('click', (e) => {
+                console.log('quickFace点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                PageManager.switchPage(APP_CONFIG.PAGES.FACE);
+            });
+            console.log('quickFace事件绑定成功');
+        }
 
         // 我的二维码
-        document.getElementById('quickQR')?.addEventListener('click', () => {
-            if (Auth.checkAuth()) {
-                ProfilePage.showQRCode();
+        const quickQR = document.getElementById('quickQR');
+        console.log('quickQR元素:', quickQR);
+        if (quickQR) {
+            quickQR.addEventListener('click', async (e) => {
+                console.log('quickQR点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                if (Auth.checkAuth()) {
+                    await FacePage.showQRCode();
+                } else {
+                    Utils.showToast('请先登录', 'error');
+                }
+            });
+            console.log('quickQR事件绑定成功');
+        }
+
+        // 离校验证码
+        const studentExitQRCode = document.getElementById('studentExitQRCode');
+        console.log('studentExitQRCode元素:', studentExitQRCode);
+        if (studentExitQRCode) {
+            studentExitQRCode.addEventListener('click', async (e) => {
+                console.log('studentExitQRCode点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                if (Auth.checkAuth()) {
+                    await HomePage.showStudentExitQRCode();
+                } else {
+                    Utils.showToast('请先登录', 'error');
+                }
+            });
+            console.log('studentExitQRCode事件绑定成功');
+        }
+
+        // 电子校友卡
+        const quickAlumniCard = document.getElementById('quickAlumniCard');
+        console.log('quickAlumniCard元素:', quickAlumniCard);
+        if (quickAlumniCard) {
+            quickAlumniCard.addEventListener('click', (e) => {
+                console.log('quickAlumniCard点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                PageManager.switchPage(APP_CONFIG.PAGES.ALUMNI_CARD);
+            });
+            console.log('quickAlumniCard事件绑定成功');
+        }
+
+        // 学生出校申请
+        const studentExitApplication = document.getElementById('studentExitApplication');
+        console.log('studentExitApplication元素:', studentExitApplication);
+        if (studentExitApplication) {
+            studentExitApplication.addEventListener('click', (e) => {
+                console.log('studentExitApplication点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                if (!Auth.checkAuth()) {
+                    Utils.showToast('请先登录', 'warning');
+                    PageManager.switchPage(APP_CONFIG.PAGES.LOGIN);
+                    return;
+                }
+
+                // 显示模态框
+                UI.showModal('studentExitApplicationModal');
+
+                // 重置表单状态并加载学生信息
+                if (window.studentExitApp) {
+                    setTimeout(() => {
+                        console.log('开始重置表单状态...');
+                        window.studentExitApp.resetFormState('student');
+                        window.studentExitApp.loadAvailableStudents('student');
+
+                        // 延迟更长时间确保HomePage对象已初始化
+                        setTimeout(() => {
+                            console.log('检查HomePage对象:', typeof HomePage);
+                            console.log('检查bindStudentExitFormEvents函数:', typeof HomePage?.bindStudentExitFormEvents);
+                            console.log('HomePage对象的所有方法:', Object.getOwnPropertyNames(HomePage));
+                            console.log('HomePage.bindStudentExitFormEvents:', HomePage.bindStudentExitFormEvents);
+
+                            // 重新绑定表单提交事件
+                            if (typeof HomePage === 'object' && typeof HomePage.bindStudentExitFormEvents === 'function') {
+                                console.log('调用bindStudentExitFormEvents函数...');
+                                HomePage.bindStudentExitFormEvents();
+                            } else {
+                                console.warn('HomePage.bindStudentExitFormEvents 函数不存在，跳过绑定');
+                            }
+                        }, 200);
+                    }, 100);
+                }
+            });
+            console.log('studentExitApplication事件绑定成功');
+        }
+
+        // 为孩子申请出校
+        const parentApplyForExit = document.getElementById('parentApplyForExit');
+        console.log('parentApplyForExit元素:', parentApplyForExit);
+        if (parentApplyForExit) {
+            parentApplyForExit.addEventListener('click', (e) => {
+                console.log('parentApplyForExit点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+
+                // 显示模态框
+                UI.showModal('parentApplyForExitModal');
+
+                // 加载学生列表到家长申请表单
+                if (window.studentExitApp) {
+                    setTimeout(() => {
+                        window.studentExitApp.loadAvailableStudents('parent');
+                    }, 100);
+                }
+            });
+            console.log('parentApplyForExit事件绑定成功');
+        }
+
+        // 审批管理
+        const teacherApproval = document.getElementById('teacherApproval');
+        console.log('teacherApproval元素:', teacherApproval);
+        if (teacherApproval) {
+            teacherApproval.addEventListener('click', (e) => {
+                console.log('teacherApproval点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                PageManager.switchPage(APP_CONFIG.PAGES.APPROVAL);
+            });
+            console.log('teacherApproval事件绑定成功');
+        }
+
+        // 标记为已绑定
+        APP_CONFIG.EVENTS_BOUND.QUICK_ACTIONS = true;
+        console.log('=== 快捷操作绑定完成 ===');
+    },
+
+    // 显示学生离校验证码
+    async showStudentExitQRCode() {
+        try {
+            Utils.showLoading('生成离校验证码...');
+
+            // 检查用户类型
+            if (!["student", "parent", "teacher"].includes(AppState.user.user_type)) {
+                Utils.showToast('只有学生、家长、教师可以查看离校验证码', 'warning');
+                return;
             }
-        });
+
+            // 获取已通过的学生出校申请
+            let apiUrl = '/api/student-exit/applications';
+            let params = new URLSearchParams({
+                'status': 'approved',
+                'limit': '1'
+            });
+
+            if (AppState.user.user_type === 'student') {
+                params.append('student_id', AppState.user.id);
+            }
+
+            const response = await fetch(`${apiUrl}?${params}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${AppState.token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('获取出校申请失败');
+            }
+
+            const data = await response.json();
+
+            if (!data.success || !data.applications || data.applications.length === 0) {
+                Utils.showToast('暂无已通过的出校申请', 'info');
+                return;
+            }
+
+            const application = data.applications[0];
+
+            // 生成验证码内容
+            const qrContent = JSON.stringify({
+                type: 'student_exit',
+                application_id: application.id,
+                student_name: application.student_name,
+                exit_date: application.exit_date,
+                exit_time: application.exit_time,
+                status: application.status,
+                timestamp: new Date().toISOString()
+            });
+
+            // 生成QR码
+            const qrContainer = document.createElement('div');
+            qrContainer.style.textAlign = 'center';
+            qrContainer.style.padding = '20px';
+
+            const qrCodeDiv = document.createElement('div');
+            qrCodeDiv.id = 'studentExitQRCodeDisplay';
+            qrCodeDiv.style.marginBottom = '20px';
+
+            const infoDiv = document.createElement('div');
+            infoDiv.style.fontSize = '14px';
+            infoDiv.style.color = '#666';
+            infoDiv.innerHTML = `
+                <p><strong>学生：</strong>${application.student_name}</p>
+                <p><strong>出校日期：</strong>${application.exit_date}</p>
+                <p><strong>出校时间：</strong>${application.exit_time}</p>
+                <p><strong>状态：</strong><span style="color: #28a745;">已通过</span></p>
+            `;
+
+            qrContainer.appendChild(qrCodeDiv);
+            qrContainer.appendChild(infoDiv);
+
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.className = 'modal active visible';
+            modal.id = 'studentExitQRModal';
+            modal.style.cssText = `
+                display: flex !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                z-index: 9999 !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                background: rgba(0, 0, 0, 0.8) !important;
+                backdrop-filter: blur(5px) !important;
+                align-items: center !important;
+                justify-content: center !important;
+            `;
+
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.cssText = `
+                background: white;
+                border-radius: 8px;
+                max-width: 400px;
+                width: 90%;
+                max-height: 90vh;
+                overflow-y: auto;
+                padding: 0;
+                position: relative;
+            `;
+
+            const modalHeader = document.createElement('div');
+            modalHeader.className = 'modal-header';
+            modalHeader.style.cssText = `
+                padding: 20px;
+                border-bottom: 1px solid #eee;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            `;
+
+            const modalTitle = document.createElement('h3');
+            modalTitle.textContent = '离校验证码';
+            modalTitle.style.cssText = `
+                margin: 0;
+                font-size: 18px;
+                color: #333;
+            `;
+
+            const closeButton = document.createElement('button');
+            closeButton.innerHTML = '×';
+            closeButton.style.cssText = `
+                background: none;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                color: #666;
+                padding: 0;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            closeButton.onclick = () => {
+                document.body.removeChild(modal);
+            };
+
+            modalHeader.appendChild(modalTitle);
+            modalHeader.appendChild(closeButton);
+
+            const modalBody = document.createElement('div');
+            modalBody.className = 'modal-body';
+            modalBody.style.cssText = `
+                padding: 20px;
+            `;
+            modalBody.appendChild(qrContainer);
+
+            modalContent.appendChild(modalHeader);
+            modalContent.appendChild(modalBody);
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+
+            // 生成QR码
+            setTimeout(async () => {
+                if (typeof QRCode !== 'undefined') {
+                    await QRCode.toCanvas(qrCodeDiv, qrContent, {
+                        width: 200,
+                        height: 200,
+                        margin: 2,
+                        color: {
+                            dark: '#000000',
+                            light: '#FFFFFF'
+                        }
+                    });
+                } else {
+                    Utils.showToast('QR码生成库未加载', 'error');
+                }
+            }, 100);
+
+            // 点击背景关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+
+        } catch (error) {
+            console.error('生成离校验证码失败:', error);
+            Utils.showToast('生成验证码失败，请重试', 'error');
+        } finally {
+            Utils.hideLoading();
+        }
+    },
+
+    // 绑定学生出校申请表单事件
+    bindStudentExitFormEvents() {
+        const studentExitForm = document.getElementById('studentExitApplicationForm');
+        console.log('=== 绑定学生出校申请表单事件 ===');
+        console.log('学生出校申请表单元素:', studentExitForm);
+
+        if (studentExitForm) {
+            console.log('✅ 找到表单元素，开始绑定事件');
+            console.log('表单当前属性:', {
+                method: studentExitForm.method,
+                action: studentExitForm.action,
+                onsubmit: studentExitForm.onsubmit
+            });
+
+            // 强制设置表单属性
+            studentExitForm.method = 'post';
+            studentExitForm.action = 'javascript:void(0)';
+            console.log('强制设置表单属性后:', {
+                method: studentExitForm.method,
+                action: studentExitForm.action
+            });
+
+            // 移除现有的事件监听器（如果有的话）
+            const newForm = studentExitForm.cloneNode(true);
+            studentExitForm.parentNode.replaceChild(newForm, studentExitForm);
+
+            // 绑定新的事件监听器
+            const formElement = document.getElementById('studentExitApplicationForm');
+            console.log('获取新的表单元素:', formElement);
+
+            // 添加多个事件监听器确保捕获提交
+            formElement.addEventListener('submit', (e) => {
+                console.log('=== 学生出校申请表单提交事件触发 (submit) ===');
+                console.log('事件对象:', e);
+                console.log('事件目标:', e.target);
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('阻止默认提交行为，调用AJAX提交');
+                // 直接使用API提交学生出校申请
+                this.submitStudentExitApplicationDirect();
+            });
+
+            // 也监听 click 事件来捕获提交按钮点击
+            const submitBtn = formElement.querySelector('button[type="submit"], input[type="submit"]');
+            if (submitBtn) {
+                console.log('找到提交按钮:', submitBtn);
+                submitBtn.addEventListener('click', (e) => {
+                    console.log('=== 提交按钮点击事件触发 ===');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('阻止按钮默认行为，调用表单提交');
+                    // 直接使用API提交学生出校申请
+                    this.submitStudentExitApplicationDirect();
+                });
+            } else {
+                console.warn('未找到提交按钮');
+            }
+
+            console.log('✅ 学生出校申请表单事件绑定成功');
+        } else {
+            console.error('❌ 未找到学生出校申请表单元素');
+            // 尝试查找所有表单元素
+            const allForms = document.querySelectorAll('form');
+            console.log('页面中的所有表单元素:', allForms);
+        }
+    },
+
+    // 直接提交学生出校申请的简化方法
+    async submitStudentExitApplicationDirect() {
+        try {
+            console.log('=== 开始直接提交学生出校申请 ===');
+            Utils.showLoading('正在提交申请...');
+
+            const form = document.getElementById('studentExitApplicationForm');
+            if (!form) {
+                console.error('表单不存在');
+                Utils.showToast('表单不存在', 'error');
+                return;
+            }
+
+            // 获取表单数据
+            const formData = new FormData(form);
+            console.log('表单数据:', Object.fromEntries(formData.entries()));
+
+            // 强制获取最新的当前用户信息
+            console.log('=== 强制刷新当前用户信息 ===');
+            const profileResponse = await fetch('/api/auth/profile', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${AppState.token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const profileData = await profileResponse.json();
+            console.log('当前用户信息:', profileData.user);
+
+            if (!profileData.user) {
+                Utils.showToast('获取用户信息失败', 'error');
+                return;
+            }
+
+            // 强制更新AppState.user
+            AppState.user = profileData.user;
+            localStorage.setItem('app_user', JSON.stringify(profileData.user));
+
+            // 如果当前用户是学生，强制使用学生自己的ID，隐藏学生选择
+            let studentId;
+            if (AppState.user.user_type === 'student') {
+                studentId = AppState.user.id;
+                console.log('当前用户是学生，使用学生ID:', studentId);
+
+                // 隐藏学生选择区域
+                const studentSelectSection = document.getElementById('studentInfoSection');
+                const studentInfoDisplay = document.getElementById('studentInfoDisplay');
+                if (studentSelectSection) {
+                    studentSelectSection.style.display = 'none';
+                    console.log('已隐藏学生选择区域');
+                }
+                if (studentInfoDisplay) {
+                    studentInfoDisplay.style.display = 'block';
+                    console.log('已显示学生信息区域');
+                }
+            } else {
+                // 非学生用户，从表单获取选择的学生ID
+                const studentSelect = formData.get('studentSelect');
+                if (!studentSelect) {
+                    Utils.showToast('请选择学生', 'error');
+                    return;
+                }
+                studentId = parseInt(studentSelect);
+                console.log('非学生用户，从表单获取学生ID:', studentId);
+            }
+
+            // 构建申请数据
+            const applicationData = {
+                student_id: studentId,
+                exit_date: formData.get('exitDate'),
+                exit_time_start: formData.get('exitTimeStart'),
+                exit_time_end: formData.get('exitTimeEnd'),
+                exit_reason: formData.get('exitReason'),
+                destination: formData.get('destination') || '',
+                emergency_contact: formData.get('emergencyContact') || '',
+                emergency_phone: formData.get('emergencyPhone') || ''
+            };
+
+            console.log('申请数据:', applicationData);
+
+            // 验证必填字段
+            if (!applicationData.exit_date || !applicationData.exit_time_start || !applicationData.exit_time_end || !applicationData.exit_reason) {
+                Utils.showToast('请填写所有必填字段：出校日期、时间、原因', 'error');
+                return;
+            }
+
+            // 调用API提交申请
+            const response = await Utils.request('/api/student-exit/applications', {
+                method: 'POST',
+                body: JSON.stringify(applicationData)
+            });
+
+            console.log('API响应:', response);
+
+            Utils.showToast('申请提交成功！', 'success');
+
+            // 清空表单
+            form.reset();
+
+            // 刷新申请列表
+            if (typeof this.loadRecentApplications === 'function') {
+                await this.loadRecentApplications();
+            }
+
+            // 关闭模态框
+            UI.hideModal('studentExitApplicationModal');
+
+        } catch (error) {
+            console.error('提交学生出校申请失败:', error);
+            Utils.showToast('提交失败：' + error.message, 'error');
+        } finally {
+            Utils.hideLoading();
+        }
     }
 };
 
@@ -1156,72 +2194,470 @@ const VisitPage = {
             }
         });
 
-        // 拜访对象工作ID输入事件（带防抖）
-        let searchTimeout;
-        document.getElementById('targetWorkId')?.addEventListener('input', (e) => {
+        // 工作ID输入框失去焦点时自动验证ID是否存在
+        document.getElementById('targetWorkId')?.addEventListener('blur', (e) => {
             const workId = e.target.value.trim();
+            if (workId) {
+                this.validateTargetIdExists(workId);
+            } else {
+                this.clearValidationStatus();
+            }
+        });
 
-            // 清除之前的定时器
-            clearTimeout(searchTimeout);
+        // 姓名输入框失去焦点时自动验证姓名匹配
+        document.getElementById('targetPerson')?.addEventListener('blur', (e) => {
+            const workId = document.getElementById('targetWorkId')?.value.trim();
+            const personName = e.target.value.trim();
+            if (workId && personName) {
+                this.validateTargetPerson();
+            }
+        });
 
-            // 设置新的定时器，500ms后执行搜索
-            searchTimeout = setTimeout(() => {
-                this.lookupTargetPerson(workId);
-            }, 500);
+        // 拜访对象验证按钮事件（手动验证）
+        document.getElementById('validateTargetBtn')?.addEventListener('click', () => {
+            this.validateTargetPerson();
+        });
+
+        // 支持回车键验证
+        document.getElementById('targetPerson')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.validateTargetPerson();
+            }
+        });
+
+        // 添加同行人按钮事件
+        document.getElementById('addCompanion')?.addEventListener('click', () => {
+            this.addCompanion();
+        });
+
+        // 学生出校申请添加同行人按钮事件
+        document.getElementById('addExitCompanion')?.addEventListener('click', () => {
+            this.addExitCompanion();
+        });
+
+        // 学生出校申请表单提交事件
+        // 学生出校申请表单提交事件将在显示模态框时绑定
+
+        // 家长为孩子申请表单提交事件
+        document.getElementById('parentApplyForExitForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.submitParentExitApplication();
         });
     },
 
-    // 根据工作ID查询拜访对象信息
-    async lookupTargetPerson(workId) {
+    // 提交学生出校申请
+    async submitStudentExitApplication() {
         try {
-            // 如果工作ID为空，清空相关字段
-            if (!workId) {
-                this.clearTargetInfo();
+            console.log('=== 开始提交学生出校申请 ===');
+            Utils.showLoading('正在提交申请...');
+
+            const form = document.getElementById('studentExitApplicationForm');
+            if (!form) {
+                console.error('表单不存在');
+                Utils.showToast('表单不存在', 'error');
                 return;
             }
 
-            // 至少输入3个字符才开始查询
-            if (workId.length < 3) {
+            console.log('找到表单:', form);
+
+            // 获取表单数据
+            const formData = new FormData(form);
+            console.log('表单数据:', Object.fromEntries(formData.entries()));
+
+            // 检查 window.studentExitApp 是否存在
+            console.log('window.studentExitApp:', window.studentExitApp);
+
+            // 使用新的方法获取学生ID（支持学生用户自动加载）
+            const studentId = window.studentExitApp ? window.studentExitApp.getCurrentStudentId('student') : null;
+            console.log('获取到的学生ID:', studentId);
+
+            if (!studentId) {
+                console.error('无法获取学生信息，尝试从当前用户获取');
+                // 备用方案：直接使用当前登录用户ID（如果是学生）
+                if (AppState.user && AppState.user.user_type === 'student') {
+                    const fallbackStudentId = AppState.user.id;
+                    console.log('使用备用学生ID:', fallbackStudentId);
+
+                    const applicationData = {
+                        student_id: fallbackStudentId,
+                        exit_date: formData.get('exit_date'),
+                        exit_time_start: formData.get('exit_time_start'),
+                        exit_time_end: formData.get('exit_time_end'),
+                        exit_reason: formData.get('exit_reason'),
+                        destination: formData.get('destination') || '',
+                        transport_method: formData.get('transport_method') || '',
+                        emergency_contact: formData.get('emergency_contact') || '',
+                        emergency_phone: formData.get('emergency_phone') || ''
+                    };
+
+                    console.log('申请数据:', applicationData);
+                    await this.submitApplicationData(applicationData, form);
+                    return;
+                }
+
+                Utils.showToast('无法获取学生信息', 'error');
                 return;
             }
 
-            // 显示查询中状态
-            const targetPersonInput = document.getElementById('targetPerson');
-            if (targetPersonInput) {
-                targetPersonInput.placeholder = '查询中...';
-                targetPersonInput.style.color = '#999';
-            }
+            const applicationData = {
+                student_id: studentId,
+                exit_date: formData.get('exit_date'),
+                exit_time_start: formData.get('exit_time_start'),
+                exit_time_end: formData.get('exit_time_end'),
+                exit_reason: formData.get('exit_reason'),
+                destination: formData.get('destination') || '',
+                transport_method: formData.get('transport_method') || '',
+                emergency_contact: formData.get('emergency_contact') || '',
+                emergency_phone: formData.get('emergency_phone') || ''
+            };
 
-            // 调用API查询拜访对象信息
-            const data = await Utils.request(`/target-persons/search?work_id=${encodeURIComponent(workId)}`);
-
-            // 填充拜访对象信息
-            const targetDepartmentInput = document.getElementById('targetDepartment');
-
-            if (targetPersonInput) {
-                targetPersonInput.value = data.name;
-                targetPersonInput.placeholder = '系统自动填充';
-                targetPersonInput.style.color = '';
-            }
-            if (targetDepartmentInput) targetDepartmentInput.value = data.department;
-
-            Utils.showToast(`已找到拜访对象：${data.name}（${data.department}）`, 'success');
+            console.log('申请数据:', applicationData);
+            await this.submitApplicationData(applicationData, form);
 
         } catch (error) {
-            // 清空相关字段
-            this.clearTargetInfo();
+            console.error('提交学生出校申请失败:', error);
+            Utils.showToast('提交失败，请重试', 'error');
+        } finally {
+            Utils.hideLoading();
+        }
+    },
 
-            // 恢复placeholder
-            const targetPersonInput = document.getElementById('targetPerson');
-            if (targetPersonInput) {
-                targetPersonInput.placeholder = '系统自动填充';
-                targetPersonInput.style.color = '';
+    // 通用的申请数据提交函数
+    async submitApplicationData(applicationData, form) {
+        console.log('开始提交申请数据:', applicationData);
+
+        // 验证必填字段
+        const requiredFields = ['exit_date', 'exit_time_start', 'exit_time_end', 'exit_reason'];
+        for (const field of requiredFields) {
+            if (!applicationData[field]) {
+                console.error(`必填字段 ${field} 为空`);
+                Utils.showToast('请填写所有必填字段', 'error');
+                return;
+            }
+        }
+
+        try {
+            // 提交申请
+            const response = await fetch('/api/student-exit/applications', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${AppState.token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(applicationData)
+            });
+
+            console.log('API响应状态:', response.status);
+            const result = await response.json();
+            console.log('API响应数据:', result);
+
+            if (response.ok) {
+                // 显示成功消息，包含状态信息
+                const successMessage = '申请提交成功！等待家长和班主任审批';
+                Utils.showToast(successMessage, 'success');
+
+                // 重置表单
+                if (form) {
+                    form.reset();
+                }
+                this.hideStudentInfoDisplay();
+
+                // 刷新申请列表
+                console.log('刷新申请列表...');
+                await HomePage.loadRecentApplications();
+
+                // 关闭模态框
+                setTimeout(() => {
+                    const modal = document.getElementById('studentExitApplicationModal');
+                    if (modal) {
+                        UI.hideModal('studentExitApplicationModal');
+                    }
+                }, 1500);
+
+            } else {
+                console.error('提交失败:', result);
+                Utils.showToast(result.error || '提交失败', 'error');
             }
 
-            // 只有在输入足够长度后才显示错误提示
-            if (workId.length >= 6) {
-                Utils.showToast('未找到该工作ID对应的拜访对象', 'error');
+        } catch (error) {
+            console.error('API调用失败:', error);
+            Utils.showToast('网络错误，请重试', 'error');
+        }
+    },
+
+    // 提交家长出校申请
+    async submitParentExitApplication() {
+        try {
+            Utils.showLoading('正在提交申请...');
+
+            const form = document.getElementById('parentApplyForExitForm');
+            if (!form) {
+                Utils.showToast('表单不存在', 'error');
+                return;
             }
+
+            // 获取表单数据
+            const formData = new FormData(form);
+            const studentSelect = document.getElementById('parentStudentSelect');
+
+            if (!studentSelect || !studentSelect.value) {
+                Utils.showToast('请选择学生', 'error');
+                return;
+            }
+
+            const applicationData = {
+                student_id: studentSelect.value,
+                exit_date: formData.get('exit_date'),
+                exit_time_start: formData.get('exit_time_start'),
+                exit_time_end: formData.get('exit_time_end'),
+                exit_reason: formData.get('exit_reason'),
+                destination: formData.get('destination') || '',
+                transport_method: formData.get('transport_method') || '',
+                emergency_contact: formData.get('emergency_contact') || '',
+                emergency_phone: formData.get('emergency_phone') || ''
+            };
+
+            // 验证必填字段
+            const requiredFields = ['exit_date', 'exit_time_start', 'exit_time_end', 'exit_reason'];
+            for (const field of requiredFields) {
+                if (!applicationData[field]) {
+                    Utils.showToast('请填写所有必填字段', 'error');
+                    return;
+                }
+            }
+
+            // 提交申请
+            const response = await fetch('/api/student-exit/applications', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${AppState.token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(applicationData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                Utils.showToast('申请提交成功！', 'success');
+                form.reset();
+                this.hideStudentInfoDisplay();
+                // 刷新申请列表
+                HomePage.loadRecentApplications();
+            } else {
+                Utils.showToast(result.error || '提交失败', 'error');
+            }
+
+        } catch (error) {
+            console.error('提交家长出校申请失败:', error);
+            Utils.showToast('提交失败，请重试', 'error');
+        } finally {
+            Utils.hideLoading();
+        }
+    },
+
+    // 隐藏学生信息显示
+    hideStudentInfoDisplay() {
+        const displaySection = document.getElementById('studentInfoDisplay');
+        if (displaySection) {
+            displaySection.style.display = 'none';
+        }
+    },
+
+    // 验证受访者ID是否存在
+    async validateTargetIdExists(workId) {
+        const validationStatus = document.getElementById('validationStatus');
+
+        if (!workId) {
+            this.clearValidationStatus();
+            return;
+        }
+
+        // 显示验证中状态
+        this.showValidationStatus('loading', '正在验证受访者ID...');
+
+        try {
+            // 调用后端API仅验证ID是否存在
+            const response = await Utils.request('/api/visits/check-target-id', {
+                method: 'POST',
+                body: JSON.stringify({
+                    target_work_id: workId
+                })
+            });
+
+            if (response.success) {
+                this.showValidationStatus('info',
+                    `✅ 找到受访者：${response.user_info.real_name}（${response.user_info.user_type}）<br>请继续输入姓名进行验证`);
+
+                // 存储用户信息供后续验证使用
+                this.cachedTargetUserInfo = response.user_info;
+
+                // 启用姓名输入框
+                const nameInput = document.getElementById('targetPerson');
+                if (nameInput) {
+                    nameInput.disabled = false;
+                    nameInput.placeholder = `请输入 ${response.user_info.real_name} 进行验证`;
+                }
+            }
+
+        } catch (error) {
+            this.showValidationStatus('error', `❌ ${error.message || '受访者ID不存在'}`);
+
+            // 清空部门信息
+            const deptInput = document.getElementById('targetDepartment');
+            if (deptInput) {
+                deptInput.value = '';
+            }
+
+            // 禁用姓名输入框
+            const nameInput = document.getElementById('targetPerson');
+            if (nameInput) {
+                nameInput.disabled = true;
+                nameInput.placeholder = '请先输入有效的受访者ID';
+                nameInput.value = '';
+            }
+
+            this.cachedTargetUserInfo = null;
+        }
+    },
+
+    // 清除验证状态
+    clearValidationStatus() {
+        const validationStatus = document.getElementById('validationStatus');
+        if (validationStatus) {
+            validationStatus.innerHTML = '';
+            validationStatus.className = 'validation-status';
+        }
+
+        // 重置姓名输入框
+        const nameInput = document.getElementById('targetPerson');
+        if (nameInput) {
+            nameInput.disabled = false;
+            nameInput.placeholder = '请输入受访者真实姓名';
+        }
+
+        // 清空部门信息
+        const deptInput = document.getElementById('targetDepartment');
+        if (deptInput) {
+            deptInput.value = '';
+        }
+
+        this.cachedTargetUserInfo = null;
+    },
+
+    // 清除验证状态
+    clearValidationStatus() {
+        const validationStatus = document.getElementById('validationStatus');
+        if (validationStatus) {
+            validationStatus.innerHTML = '';
+            validationStatus.className = 'validation-status';
+        }
+
+        // 重置姓名输入框
+        const nameInput = document.getElementById('targetPerson');
+        if (nameInput) {
+            nameInput.disabled = false;
+            nameInput.placeholder = '请输入受访者真实姓名';
+        }
+
+        // 清空部门信息
+        const deptInput = document.getElementById('targetDepartment');
+        if (deptInput) {
+            deptInput.value = '';
+        }
+
+        this.cachedTargetUserInfo = null;
+    },
+
+    // 根据工作ID查询拜访对象信息
+    // 验证受访者信息（双重验证：ID + 姓名）
+    async validateTargetPerson() {
+        const workId = document.getElementById('targetWorkId')?.value.trim();
+        const personName = document.getElementById('targetPerson')?.value.trim();
+        const validateBtn = document.getElementById('validateTargetBtn');
+        const validationStatus = document.getElementById('validationStatus');
+
+        // 检查必填字段
+        if (!workId || !personName) {
+            this.showValidationStatus('error', '请同时填写受访者ID和姓名');
+            return;
+        }
+
+        // 显示验证中状态
+        if (validateBtn) {
+            validateBtn.disabled = true;
+            validateBtn.innerHTML = '<span class="btn-icon">⟳</span>验证中...';
+        }
+        this.showValidationStatus('loading', '正在验证受访者信息...');
+
+        try {
+            // 调用后端验证API
+            const response = await Utils.request('/api/visits/validate-target', {
+                method: 'POST',
+                body: JSON.stringify({
+                    target_work_id: workId,
+                    target_person: personName
+                })
+            });
+
+            if (response.success) {
+                // 验证成功，填充部门信息
+                const deptInput = document.getElementById('targetDepartment');
+                if (deptInput && response.user_info.department_info) {
+                    deptInput.value = response.user_info.department_info;
+                }
+
+                this.showValidationStatus('success',
+                    `✅ 验证成功！${response.user_info.real_name}（${response.user_info.user_type} - ${response.user_info.department_info}）`);
+
+                Utils.showToast('受访者信息验证通过', 'success');
+            }
+
+        } catch (error) {
+            // 验证失败，显示错误信息
+            this.showValidationStatus('error', `❌ ${error.message || '验证失败'}`);
+
+            // 清空部门信息
+            const deptInput = document.getElementById('targetDepartment');
+            if (deptInput) {
+                deptInput.value = '';
+            }
+        } finally {
+            // 恢复按钮状态
+            if (validateBtn) {
+                validateBtn.disabled = false;
+                validateBtn.innerHTML = '<span class="btn-icon">✓</span>验证';
+            }
+        }
+    },
+
+    // 显示验证状态
+    showValidationStatus(type, message) {
+        const statusDiv = document.getElementById('validationStatus');
+        if (!statusDiv) return;
+
+        statusDiv.className = `validation-status ${type}`;
+        statusDiv.textContent = message;
+
+        if (type === 'loading') {
+            statusDiv.style.display = 'block';
+        } else if (type === 'success') {
+            statusDiv.style.display = 'block';
+            // 成功消息3秒后自动隐藏
+            setTimeout(() => {
+                if (statusDiv.className.includes('success')) {
+                    statusDiv.style.display = 'none';
+                }
+            }, 3000);
+        } else if (type === 'error') {
+            statusDiv.style.display = 'block';
+            // 错误消息5秒后自动隐藏
+            setTimeout(() => {
+                if (statusDiv.className.includes('error')) {
+                    statusDiv.style.display = 'none';
+                }
+            }, 5000);
         }
     },
 
@@ -1287,7 +2723,7 @@ const VisitPage = {
 
         try {
             console.log('发送API请求...');
-            const response = await Utils.request('/visits/applications', {
+            const response = await Utils.request('/api/visits/applications', {
                 method: 'POST',
                 body: JSON.stringify(formData)
             });
@@ -1327,6 +2763,9 @@ const VisitPage = {
     getFormData() {
         const getValue = (id) => document.getElementById(id)?.value || '';
 
+        // 获取同行人数据
+        const companions = this.getCompanionsData();
+
         return {
             visit_date: getValue('visitDate'),
             visit_time_start: getValue('timeStart'),
@@ -1339,7 +2778,8 @@ const VisitPage = {
             visitor_phone: getValue('visitorPhone'),
             visitor_email: getValue('visitorEmail'),
             visitor_id_card: getValue('visitorIdCard'),
-            visit_type: 'in-person'
+            visit_type: 'in-person',
+            companions: companions  // 添加同行人数据
         };
     },
 
@@ -1402,7 +2842,7 @@ const VisitPage = {
     async loadVisitHistory() {
         try {
             console.log('开始加载申请历史...');
-            const data = await Utils.request('/visits/applications');
+            const data = await Utils.request('/api/visits/applications');
             console.log('获取到申请历史数据:', data);
 
             const container = document.getElementById('visitHistory');
@@ -1501,7 +2941,7 @@ const VisitPage = {
         }
 
         try {
-            await Utils.request(`/visits/applications/${id}/cancel`, {
+            await Utils.request(`/api/visits/applications/${id}/cancel`, {
                 method: 'POST'
             });
 
@@ -1515,7 +2955,7 @@ const VisitPage = {
     // 开始访问
     async startVisit(id) {
         try {
-            await Utils.request(`/visits/applications/${id}/start`, {
+            await Utils.request(`/api/visits/applications/${id}/start`, {
                 method: 'POST'
             });
 
@@ -1527,11 +2967,365 @@ const VisitPage = {
     },
 
     // 查看详情
-    viewDetails(id) {
-        // 显示申请详情模态框
-        // 这里可以实现详情查看功能
-        Utils.showToast('详情查看功能开发中', 'info');
-    }
+    async viewDetails(id) {
+        try {
+            // 检查是否已登录
+            if (!AppState.token && !window.isLoggingOut) {
+                Utils.showToast('请先登录后查看详情', 'warning');
+                // 跳转到登录页面
+                AppState.logout();
+                return;
+            }
+
+            Utils.showLoading('加载申请详情...');
+
+            const response = await Utils.request(`/api/visits/applications/${id}`);
+
+            if (response.success) {
+                this.showVisitDetailsModal(response.data);
+            } else {
+                Utils.showToast('获取申请详情失败', 'error');
+            }
+        } catch (error) {
+            Utils.hideLoading();
+            console.error('获取申请详情失败:', error);
+
+            // 检查是否是认证错误
+            if (error.message && error.message.includes('401') && !window.isLoggingOut) {
+                Utils.showToast('登录已过期，请重新登录', 'warning');
+                AppState.logout();
+                return;
+            }
+
+            // 检查是否是权限错误
+            if (error.message && error.message.includes('403')) {
+                Utils.showToast('没有权限查看此申请', 'error');
+                return;
+            }
+
+            Utils.showToast('获取申请详情失败，请重试', 'error');
+        }
+    },
+
+    // 显示访问申请详情模态框
+    showVisitDetailsModal(application) {
+        // 创建详情内容
+        const statusColors = {
+            'pending': '#ff9800',
+            'approved': '#4caf50',
+            'rejected': '#f44336',
+            'cancelled': '#9e9e9e',
+            'completed': '#2196f3'
+        };
+
+        const statusTexts = {
+            'pending': '待处理',
+            'approved': '已通过',
+            'rejected': '已拒绝',
+            'cancelled': '已取消',
+            'completed': '已完成'
+        };
+
+        const detailsHtml = `
+            <div class="visit-details">
+                <div class="detail-section">
+                    <h3>基本信息</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">申请人：</span>
+                        <span class="detail-value">${application.applicant?.real_name || '未知'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">访问日期：</span>
+                        <span class="detail-value">${application.visit_date || '未设置'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">访问时间：</span>
+                        <span class="detail-value">${application.visit_time_start || '未设置'} - ${application.visit_time_end || '未设置'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">访问目的：</span>
+                        <span class="detail-value">${application.visit_purpose || '未填写'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">申请状态：</span>
+                        <span class="detail-value" style="color: ${statusColors[application.application_status] || '#666'}; font-weight: 600;">
+                            ${statusTexts[application.application_status] || application.application_status}
+                        </span>
+                    </div>
+                </div>
+
+                ${application.application_status === 'approved' ? `
+                <div class="detail-section">
+                    <h3>审批信息</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">审批人：</span>
+                        <span class="detail-value">${application.approver_name || '未知'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">审批时间：</span>
+                        <span class="detail-value">${application.approval_time ? new Date(application.approval_time).toLocaleString() : '未知'}</span>
+                    </div>
+                    ${application.approval_note ? `
+                    <div class="detail-row">
+                        <span class="detail-label">审批备注：</span>
+                        <span class="detail-value">${application.approval_note}</span>
+                    </div>
+                    ` : ''}
+                </div>
+                ` : ''}
+
+                ${application.target_person ? `
+                <div class="detail-section">
+                    <h3>访问对象</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">访问对象：</span>
+                        <span class="detail-value">${application.target_person}</span>
+                    </div>
+                </div>
+                ` : ''}
+
+                ${application.vehicle ? `
+                <div class="detail-section">
+                    <h3>车辆信息</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">车牌号：</span>
+                        <span class="detail-value">${application.vehicle.plate_number || '未提供'}</span>
+                    </div>
+                    ${application.vehicle.car_model ? `
+                    <div class="detail-row">
+                        <span class="detail-label">车型：</span>
+                        <span class="detail-value">${application.vehicle.car_model}</span>
+                    </div>
+                    ` : ''}
+                    ${application.vehicle.color ? `
+                    <div class="detail-row">
+                        <span class="detail-label">颜色：</span>
+                        <span class="detail-value">${application.vehicle.color}</span>
+                    </div>
+                    ` : ''}
+                </div>
+                ` : ''}
+
+                <div class="detail-section">
+                    <h3>申请信息</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">申请时间：</span>
+                        <span class="detail-value">${new Date(application.created_at).toLocaleString()}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">申请编号：</span>
+                        <span class="detail-value">#${application.id.toString().padStart(6, '0')}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 更新模态框内容
+        document.getElementById('visitDetailsContent').innerHTML = detailsHtml;
+
+        // 绑定关闭事件
+        document.getElementById('closeVisitDetailsModal').addEventListener('click', () => {
+            UI.hideModal('visitDetailsModal');
+        });
+        document.getElementById('closeVisitDetails').addEventListener('click', () => {
+            UI.hideModal('visitDetailsModal');
+        });
+
+        // 显示模态框
+        UI.hideLoading();
+        UI.showModal('visitDetailsModal');
+    },
+
+    // 添加同行人
+    addCompanion() {
+        const companionList = document.getElementById('companionList');
+        if (!companionList) {
+            console.error('companionList元素未找到');
+            return;
+        }
+
+        // 获取当前同行人数量
+        const currentCompanions = companionList.children.length;
+        const maxCompanions = 10; // 最多10个同行人
+
+        if (currentCompanions >= maxCompanions) {
+            Utils.showToast('同行人数量已达上限（最多10人）', 'warning');
+            return;
+        }
+
+        const companionIndex = currentCompanions + 1;
+        const companionId = `companion_${companionIndex}`;
+
+        // 创建同行人表单HTML
+        const companionHtml = `
+            <div class="companion-item" id="${companionId}" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px; position: relative;">
+                <div class="companion-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="margin: 0; color: #495057; font-size: 14px; font-weight: 600;">
+                        <i class="ri-user-line"></i> 同行人 ${companionIndex}
+                    </h4>
+                    <button type="button" class="btn btn-outline btn-sm remove-companion" data-id="${companionId}" style="padding: 4px 8px; font-size: 12px;">
+                        <i class="ri-close-line"></i> 删除
+                    </button>
+                </div>
+                <div class="companion-form" style="display: grid; gap: 10px;">
+                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #6c757d;">姓名 <span style="color: #dc3545;">*</span></label>
+                            <input type="text" name="companion_name_${companionIndex}" placeholder="请输入姓名" required
+                                   style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #6c757d;">联系电话 <span style="color: #dc3545;">*</span></label>
+                            <input type="tel" name="companion_phone_${companionIndex}" placeholder="请输入手机号" required
+                                   style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #6c757d;">身份证号</label>
+                            <input type="text" name="companion_idcard_${companionIndex}" placeholder="请输入身份证号（选填）" maxlength="18"
+                                   style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #6c757d;">关系</label>
+                            <select name="companion_relation_${companionIndex}" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;">
+                                <option value="">请选择关系</option>
+                                <option value="家人">家人</option>
+                                <option value="朋友">朋友</option>
+                                <option value="同事">同事</option>
+                                <option value="同学">同学</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 添加到DOM
+        companionList.insertAdjacentHTML('beforeend', companionHtml);
+
+        // 绑定删除按钮事件
+        const removeBtn = document.querySelector(`#${companionId} .remove-companion`);
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                this.removeCompanion(companionId);
+            });
+        }
+
+        // 添加动画效果
+        const newCompanion = document.getElementById(companionId);
+        if (newCompanion) {
+            newCompanion.style.opacity = '0';
+            newCompanion.style.transform = 'translateY(-10px)';
+            newCompanion.style.transition = 'all 0.3s ease';
+
+            setTimeout(() => {
+                newCompanion.style.opacity = '1';
+                newCompanion.style.transform = 'translateY(0)';
+            }, 10);
+        }
+
+        // 滚动到新添加的同行人
+        setTimeout(() => {
+            newCompanion.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+
+        console.log(`已添加同行人 ${companionIndex}`);
+    },
+
+    // 删除同行人
+    removeCompanion(companionId) {
+        const companion = document.getElementById(companionId);
+        if (companion) {
+            // 添加删除动画
+            companion.style.transition = 'all 0.3s ease';
+            companion.style.opacity = '0';
+            companion.style.transform = 'translateX(20px)';
+
+            setTimeout(() => {
+                companion.remove();
+
+                // 重新编号剩余的同行人
+                this.renumberCompanions();
+
+                Utils.showToast('同行人已删除', 'info');
+            }, 300);
+        }
+    },
+
+    // 重新编号同行人
+    renumberCompanions() {
+        const companionList = document.getElementById('companionList');
+        if (!companionList) return;
+
+        const companions = companionList.querySelectorAll('.companion-item');
+        companions.forEach((companion, index) => {
+            const newIndex = index + 1;
+            const newId = `companion_${newIndex}`;
+
+            // 更新ID
+            companion.id = newId;
+
+            // 更新标题
+            const title = companion.querySelector('h4');
+            if (title) {
+                title.innerHTML = `<i class="ri-user-line"></i> 同行人 ${newIndex}`;
+            }
+
+            // 更新删除按钮的data-id
+            const removeBtn = companion.querySelector('.remove-companion');
+            if (removeBtn) {
+                removeBtn.setAttribute('data-id', newId);
+                // 重新绑定事件
+                removeBtn.removeEventListener('click', () => {});
+                removeBtn.addEventListener('click', () => {
+                    this.removeCompanion(newId);
+                });
+            }
+
+            // 更新表单字段的name属性
+            const nameInput = companion.querySelector('input[name^="companion_name_"]');
+            const phoneInput = companion.querySelector('input[name^="companion_phone_"]');
+            const idcardInput = companion.querySelector('input[name^="companion_idcard_"]');
+            const relationSelect = companion.querySelector('select[name^="companion_relation_"]');
+
+            if (nameInput) nameInput.name = `companion_name_${newIndex}`;
+            if (phoneInput) phoneInput.name = `companion_phone_${newIndex}`;
+            if (idcardInput) idcardInput.name = `companion_idcard_${newIndex}`;
+            if (relationSelect) relationSelect.name = `companion_relation_${newIndex}`;
+        });
+    },
+
+    // 获取同行人数据
+    getCompanionsData() {
+        const companionList = document.getElementById('companionList');
+        if (!companionList) return [];
+
+        const companions = [];
+        const companionItems = companionList.querySelectorAll('.companion-item');
+
+        companionItems.forEach((companion, index) => {
+            const companionIndex = index + 1;
+            const nameInput = companion.querySelector(`input[name="companion_name_${companionIndex}"]`);
+            const phoneInput = companion.querySelector(`input[name="companion_phone_${companionIndex}"]`);
+            const idcardInput = companion.querySelector(`input[name="companion_idcard_${companionIndex}"]`);
+            const relationSelect = companion.querySelector(`select[name="companion_relation_${companionIndex}"]`);
+
+            if (nameInput && phoneInput && nameInput.value.trim() && phoneInput.value.trim()) {
+                companions.push({
+                    name: nameInput.value.trim(),
+                    phone: phoneInput.value.trim(),
+                    id_card: idcardInput ? idcardInput.value.trim() : '',
+                    relation: relationSelect ? relationSelect.value : ''
+                });
+            }
+        });
+
+        return companions;
+    },
 };
 
 // 人脸识别页面逻辑
@@ -1674,7 +3468,7 @@ const FacePage = {
     // 加载人脸注册状态
     async loadFaceStatus() {
         try {
-            const data = await Utils.request('/faces/status');
+            const data = await Utils.request('/api/faces/status');
             this.updateFaceStatus(data);
 
             // 如果已注册，加载详细信息
@@ -1690,7 +3484,7 @@ const FacePage = {
     // 加载人脸信息详情
     async loadFaceInfo() {
         try {
-            const data = await Utils.request('/faces/info');
+            const data = await Utils.request('/api/faces/info');
             this.updateFaceInfoDisplay(data);
         } catch (error) {
             console.error('加载人脸信息失败:', error);
@@ -1720,7 +3514,24 @@ const FacePage = {
             if (!imagePath.startsWith('/')) {
                 imagePath = '/' + imagePath;
             }
+
+            // 添加图片加载错误处理
+            registeredFaceImage.onload = function() {
+                console.log('人脸图片加载成功:', imagePath);
+            };
+            registeredFaceImage.onerror = function() {
+                console.error('人脸图片加载失败:', imagePath);
+                // 使用默认图片或隐藏
+                registeredFaceImage.style.display = 'none';
+            };
+
             registeredFaceImage.src = imagePath + '?t=' + Date.now();
+            registeredFaceImage.style.display = 'block';
+        } else {
+            // 如果没有图片路径，隐藏图片元素
+            if (registeredFaceImage) {
+                registeredFaceImage.style.display = 'none';
+            }
         }
 
         if (registrationTime) {
@@ -1981,6 +3792,157 @@ const FacePage = {
         }
     },
 
+    // 显示访问二维码
+    async showQRCode() {
+        try {
+            Utils.showLoading('检查访问申请状态...');
+
+            // 获取用户的已通过申请
+            const response = await Utils.request('/api/visits/applications?status=approved&limit=1');
+            const approvedApplications = response.applications || [];
+
+            if (approvedApplications.length === 0) {
+                Utils.hideLoading();
+                this.showStartApplicationModal();
+                return;
+            }
+
+            // 使用最新的已通过申请生成二维码
+            const application = approvedApplications[0];
+            await this.showVisitQRCode(application);
+            Utils.hideLoading();
+
+        } catch (error) {
+            Utils.hideLoading();
+            console.error('获取访问申请失败:', error);
+            Utils.showToast('获取访问申请失败，请重试', 'error');
+        }
+    },
+
+    // 显示开始申请确认模态框
+    showStartApplicationModal() {
+        // 创建模态框HTML
+        const modalHtml = `
+            <div class="modal" id="startApplicationModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>访问申请</h3>
+                        <button class="modal-close" onclick="UI.hideModal('startApplicationModal')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center" style="padding: 20px;">
+                            <div class="info-icon" style="font-size: 48px; color: #1976d2; margin-bottom: 20px;">
+                                📋
+                            </div>
+                            <p style="font-size: 16px; color: #333; margin-bottom: 15px;">
+                                您当前没有有效的访问申请
+                            </p>
+                            <p style="font-size: 14px; color: #666; margin-bottom: 25px;">
+                                是否现在提交一个新的访问申请？
+                            </p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline" onclick="UI.hideModal('startApplicationModal')">
+                            取消
+                        </button>
+                        <button class="btn btn-primary" onclick="FacePage.startNewApplication()">
+                            开始申请
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 添加到页面并显示
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        UI.showModal('startApplicationModal');
+    },
+
+    // 开始新的访问申请
+    startNewApplication() {
+        UI.hideModal('startApplicationModal');
+        // 切换到访问申请页面
+        PageManager.switchPage(APP_CONFIG.PAGES.VISIT);
+    },
+
+    // 显示具体申请的访问二维码
+    async showVisitQRCode(application) {
+        try {
+            // 生成访问二维码内容
+            const qrContent = JSON.stringify({
+                application_id: application.id,
+                visitor_name: application.applicant_name || application.applicant?.real_name || '未知',
+                visit_date: application.visit_date,
+                visit_purpose: application.visit_purpose,
+                status: 'approved',
+                timestamp: Date.now()
+            });
+
+            // 生成二维码
+            const canvas = document.createElement('canvas');
+            await QRCode.toCanvas(canvas, qrContent, {
+                width: 200,
+                height: 200,
+                color: {
+                    dark: '#1976d2',
+                    light: '#ffffff'
+                }
+            });
+
+            // 显示二维码模态框
+            this.showQRModal(canvas.toDataURL(), application);
+
+        } catch (error) {
+            Utils.hideLoading();
+            console.error('生成访问二维码失败:', error);
+            Utils.showToast('生成访问二维码失败', 'error');
+        }
+    },
+
+    // 显示二维码模态框
+    showQRModal(qrDataUrl, application) {
+        // 创建模态框HTML
+        const modalHtml = `
+            <div class="modal" id="visitQRModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>访问二维码</h3>
+                        <button class="modal-close" onclick="UI.hideModal('visitQRModal')">&times;</button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="qr-code-container">
+                            <img src="${qrDataUrl}" alt="访问二维码" style="width: 200px; height: 200px;" />
+                        </div>
+                        <div class="qr-code-info">
+                            <p><strong>访客：</strong>${application.applicant_name || application.applicant?.real_name || '未知'}</p>
+                            <p><strong>访问日期：</strong>${Utils.formatDate(application.visit_date)}</p>
+                            <p><strong>访问事由：</strong>${application.visit_purpose}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 如果已存在模态框，先移除
+        const existingModal = document.getElementById('visitQRModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加新模态框
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // 显示模态框
+        const modal = document.getElementById('visitQRModal');
+        if (modal) {
+            modal.classList.add('active');
+        }
+
+        // 自动隐藏加载状态
+        Utils.hideLoading();
+    },
+
     // 人脸识别成功回调
     onFaceRecognitionSuccess() {
         // 可以在这里添加识别成功后的逻辑
@@ -2017,7 +3979,7 @@ const ProfilePage = {
         try {
             // 获取访问次数 - 使用存在的接口或设置默认值
             try {
-                const visitData = await Utils.request('/visits/statistics');
+                const visitData = await Utils.request('/api/visits/statistics');
                 const visitCountElement = document.getElementById('visitCount');
                 if (visitCountElement) {
                     visitCountElement.textContent = visitData.total_visits || '0';
@@ -2032,7 +3994,7 @@ const ProfilePage = {
 
             // 获取人脸注册状态
             try {
-                const faceData = await Utils.request('/faces/status');
+                const faceData = await Utils.request('/api/faces/status');
                 const faceRegisteredElement = document.getElementById('faceRegistered');
                 if (faceRegisteredElement) {
                     faceRegisteredElement.textContent = faceData.registered ? '已注册' : '未注册';
@@ -2061,7 +4023,7 @@ const ProfilePage = {
     // 加载校友档案
     async loadAlumniProfile() {
         try {
-            const data = await Utils.request('/alumni/profile');
+            const data = await Utils.request('/api/alumni/profile');
             if (data.profile) {
                 const profile = data.profile;
                 document.getElementById('graduationYear').textContent = profile.graduation_year || '未知';
@@ -2088,8 +4050,8 @@ const ProfilePage = {
         });
 
         // 我的二维码
-        document.getElementById('myQRCode')?.addEventListener('click', () => {
-            this.showQRCode();
+        document.getElementById('myQRCode')?.addEventListener('click', async () => {
+            await this.showAlumniCardQRCode();
         });
 
         // 访问记录
@@ -2119,9 +4081,7 @@ const ProfilePage = {
 
         // 退出登录
         document.getElementById('logout')?.addEventListener('click', () => {
-            if (confirm('确定要退出登录吗？')) {
-                Auth.logout();
-            }
+            Auth.logout();
         });
 
         // 绑定模态框事件
@@ -2276,7 +4236,7 @@ const ProfilePage = {
                 formData.alumni_profile = alumniData;
             }
 
-            const data = await Utils.request('/auth/profile', {
+            const data = await Utils.request('/api/auth/profile', {
                 method: 'PUT',
                 body: JSON.stringify(formData)
             });
@@ -2300,7 +4260,7 @@ const ProfilePage = {
     showChangePasswordModal() {
         document.getElementById('currentPassword').value = '';
         document.getElementById('newPassword').value = '';
-        document.getElementById('confirmPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
         UI.showModal('changePasswordModal');
     },
 
@@ -2309,7 +4269,7 @@ const ProfilePage = {
         try {
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
+            const confirmPassword = document.getElementById('confirmNewPassword').value;
 
             // 验证输入
             if (!currentPassword || !newPassword || !confirmPassword) {
@@ -2327,7 +4287,7 @@ const ProfilePage = {
                 return;
             }
 
-            await Utils.request('/auth/change-password', {
+            await Utils.request('/api/auth/change-password', {
                 method: 'POST',
                 body: JSON.stringify({
                     current_password: currentPassword,
@@ -2342,12 +4302,17 @@ const ProfilePage = {
         }
     },
 
-    // 显示二维码
-    showQRCode() {
+    // 显示电子校友卡二维码
+    async showAlumniCardQRCode() {
+        console.log('=== showQRCode 开始执行 ===');
+
         if (!AppState.user) {
+            console.log('用户未登录');
             Utils.showToast('请先登录', 'error');
             return;
         }
+
+        console.log('当前用户:', AppState.user);
 
         // 生成二维码内容（可以包含用户ID、姓名等信息）
         const qrContent = JSON.stringify({
@@ -2357,26 +4322,130 @@ const ProfilePage = {
             timestamp: Date.now()
         });
 
+        console.log('二维码内容:', qrContent);
+
         // 显示二维码模态框
         const qrModal = document.getElementById('qrCodeModal');
+        console.log('qrCodeModal元素:', qrModal);
+
         if (qrModal) {
-            // 这里可以使用二维码库生成二维码
-            // 为了演示，我们显示一个简单的文本
+            // 清空并设置二维码容器
             const qrContainer = document.getElementById('qrCodeContainer');
+            console.log('qrCodeContainer元素:', qrContainer);
+
             if (qrContainer) {
-                qrContainer.innerHTML = `
-                    <div style="text-align: center; padding: 20px;">
-                        <div style="font-size: 12px; word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 4px;">
-                            ${qrContent}
+                // 清空容器
+                qrContainer.innerHTML = '';
+
+                // 创建二维码div
+                const qrDiv = document.createElement('div');
+                qrDiv.id = 'qrcode';
+                qrDiv.style.textAlign = 'center';
+
+                // 使用qrcode.js库生成二维码（参考电子校友卡实现）
+                if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
+                    console.log('使用QRCode.toCanvas生成二维码（参考电子校友卡）');
+
+                    try {
+                        // 创建canvas元素（参考电子校友卡实现）
+                        const canvas = document.createElement('canvas');
+
+                        // 生成访问二维码内容（简化版）
+                        const visitQrContent = JSON.stringify({
+                            type: 'visit_pass',
+                            user_id: AppState.user.id,
+                            real_name: AppState.user.real_name,
+                            valid_from: new Date().toISOString(),
+                            valid_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24小时有效期
+                            timestamp: Date.now()
+                        });
+
+                        console.log('访问二维码内容:', visitQrContent);
+
+                        // 使用toCanvas方法生成二维码（参考电子校友卡）
+                        await QRCode.toCanvas(canvas, visitQrContent, {
+                            width: 200,
+                            height: 200,
+                            margin: 1,
+                            color: {
+                                dark: '#1976d2',  // 使用电子校友卡的蓝色
+                                light: '#ffffff'
+                            },
+                            errorCorrectionLevel: 'M'
+                        });
+
+                        // 将canvas添加到容器
+                        qrDiv.appendChild(canvas);
+
+                        // 添加访问凭证信息
+                        const infoDiv = document.createElement('div');
+                        infoDiv.style.cssText = `
+                            margin-top: 15px;
+                            padding: 10px;
+                            background: #f8f9fa;
+                            border-radius: 6px;
+                            font-size: 12px;
+                            color: #666;
+                        `;
+
+                        const validFrom = new Date().toLocaleString('zh-CN');
+                        const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleString('zh-CN');
+
+                        infoDiv.innerHTML = `
+                            <div style="text-align: center; margin-bottom: 8px;">
+                                <strong style="color: #1976d2; font-size: 14px;">访问凭证</strong>
+                            </div>
+                            <div style="margin-bottom: 4px;"><strong>访客:</strong> ${AppState.user.real_name}</div>
+                            <div style="margin-bottom: 4px;"><strong>有效期:</strong></div>
+                            <div style="margin-bottom: 2px; font-size: 11px;">从: ${validFrom}</div>
+                            <div style="margin-bottom: 8px; font-size: 11px;">至: ${validUntil}</div>
+                            <div style="text-align: center; font-size: 11px; color: #999;">
+                                请在入口处出示此二维码
+                            </div>
+                        `;
+
+                        qrDiv.appendChild(infoDiv);
+                        console.log('访问二维码生成成功');
+
+                    } catch (error) {
+                        console.error('生成访问二维码时出错:', error);
+                        // 如果生成失败，显示文本内容
+                        qrDiv.innerHTML = `
+                            <div style="background: #f5f5f5; padding: 15px; border-radius: 4px; word-break: break-all; max-width: 300px; margin: 0 auto; border: 2px solid orange;">
+                                <h4 style="color: #ff6600; margin-top: 0;">二维码生成失败</h4>
+                                <p style="color: #666; font-size: 12px;">错误: ${error.message}</p>
+                                <small style="color: #666;">二维码内容:</small><br>
+                                <small>${qrContent}</small>
+                            </div>
+                        `;
+                    }
+                } else {
+                    console.log('QRCode.toCanvas不可用，显示文本内容');
+                    // 如果QRCode库不可用，显示文本内容作为备选
+                    qrDiv.innerHTML = `
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 4px; word-break: break-all; max-width: 300px; margin: 0 auto; border: 2px solid red;">
+                            <h4 style="color: #ff0000; margin-top: 0;">访问凭证</h4>
+                            <div style="margin-bottom: 8px;"><strong>访客:</strong> ${AppState.user.real_name}</div>
+                            <div style="margin-bottom: 8px;"><strong>有效期:</strong> 24小时</div>
+                            <small style="color: #666;">二维码内容:</small><br>
+                            <small style="font-size: 10px;">${qrContent}</small>
                         </div>
                         <p style="margin-top: 10px; color: #666; font-size: 12px;">
-                            请使用校园系统扫描此二维码
+                            请在入口处出示此凭证
                         </p>
-                    </div>
-                `;
+                    `;
+                }
+
+                qrContainer.appendChild(qrDiv);
+                console.log('二维码已添加到容器');
+            } else {
+                console.error('qrCodeContainer不存在');
             }
+
+            console.log('准备显示模态框');
             UI.showModal('qrCodeModal');
         } else {
+            console.error('qrCodeModal不存在');
             Utils.showToast('二维码功能暂时不可用', 'info');
         }
     },
@@ -2386,7 +4455,7 @@ const ProfilePage = {
         try {
             Utils.showLoading('加载访问记录...');
 
-            const data = await Utils.request('/visits/records');
+            const data = await Utils.request('/api/visits/records');
             const container = document.getElementById('visitRecordsContainer');
 
             if (data.records.length === 0) {
@@ -2424,9 +4493,118 @@ const ProfilePage = {
                             实际进入时间: ${new Date(record.actual_checkin_time).toLocaleString('zh-CN')}
                         </div>
                     ` : ''}
+                    ${record.status === 'approved' ? `
+                        <div class="record-qr">
+                            <button class="btn btn-primary btn-sm" onclick="ProfilePage.showVisitQRCode(${record.id})">
+                                <i class="fas fa-qrcode"></i> 访问二维码
+                            </button>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
+    },
+
+    // 显示访问二维码
+    async showVisitQRCode(applicationId) {
+        try {
+            Utils.showLoading('生成访问二维码...');
+
+            // 获取访问申请详情
+            const data = await Utils.request(`/api/visits/applications/${applicationId}`);
+            const application = data.data;
+
+            if (application.status !== 'approved') {
+                Utils.showToast('只有已通过的申请才能生成访问二维码', 'error');
+                return;
+            }
+
+            // 生成二维码内容
+            const qrContent = JSON.stringify({
+                application_id: application.id,
+                visitor_name: application.applicant_name,
+                visit_date: application.visit_date,
+                visit_purpose: application.visit_purpose,
+                status: 'approved',
+                timestamp: Date.now()
+            });
+
+            // 显示访问二维码模态框
+            this.showVisitQRCodeModal(qrContent, application);
+
+            Utils.hideLoading();
+        } catch (error) {
+            Utils.hideLoading();
+            Utils.showToast('生成访问二维码失败: ' + error.message, 'error');
+        }
+    },
+
+    // 显示访问二维码模态框
+    showVisitQRCodeModal(qrContent, application) {
+        // 创建访问二维码模态框
+        let modal = document.getElementById('visitQRCodeModal');
+        if (!modal) {
+            const modalHtml = `
+                <div class="modal" id="visitQRCodeModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>访问凭证二维码</h3>
+                            <button class="modal-close" onclick="UI.hideModal('visitQRCodeModal')">&times;</button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <div id="visitQrCodeContainer" style="padding: 20px;">
+                                <!-- QR码将在这里生成 -->
+                            </div>
+                            <div class="mt-3">
+                                <p><strong>访客:</strong> ${application.applicant_name}</p>
+                                <p><strong>访问日期:</strong> ${Utils.formatDate(application.visit_date)}</p>
+                                <p><strong>访问事由:</strong> ${application.visit_purpose}</p>
+                                <p class="text-muted small">请在入口处出示此二维码</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            modal = document.getElementById('visitQRCodeModal');
+        }
+
+        // 生成二维码
+        const qrContainer = document.getElementById('visitQrCodeContainer');
+        if (qrContainer) {
+            // 清空容器
+            qrContainer.innerHTML = '';
+
+            // 创建二维码
+            const qrDiv = document.createElement('div');
+            qrDiv.id = 'visitQrCode';
+            qrDiv.style.textAlign = 'center';
+
+            // 使用qrcode.js库生成二维码
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(qrDiv, {
+                    text: qrContent,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                // 如果没有qrcode.js库，显示文本内容作为备选
+                qrDiv.innerHTML = `
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 4px; word-break: break-all; max-width: 300px; margin: 0 auto;">
+                        <small style="color: #666;">二维码内容:</small><br>
+                        <small>${qrContent}</small>
+                    </div>
+                `;
+            }
+
+            qrContainer.appendChild(qrDiv);
+        }
+
+        // 显示模态框
+        UI.showModal('visitQRCodeModal');
     },
 
     // 显示关于我们模态框
@@ -2466,9 +4644,14 @@ const ReviewPage = {
             this.loadApplications();
         });
 
-        // 返回按钮
-        document.getElementById('backToProfile')?.addEventListener('click', () => {
-            PageManager.switchPage(APP_CONFIG.PAGES.PROFILE);
+        // 退出按钮
+        document.getElementById('exitReview')?.addEventListener('click', () => {
+            PageManager.switchPage(APP_CONFIG.PAGES.HOME);
+        });
+
+        // 刷新按钮
+        document.getElementById('refreshReviewList')?.addEventListener('click', () => {
+            this.loadApplications();
         });
     },
 
@@ -2499,7 +4682,7 @@ const ReviewPage = {
         try {
             Utils.showLoading('加载申请列表...');
 
-            let apiUrl = `/visits/applications?status=${this.currentFilter}&page=${this.currentPage}&per_page=${this.itemsPerPage}`;
+            let apiUrl = `/api/visits/applications?status=${this.currentFilter}&page=${this.currentPage}&per_page=${this.itemsPerPage}`;
 
             if (searchKeyword) {
                 apiUrl += `&search=${encodeURIComponent(searchKeyword)}`;
@@ -2580,6 +4763,13 @@ const ReviewPage = {
                     <i class="ri-close-line"></i> 拒绝
                 </button>
             `;
+        } else if (app.application_status === 'approved' || app.application_status === 'rejected') {
+            // 为已审批的申请添加撤销按钮
+            actions += `
+                <button class="btn btn-warning btn-sm revoke-btn" data-id="${app.id}">
+                    <i class="ri-refresh-line"></i> 撤销审批
+                </button>
+            `;
         }
 
         actions += `
@@ -2614,6 +4804,14 @@ const ReviewPage = {
             });
         });
 
+        // 撤销审批按钮
+        document.querySelectorAll('.revoke-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                await this.revokeApplication(id);
+            });
+        });
+
         // 详情按钮
         document.querySelectorAll('.details-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -2626,7 +4824,7 @@ const ReviewPage = {
     // 审核申请
     async reviewApplication(id, approve, note = '') {
         try {
-            await Utils.request(`/visits/applications/${id}/approve`, {
+            await Utils.request(`/api/visits/applications/${id}/approve`, {
                 method: 'POST',
                 body: JSON.stringify({
                     approve: approve,
@@ -2641,10 +4839,40 @@ const ReviewPage = {
         }
     },
 
+    // 撤销审批
+    async revokeApplication(id) {
+        try {
+            // 确认撤销
+            const confirmed = confirm('确定要撤销这个申请的审批吗？撤销后申请将重新变为待审核状态。');
+            if (!confirmed) {
+                return;
+            }
+
+            Utils.showLoading('撤销审批中...');
+
+            await Utils.request(`/api/visits/applications/${id}/revoke`, {
+                method: 'POST'
+            });
+
+            Utils.showToast('审批已撤销', 'success');
+            await this.loadApplications();
+        } catch (error) {
+            // 处理详细的权限错误信息
+            let errorMessage = error.message;
+            if (error.detail) {
+                errorMessage += `\n${error.detail}`;
+            }
+            Utils.showToast(errorMessage, 'error');
+        } finally {
+            // 确保加载状态被清除
+            Utils.hideLoading();
+        }
+    },
+
     // 显示申请详情
     async showApplicationDetails(id) {
         try {
-            const data = await Utils.request(`/visits/applications/${id}`);
+            const data = await Utils.request(`/api/visits/applications/${id}`);
             const app = data.application;
 
             // 创建详情模态框内容
@@ -2744,7 +4972,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 根据认证状态显示相应页面
         if (AppState.isAuthenticated) {
             PageManager.switchPage(APP_CONFIG.PAGES.HOME);
-        } else {
+        } else if (!window.isLoggingOut) {
             UI.showLoginModal();
         }
 
@@ -2779,3 +5007,124 @@ function showFacePreviewModal() {
 function hideFacePreviewModal() {
     FacePage.hideFacePreviewModal();
 }
+
+// 增强的最近申请刷新函数
+async function refreshRecentApplications() {
+    const refreshBtn = document.getElementById('refreshRecentApplications');
+    const refreshIcon = document.getElementById('refreshIcon');
+    const refreshText = document.getElementById('refreshText');
+    const recentApplicationsContainer = document.getElementById('recentApplications');
+
+    if (!refreshBtn || !refreshIcon || !refreshText || !recentApplicationsContainer) {
+        console.error('刷新按钮元素未找到');
+        return;
+    }
+
+    try {
+        console.log('=== 开始刷新最近申请 ===');
+
+        // 检查认证状态
+        console.log('认证状态检查:', {
+            isAuthenticated: AppState.isAuthenticated,
+            hasToken: !!AppState.token,
+            userId: AppState.user?.id,
+            userType: AppState.user?.user_type,
+            tokenLength: AppState.token?.length
+        });
+
+        if (!AppState.isAuthenticated || !AppState.token) {
+            throw new Error('用户未登录或令牌无效');
+        }
+
+        // 显示加载状态
+        refreshIcon.className = 'ri-loader-4-line animate-spin';
+        refreshText.textContent = '刷新中...';
+        refreshBtn.disabled = true;
+
+        // 记录刷新开始时间
+        const startTime = Date.now();
+
+        // 调用原始刷新函数
+        await HomePage.loadRecentApplications();
+
+        // 记录刷新完成时间
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+
+        console.log(`=== 刷新完成，耗时: ${duration}ms ===`);
+
+        // 检查容器内容
+        const containerContent = recentApplicationsContainer.innerHTML;
+        const hasApplications = containerContent.includes('application-item') || containerContent.includes('recent-application-container');
+
+        console.log('容器内容检查:', {
+            hasContent: !!containerContent,
+            hasApplications: hasApplications,
+            contentLength: containerContent.length
+        });
+
+        // 恢复按钮状态
+        refreshIcon.className = 'ri-refresh-line';
+        refreshText.textContent = '刷新';
+        refreshBtn.disabled = false;
+
+        // 如果没有申请内容，显示调试信息
+        if (!hasApplications) {
+            console.log('⚠️ 警告: 没有找到申请内容');
+
+            // 在容器中显示调试信息（仅在开发模式）
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                const debugInfo = document.createElement('div');
+                debugInfo.style.cssText = `
+                    background: #fff3cd;
+                    border: 1px solid #ffeaa7;
+                    border-radius: 4px;
+                    padding: 10px;
+                    margin-top: 10px;
+                    font-size: 12px;
+                    color: #856404;
+                `;
+                debugInfo.innerHTML = `
+                    <strong>调试信息：</strong><br>
+                    - 刷新时间: ${new Date().toLocaleTimeString()}<br>
+                    - 刷新耗时: ${duration}ms<br>
+                    - 用户状态: ${AppState.isAuthenticated ? '已登录' : '未登录'}<br>
+                    - 用户类型: ${AppState.user ? AppState.user.user_type : '未知'}<br>
+                    - Token存在: ${!!AppState.token}<br>
+                    - API地址: ${window.APP_CONFIG ? window.APP_CONFIG.API_URL : '未知'}
+                `;
+                recentApplicationsContainer.appendChild(debugInfo);
+            }
+        } else {
+            console.log('✅ 刷新成功，找到申请内容');
+        }
+
+    } catch (error) {
+        console.error('刷新最近申请失败:', error);
+
+        // 恢复按钮状态
+        refreshIcon.className = 'ri-refresh-line';
+        refreshText.textContent = '刷新';
+        refreshBtn.disabled = false;
+
+        // 显示错误信息
+        if (recentApplicationsContainer) {
+            recentApplicationsContainer.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #dc3545;">
+                    <i class="ri-error-warning-line" style="font-size: 24px;"></i>
+                    <p>刷新失败，请重试</p>
+                    <p style="font-size: 12px; color: #6c757d;">错误: ${error.message}</p>
+                </div>
+            `;
+        }
+    }
+};
+
+// 将主要对象导出到全局作用域
+window.HomePage = HomePage;
+window.Auth = Auth;
+window.UI = UI;
+window.Utils = Utils;
+window.AppState = AppState;
+window.APP_CONFIG = APP_CONFIG;
+window.PageManager = PageManager;

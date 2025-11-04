@@ -10,5 +10,6 @@ from .visit_record import VisitRecord
 from .target_person import TargetPerson
 from .school_calendar import SchoolCalendar, EventBooking
 from .organization import Organization, UserRole, UserRoleAssignment
+from .student_exit_application import StudentExitApplication
 
-__all__ = ['User', 'AlumniProfile', 'VisitApplication', 'FaceData', 'VisitRecord', 'TargetPerson', 'SchoolCalendar', 'EventBooking', 'Organization', 'UserRole', 'UserRoleAssignment']
+__all__ = ['User', 'AlumniProfile', 'VisitApplication', 'FaceData', 'VisitRecord', 'TargetPerson', 'SchoolCalendar', 'EventBooking', 'Organization', 'UserRole', 'UserRoleAssignment', 'StudentExitApplication']

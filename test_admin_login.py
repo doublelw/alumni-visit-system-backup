@@ -1,72 +1,80 @@
-#!/usr/bin/env python3
-"""
-测试管理员登录
-"""
-
 import requests
 import json
-import sys
-from urllib3.exceptions import InsecureRequestWarning
-
-# 禁用SSL警告
-requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 def test_admin_login():
     """测试管理员登录"""
+    login_url = "http://localhost:5000/api/auth/login"
 
-    login_url = 'https://127.0.0.1:5000/api/auth/login'
-    dashboard_url = 'https://127.0.0.1:5000/api/admin/dashboard'
-
-    # 登录数据
     login_data = {
-        'username': 'admin',
-        'password': 'admin123'
+        "username": "admin",
+        "password": "admin123"
     }
 
     try:
-        print("=== 测试管理员登录 ===")
+        print("Testing admin login...")
+        response = requests.post(login_url, json=login_data)
 
-        # 第一步：登录
-        print("1. 尝试登录...")
-        response = requests.post(login_url, json=login_data, verify=False)
-
-        print(f"状态码: {response.status_code}")
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {response.text}")
 
         if response.status_code == 200:
-            login_result = response.json()
-            print("登录成功!")
-            print(f"用户信息: {json.dumps(login_result.get('user', {}), indent=2, ensure_ascii=False)}")
-
-            token = login_result.get('access_token')
-            if token:
-                print(f"Token长度: {len(token)}")
-
-                # 第二步：使用token访问管理界面
-                print("\n2. 尝试访问管理仪表板...")
-                headers = {'Authorization': f'Bearer {token}'}
-                dashboard_response = requests.get(dashboard_url, headers=headers, verify=False)
-
-                print(f"仪表板状态码: {dashboard_response.status_code}")
-
-                if dashboard_response.status_code == 200:
-                    print("仪表板访问成功!")
-                    dashboard_data = dashboard_response.json()
-                    print(f"仪表板数据: {json.dumps(dashboard_data, indent=2, ensure_ascii=False)}")
-                else:
-                    print("仪表板访问失败!")
-                    print(f"错误信息: {dashboard_response.text}")
+            data = response.json()
+            if "access_token" in data:
+                print("SUCCESS: Admin login successful!")
+                return data["access_token"]
             else:
-                print("未获取到访问令牌")
+                print("ERROR: No token in response")
+                return None
         else:
-            print("登录失败!")
-            print(f"错误信息: {response.text}")
+            print("ERROR: Admin login failed")
+            return None
 
-    except requests.exceptions.SSLError:
-        print("SSL连接错误 - 请检查服务器是否正在运行HTTPS")
-    except requests.exceptions.ConnectionError:
-        print("连接错误 - 请检查服务器是否正在运行")
     except Exception as e:
-        print(f"测试失败: {e}")
+        print(f"ERROR: {e}")
+        return None
 
-if __name__ == '__main__':
-    test_admin_login()
+def test_admin_users_api(token):
+    """测试管理员用户API"""
+    users_url = "http://localhost:5000/api/admin/users"
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        print("\nTesting admin users API...")
+        response = requests.get(users_url, headers=headers)
+
+        print(f"Status Code: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+            print("SUCCESS: Admin users API access successful!")
+            print(f"Found {len(data.get(\"users\", []))} users")
+            return True
+        else:
+            print(f"ERROR: Admin users API access failed: {response.text}")
+            return False
+
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return False
+
+if __name__ == "__main__":
+    print("=== Admin Permission Test ===")
+    print()
+
+    # Test admin login
+    token = test_admin_login()
+
+    if token:
+        # Test admin API access
+        success = test_admin_users_api(token)
+
+        if success:
+            print("\nSUCCESS: All admin permission tests passed!")
+        else:
+            print("\nERROR: Admin API test failed")
+    else:
+        print("\nERROR: Cannot test admin API without token")

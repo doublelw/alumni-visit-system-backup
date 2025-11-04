@@ -79,7 +79,7 @@ class AlumniCard {
     async loadCardData() {
         try {
             // 获取当前用户信息
-            const token = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.TOKEN);
+            const token = localStorage.getItem('auth_token');
             if (!token) {
                 return;
             }
@@ -104,33 +104,14 @@ class AlumniCard {
     prepareQRCodeData() {
         if (!this.cardData) return;
 
-        // 准备QR码数据
-        this.qrCodeData = {
-            type: 'alumni_card',
-            userId: this.cardData.id,
-            realName: this.cardData.real_name,
-            studentId: this.cardData.alumni_profile?.student_id || '',
-            graduationYear: this.cardData.alumni_profile?.graduation_year || '',
-            className: this.cardData.alumni_profile?.class_name || '',
-            phone: this.cardData.phone,
-            email: this.cardData.email,
-            timestamp: new Date().toISOString(),
-            signature: this.generateSignature()
-        };
+        // 获取当前域名和端口
+        const currentHost = window.location.origin;
+
+        // 准备QR码数据 - 只保存校友档案API链接
+        this.qrCodeData = `${currentHost}/api/alumni/profile/verify/${this.cardData.id}`;
     }
 
-    generateSignature() {
-        // 简单的签名生成（实际项目中应该使用更安全的签名方式）
-        const data = JSON.stringify(this.qrCodeData);
-        let hash = 0;
-        for (let i = 0; i < data.length; i++) {
-            const char = data.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return Math.abs(hash).toString(16);
-    }
-
+    
     async showCard() {
         if (!this.cardData) {
             await this.loadCardData();
@@ -193,65 +174,73 @@ class AlumniCard {
                     </div>
 
                     <!-- 校友信息区域 -->
-                    <div style="padding: 16px;">
+                    <div style="padding: 12px;">
                         <!-- 姓名区域 - 身份证样式 -->
-                        <div style="margin-bottom: 12px;">
-                            <div style="font-size: 11px; color: #666; margin-bottom: 3px; font-weight: 500;">姓名 NAME</div>
-                            <div style="font-size: 20px; font-weight: bold; color: #333; border-bottom: 1px solid #e9ecef; padding-bottom: 4px; letter-spacing: 1px;">${this.cardData.real_name || '校友姓名'}</div>
+                        <div style="margin-bottom: 8px;">
+                            <div style="font-size: 10px; color: #666; margin-bottom: 2px; font-weight: 500;">姓名 NAME</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #333; border-bottom: 1px solid #e9ecef; padding-bottom: 3px; letter-spacing: 1px;">${this.cardData.real_name || '校友姓名'}</div>
                         </div>
 
                         <!-- 基本信息网格 - 身份证信息样式 -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 12px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 6px; margin-bottom: 8px; font-size: 11px;">
                             <div>
-                                <div style="font-size: 10px; color: #666; margin-bottom: 2px;">学号</div>
-                                <div style="font-weight: 600; color: #333; font-family: 'Courier New', monospace;">${this.cardData.alumni_profile?.student_id || 'N/A'}</div>
+                                <div style="font-size: 9px; color: #666; margin-bottom: 1px;">学号</div>
+                                <div style="font-weight: 600; color: #333; font-family: 'Courier New', monospace; font-size: 10px;">${this.cardData.alumni_profile?.student_id || 'N/A'}</div>
                             </div>
                             <div>
-                                <div style="font-size: 10px; color: #666; margin-bottom: 2px;">毕业年份</div>
-                                <div style="font-weight: 600; color: #333;">${this.cardData.alumni_profile?.graduation_year || 'N/A'}</div>
+                                <div style="font-size: 9px; color: #666; margin-bottom: 1px;">毕业年份</div>
+                                <div style="font-weight: 600; color: #333; font-size: 10px;">${this.cardData.alumni_profile?.graduation_year || 'N/A'}</div>
                             </div>
                             <div>
-                                <div style="font-size: 10px; color: #666; margin-bottom: 2px;">班级</div>
-                                <div style="font-weight: 600; color: #333;">${this.cardData.alumni_profile?.class_name || 'N/A'}</div>
+                                <div style="font-size: 9px; color: #666; margin-bottom: 1px;">班级</div>
+                                <div style="font-weight: 600; color: #333; font-size: 10px;">${this.cardData.alumni_profile?.class_name || 'N/A'}</div>
                             </div>
                             <div>
-                                <div style="font-size: 10px; color: #666; margin-bottom: 2px;">届别</div>
-                                <div style="font-weight: 600; color: #333;">${this.cardData.alumni_profile?.division || 'N/A'}</div>
+                                <div style="font-size: 9px; color: #666; margin-bottom: 1px;">届别</div>
+                                <div style="font-weight: 600; color: #333; font-size: 10px;">${this.cardData.alumni_profile?.division || 'N/A'}</div>
                             </div>
                         </div>
 
-                        <!-- 二维码和有效期区域 -->
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-                            <!-- 有效期 -->
-                            <div style="flex: 1;">
-                                <div style="font-size: 10px; color: #666; margin-bottom: 2px;">发卡时间 ISSUE DATE</div>
-                                <div style="font-weight: 600; color: #333; font-size: 11px;">${issueTime}</div>
-                                <div style="font-size: 10px; color: #666; margin-top: 8px; margin-bottom: 2px;">档案号 ARCHIVE NO.</div>
-                                <div style="font-weight: 600; color: #1976d2; font-family: 'Courier New', monospace; font-size: 11px;">${alumniId}</div>
+                        <!-- 扩展信息区域 -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 4px; margin-bottom: 8px; font-size: 10px;">
+                            <div>
+                                <div style="font-size: 9px; color: #666; margin-bottom: 1px;">所在城市</div>
+                                <div style="font-weight: 600; color: #333; font-size: 10px;">${this.cardData.alumni_profile?.city || 'N/A'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 9px; color: #666; margin-bottom: 1px;">工作单位</div>
+                                <div style="font-weight: 600; color: #333; font-size: 10px; word-break: break-all;">${this.cardData.alumni_profile?.company || 'N/A'}</div>
+                            </div>
+                        </div>
+
+                        <!-- 职务信息（如果有） -->
+                        <div style="margin-bottom: 8px; font-size: 10px;">
+                            <div style="font-size: 9px; color: #666; margin-bottom: 1px;">职务</div>
+                            <div style="font-weight: 600; color: #333; font-size: 10px;">${this.cardData.alumni_profile?.position || 'N/A'}</div>
+                        </div>
+
+                        <!-- 二维码和档案信息区域 -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <!-- 档案信息 -->
+                            <div style="flex: 1; padding-right: 8px;">
+                                <div style="font-size: 9px; color: #666; margin-bottom: 1px;">发卡时间 ISSUE DATE</div>
+                                <div style="font-weight: 600; color: #333; font-size: 9px;">${issueTime}</div>
+                                <div style="font-size: 9px; color: #666; margin-top: 4px; margin-bottom: 1px;">档案号 ARCHIVE NO.</div>
+                                <div style="font-weight: 600; color: #1976d2; font-family: 'Courier New', monospace; font-size: 9px; word-break: break-all;">${alumniId}</div>
+                                <div style="font-size: 9px; color: #666; margin-top: 4px; margin-bottom: 1px;">电话 TEL</div>
+                                <div style="font-weight: 600; color: #333; font-size: 9px; word-break: break-all;">${this.cardData.phone || 'N/A'}</div>
+                                <div style="font-size: 9px; color: #666; margin-top: 4px; margin-bottom: 1px;">身份证 ID</div>
+                                <div style="font-weight: 600; color: #333; font-family: 'Courier New', monospace; font-size: 9px;">${maskedIdCard}</div>
                             </div>
 
                             <!-- 二维码区域 -->
-                            <div style="text-align: center; margin-top: 15px;">
-                                <div style="background: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; display: inline-block;">
-                                    <div style="font-size: 10px; color: #666; margin-bottom: 8px; text-align: center; font-weight: 500;">扫码验证校友身份</div>
-                                    <div id="alumniQRCode" style="background: white; border: 2px solid #1976d2; padding: 8px; border-radius: 6px; display: inline-block; box-shadow: 0 2px 8px rgba(25,118,210,0.2);">
+                            <div style="text-align: center; flex-shrink: 0;">
+                                <div style="background: #f8f9fa; border: 1px solid #e9ecef; padding: 8px; border-radius: 6px; display: inline-block;">
+                                    <div style="font-size: 8px; color: #666; margin-bottom: 4px; text-align: center; font-weight: 500;">扫码验证</div>
+                                    <div id="alumniQRCode" style="background: white; border: 1px solid #1976d2; padding: 4px; border-radius: 4px; display: inline-block; box-shadow: 0 1px 4px rgba(25,118,210,0.15);">
                                         <!-- 校友QR码将在这里显示 -->
                                     </div>
-                                    <div style="font-size: 8px; color: #999; margin-top: 8px; text-align: center;">校友身份验证码</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 底部信息 -->
-                        <div style="border-top: 1px solid #e9ecef; padding-top: 8px; margin-top: 10px;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10px;">
-                                <div>
-                                    <div style="color: #666; margin-bottom: 2px;">电话 TEL</div>
-                                    <div style="font-weight: 600; color: #333;">${this.cardData.phone || 'N/A'}</div>
-                                </div>
-                                <div>
-                                    <div style="color: #666; margin-bottom: 2px;">身份证 ID</div>
-                                    <div style="font-weight: 600; color: #333; font-family: 'Courier New', monospace;">${maskedIdCard}</div>
+                                    <div style="font-size: 7px; color: #999; margin-top: 4px; text-align: center;">校友身份验证</div>
                                 </div>
                             </div>
                         </div>
@@ -444,9 +433,9 @@ class AlumniCard {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
-            // 设置画布尺寸
-            canvas.width = 800;
-            canvas.height = 500;
+            // 设置画布尺寸 (更接近手机屏幕比例)
+            canvas.width = 720;
+            canvas.height = 960;
 
             // 绘制白色背景
             ctx.fillStyle = '#ffffff';
@@ -457,49 +446,243 @@ class AlumniCard {
             gradient.addColorStop(0, '#1976d2');
             gradient.addColorStop(1, '#1565c0');
             ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, 120);
+            ctx.fillRect(0, 0, canvas.width, 160);
+
+            // 添加顶部装饰线
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(20, 130);
+            ctx.lineTo(canvas.width - 20, 130);
+            ctx.stroke();
+
+            // 添加校徽区域装饰
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.beginPath();
+            ctx.arc(80, 80, 30, 0, Math.PI * 2);
+            ctx.fill();
 
             // 添加标题
             ctx.fillStyle = 'white';
-            ctx.font = 'bold 28px Arial';
+            ctx.font = 'bold 24px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('辽宁省实验中学电子校友卡', canvas.width / 2, 50);
+            ctx.fillText('辽宁省实验中学', canvas.width / 2, 60);
+            ctx.font = 'bold 32px Arial';
+            ctx.fillText('电子校友卡', canvas.width / 2, 95);
+
+            // 添加英文标题
+            ctx.font = '14px Arial';
+            ctx.fillText('ELECTRONIC ALUMNI CARD', canvas.width / 2, 120);
 
             // 校友档案号
             const alumniId = 'ALU' + String(this.cardData.id).padStart(6, '0');
-            ctx.font = '16px Arial';
-            ctx.fillText(`档案号: ${alumniId}`, canvas.width / 2, 85);
+            ctx.font = '12px monospace';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText(`档案号: ${alumniId}`, canvas.width / 2, 145);
 
-            // 恢复左对齐
+            // 绘制校友信息区域 - 仿身份证布局
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(30, 180, canvas.width - 60, 600);
+
+            // 添加边框
+            ctx.strokeStyle = '#e9ecef';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(30, 180, canvas.width - 60, 600);
+
+            // 左侧信息
             ctx.textAlign = 'left';
-
-            // 绘制校友信息区域
-            ctx.fillStyle = '#f8f9fa';
-            ctx.fillRect(30, 140, canvas.width - 60, 180);
-
-            // 添加校友信息
             ctx.fillStyle = '#333333';
-            ctx.font = '20px Arial';
-            ctx.fillText(`姓名: ${this.cardData.real_name || '-'}`, 50, 180);
-            ctx.fillText(`学号: ${this.cardData.alumni_profile?.student_id || '-'}`, 50, 215);
-            ctx.fillText(`毕业年份: ${this.cardData.alumni_profile?.graduation_year || '-'}`, 50, 250);
-            ctx.fillText(`班级: ${this.cardData.alumni_profile?.class_name || '-'}`, 50, 285);
 
-            // 右侧信息
-            ctx.textAlign = 'right';
-            ctx.fillText(`身份证: ${this.cardData.alumni_profile?.id_card ? this.cardData.alumni_profile.id_card.slice(-4) : '****'}`, canvas.width - 50, 180);
-            ctx.fillText(`电话: ${this.cardData.phone || '-'}`, canvas.width - 50, 215);
-            ctx.fillText(`邮箱: ${this.cardData.email || '-'}`, canvas.width - 50, 250);
+            // 姓名
+            ctx.font = 'bold 28px Arial';
+            ctx.fillText('姓名', 60, 230);
+            ctx.font = '24px Arial';
+            ctx.fillText(this.cardData.real_name || '-', 120, 230);
+
+            // 绘制分隔线
+            ctx.strokeStyle = '#e9ecef';
+            ctx.beginPath();
+            ctx.moveTo(60, 250);
+            ctx.lineTo(canvas.width - 60, 250);
+            ctx.stroke();
+
+            // 基本信息 - 仿身份证紧凑布局
+            const leftInfoItems = [
+                { label: '学号', value: this.cardData.alumni_profile?.student_id || '-', y: 290 },
+                { label: '毕业年份', value: this.cardData.alumni_profile?.graduation_year || '-', y: 330 }
+            ];
+
+            const rightInfoItems = [
+                { label: '班级', value: this.cardData.alumni_profile?.class_name || '-', y: 290 },
+                { label: '届别', value: this.cardData.alumni_profile?.division || '-', y: 330 }
+            ];
+
+            // 扩展信息
+            const extendedInfoItems = [
+                { label: '所在城市', value: this.cardData.alumni_profile?.city || '-', y: 370 },
+                { label: '工作单位', value: this.cardData.alumni_profile?.company || '-', y: 370 }
+            ];
+
+            const positionInfo = [
+                { label: '职务', value: this.cardData.alumni_profile?.position || '-', y: 410 }
+            ];
 
             // 底部信息
-            ctx.textAlign = 'center';
+            const bottomInfoItems = [
+                { label: '联系电话', value: this.cardData.phone || '-', y: 450 },
+                { label: '身份证号', value: this.maskIdCard(this.cardData.alumni_profile?.id_card) || '-', y: 480 }
+            ];
+
+            // 绘制基本信息（两列）
+            ctx.font = '16px Arial';
             ctx.fillStyle = '#666666';
+
+            leftInfoItems.forEach(item => {
+                ctx.fillText(item.label, 60, item.y);
+                ctx.fillStyle = '#333333';
+                ctx.fillText(item.value, 150, item.y);
+                ctx.fillStyle = '#666666';
+            });
+
+            rightInfoItems.forEach(item => {
+                ctx.fillText(item.label, 340, item.y);
+                ctx.fillStyle = '#333333';
+                ctx.fillText(item.value, 400, item.y);
+                ctx.fillStyle = '#666666';
+            });
+
+            // 绘制扩展信息（两列）
+            ctx.font = '15px Arial';
+
+            // 城市信息（左列）
+            ctx.fillText(extendedInfoItems[0].label, 60, extendedInfoItems[0].y);
+            ctx.fillStyle = '#333333';
+            ctx.fillText(extendedInfoItems[0].value, 150, extendedInfoItems[0].y);
+            ctx.fillStyle = '#666666';
+
+            // 工作单位信息（右列，可能较长需要换行）
+            ctx.fillText(extendedInfoItems[1].label, 340, extendedInfoItems[1].y);
+            ctx.fillStyle = '#333333';
+            const maxWidth = 160;
+            const companyText = extendedInfoItems[1].value;
+            let usedLines = 1; // 记录工作单位占用的行数
+
+            if (ctx.measureText(companyText).width > maxWidth) {
+                const words = companyText.split('');
+                let line = '';
+                let y = extendedInfoItems[1].y;
+                for (let i = 0; i < words.length; i++) {
+                    const testLine = line + words[i];
+                    if (ctx.measureText(testLine).width > maxWidth && line !== '') {
+                        ctx.fillText(line, 400, y);
+                        line = words[i];
+                        y += 18;
+                        usedLines++;
+                    } else {
+                        line = testLine;
+                    }
+                }
+                ctx.fillText(line, 400, y);
+            } else {
+                ctx.fillText(companyText, 400, extendedInfoItems[1].y);
+            }
+            ctx.fillStyle = '#666666';
+
+            // 职务信息 - 需要根据工作单位是否换行来调整Y坐标
+            const adjustedPositionY = 410 + (usedLines > 1 ? (usedLines - 1) * 18 : 0);
+            ctx.font = '15px Arial';
+            ctx.fillText(positionInfo[0].label, 60, adjustedPositionY);
+            ctx.fillStyle = '#333333';
+            ctx.fillText(positionInfo[0].value, 150, adjustedPositionY);
+            ctx.fillStyle = '#666666';
+
+            // 底部信息 - 也需要调整Y坐标
+            const adjustedBottomY = 450 + (usedLines > 1 ? (usedLines - 1) * 18 : 0);
             ctx.font = '14px Arial';
-            ctx.fillText('此卡为校友身份唯一有效证明', canvas.width / 2, 380);
+            bottomInfoItems.forEach((item, index) => {
+                const currentY = adjustedBottomY + (index * 25);
+                ctx.fillText(item.label, 60, currentY);
+                ctx.fillStyle = '#333333';
+                ctx.fillText(item.value, 150, currentY);
+                ctx.fillStyle = '#666666';
+            });
+
+    
+            // 右侧QR码区域
+            if (this.qrCodeData) {
+                // 生成二维码
+                const qrCanvas = document.createElement('canvas');
+                const QRCode = window.QRCode;
+
+                QRCode.toCanvas(qrCanvas, this.qrCodeData, {
+                    width: 180,
+                    height: 180,
+                    margin: 1,
+                    color: {
+                        dark: '#1976d2',
+                        light: '#ffffff'
+                    },
+                    errorCorrectionLevel: 'M'
+                }).then(() => {
+                    // 绘制QR码到校友卡中间下方
+                    const qrSize = 180;
+                    const qrX = (canvas.width - qrSize) / 2; // 水平居中
+                    const qrY = canvas.height - 280; // 距离底部280px
+
+                    // QR码背景
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
+                    ctx.strokeStyle = '#1976d2';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
+
+                    // 绘制QR码
+                    ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+
+                    // QR码说明
+                    ctx.fillStyle = '#666666';
+                    ctx.font = '14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('扫码验证校友身份', canvas.width / 2, qrY + qrSize + 30);
+
+                    // 完成下载
+                    this.completeDownload(canvas);
+                              }).catch(error => {
+                    console.error('QR码生成失败:', error);
+                    // 不生成QR码的情况下继续下载
+                    this.completeDownload(canvas);
+                });
+            } else {
+                this.completeDownload(canvas);
+            }
+
+        } catch (error) {
+            console.error('下载失败:', error);
+            this.showToast('下载失败，请稍后重试', 'error');
+        }
+    }
+
+    completeDownload(canvas) {
+        try {
+            const ctx = canvas.getContext('2d');
+
+            // 添加校训
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#1976d2';
+            ctx.font = 'italic 16px Arial';
+            ctx.fillText('明心知往，力行求至', canvas.width / 2, 850);
+
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#666666';
+            ctx.fillText('辽宁省实验中学校训', canvas.width / 2, 875);
+
+            // 底部信息
+            ctx.font = '12px Arial';
+            ctx.fillText('此卡为校友身份唯一有效证明', canvas.width / 2, 910);
 
             // 发卡时间
             const issueTime = new Date(this.cardData.alumni_profile?.created_at || new Date()).toLocaleDateString();
-            ctx.fillText(`发卡时间: ${issueTime}`, canvas.width / 2, 410);
+            ctx.fillText(`发卡时间: ${issueTime}`, canvas.width / 2, 935);
 
             // 下载图片
             const link = document.createElement('a');
@@ -509,7 +692,7 @@ class AlumniCard {
 
             this.showToast('校友卡已下载', 'success');
         } catch (error) {
-            console.error('下载失败:', error);
+            console.error('完成下载失败:', error);
             this.showToast('下载失败，请稍后重试', 'error');
         }
     }
@@ -533,6 +716,12 @@ class AlumniCard {
             console.error('分享失败:', error);
             this.showToast('分享失败，请稍后重试', 'error');
         }
+    }
+
+    maskIdCard(idCard) {
+        if (!idCard) return 'N/A';
+        if (idCard.length <= 4) return idCard;
+        return idCard.slice(0, 3) + '*'.repeat(idCard.length - 6) + idCard.slice(-3);
     }
 
     showToast(message, type = 'info') {

@@ -1,45 +1,56 @@
 #!/usr/bin/env python3
 """
-调试数据库问题
+调试数据库连接的简单Flask应用
 """
-import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
+import sys
+import sqlite3
 
-from app import create_app, db
-from app.models.user import User
-from app.models.visit_application import VisitApplication
+# 设置路径
+os.chdir("/var/www/lsalumni")
+sys.path.insert(0, "/var/www/lsalumni")
+sys.path.insert(0, "/var/www/lsalumni/backend")
 
-def debug_database():
-    """调试数据库问题"""
-    app = create_app()
+from flask import Flask, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 
-    with app.app_context():
-        print("=== 数据库调试信息 ===")
+app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////var/www/lsalumni/lsalumni.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-        # 检查用户
-        users = User.query.all()
-        print(f"用户总数: {len(users)}")
-        for user in users:
-            print(f"用户ID: {user.id}, 用户名: {user.username}, 类型: {user.user_type}")
+db = SQLAlchemy(app)
 
-        # 检查访问申请
-        try:
-            applications = VisitApplication.query.all()
-            print(f"访问申请总数: {len(applications)}")
-            for app in applications:
-                print(f"申请ID: {app.id}, 申请人ID: {app.applicant_id}, 状态: {app.application_status}")
-        except Exception as e:
-            print(f"查询访问申请出错: {e}")
-            print(f"错误类型: {type(e)}")
+@app.route('/debug-db')
+def debug_db():
+    """调试数据库连接"""
+    try:
+        with app.app_context():
+            # 检查表
+            result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table';"))
+            tables = [row[0] for row in result]
 
-            # 检查表结构
-            print("\n=== VisitApplication表结构 ===")
-            from sqlalchemy import inspect
-            inspector = inspect(db.engine)
-            columns = inspector.get_columns('visit_applications')
-            for col in columns:
-                print(f"列名: {col['name']}, 类型: {col['type']}")
+            # 检查用户
+            users_info = []
+            if 'users' in tables:
+                result = db.session.execute(text("SELECT username, real_name, user_type, status FROM users;"))
+                users_info = [dict(row) for row in result]
 
-if __name__ == "__main__":
-    debug_database()
+            return jsonify({
+                'status': 'success',
+                'working_directory': os.getcwd(),
+                'database_uri': app.config["SQLALCHEMY_DATABASE_URI"],
+                'tables': tables,
+                'users': users_info
+            })
+
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'working_directory': os.getcwd(),
+            'database_uri': app.config["SQLALCHEMY_DATABASE_URI"]
+        }), 500
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5001, debug=True)

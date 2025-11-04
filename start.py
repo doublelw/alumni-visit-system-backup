@@ -91,24 +91,38 @@ def start_server(dev_mode=True):
         # 启动Flask开发服务器
         os.chdir("backend")
 
-        # 检查证书是否存在
-        cert_path = "../config/certificates/localhost.crt"
-        key_path = "../config/certificates/localhost.key"
+        # 开发环境优先使用HTTP，避免浏览器SSL警告
+        print("开发环境模式：使用HTTP启动服务器")
+        print("请在浏览器中访问 http://localhost:5000")
+        print("如需HTTPS模式，请使用 python start.py dev --ssl")
 
-        if os.path.exists(cert_path) and os.path.exists(key_path):
-            # 使用HTTPS
-            subprocess.call([
-                sys.executable, "-m", "flask",
-                "run",
-                "--host=0.0.0.0",
-                "--port=5000",
-                "--cert=" + cert_path,
-                "--key=" + key_path
-            ])
+        # 检查是否有SSL参数
+        use_ssl = "--ssl" in sys.argv
+
+        if use_ssl:
+            # 检查证书是否存在
+            cert_path = "../config/certificates/localhost.crt"
+            key_path = "../config/certificates/localhost.key"
+
+            if os.path.exists(cert_path) and os.path.exists(key_path):
+                # 使用HTTPS
+                print("使用HTTPS模式启动")
+                print("请在浏览器中访问 https://localhost:5000")
+                print("注意：由于使用自签名证书，浏览器可能会显示安全警告，请点击'继续访问'")
+                subprocess.call([
+                    sys.executable, "-m", "flask",
+                    "run",
+                    "--host=0.0.0.0",
+                    "--port=5000",
+                    "--cert=" + cert_path,
+                    "--key=" + key_path
+                ])
+            else:
+                print("错误: SSL证书文件不存在，无法启动HTTPS模式")
+                print("请使用HTTP模式: python start.py dev")
+                return
         else:
-            # 使用HTTP（开发环境）
-            print("警告: SSL证书不存在，使用HTTP模式启动")
-            print("请在浏览器中访问 http://localhost:5000")
+            # 使用HTTP（开发环境默认）
             subprocess.call([
                 sys.executable, "-m", "flask",
                 "run",

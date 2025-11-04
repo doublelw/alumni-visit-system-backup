@@ -4,6 +4,7 @@
 
 from datetime import datetime, date, time
 from app import db
+import json
 
 class VisitApplication(db.Model):
     """访问申请表"""
@@ -26,6 +27,8 @@ class VisitApplication(db.Model):
     approval_note = db.Column(db.Text)
     needs_profile_approval = db.Column(db.Boolean, default=False)  # 是否需要校友档案审核
     qr_code = db.Column(db.String(500))  # 二维码数据
+    visit_started = db.Column(db.Boolean, default=False)  # 访问是否已开始
+    visit_start_time = db.Column(db.DateTime)  # 访问开始时间
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -46,6 +49,8 @@ class VisitApplication(db.Model):
             'approval_time': self.approval_time.isoformat() if self.approval_time else None,
             'approval_note': self.approval_note,
             'needs_profile_approval': self.needs_profile_approval,
+            'visit_started': self.visit_started,
+            'visit_start_time': self.visit_start_time.isoformat() if self.visit_start_time else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
@@ -54,6 +59,33 @@ class VisitApplication(db.Model):
             data['qr_code'] = self.qr_code
 
         return data
+
+    @property
+    def visitor_info(self):
+        """获取访客信息"""
+        if self.qr_code:
+            try:
+                # 尝试解析QR码中的JSON数据
+                qr_data = json.loads(self.qr_code)
+                if isinstance(qr_data, dict):
+                    return qr_data.get('visitor_info', {})
+            except (json.JSONDecodeError, AttributeError):
+                pass
+        return {}
+
+    @visitor_info.setter
+    def visitor_info(self, value):
+        """设置访客信息"""
+        if value:
+            # 将访客信息存储在qr_code字段中
+            qr_data = {
+                'visitor_info': value,
+                'type': 'visit_application',
+                'id': self.id
+            }
+            self.qr_code = json.dumps(qr_data, ensure_ascii=False)
+        else:
+            self.qr_code = None
 
     def __repr__(self):
         return f'<VisitApplication {self.id}>'

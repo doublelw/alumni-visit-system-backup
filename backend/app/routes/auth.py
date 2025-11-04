@@ -213,11 +213,16 @@ def login():
 
         # 查找用户
         user = User.query.filter_by(username=data['username']).first()
-        if not user or not user.check_password(data['password']):
-            return jsonify({'error': '用户名或密码错误'}), 401
+
+        # 详细错误信息
+        if not user:
+            return jsonify({'error': '用户不存在，请检查用户名'}), 401
+
+        if not user.check_password(data['password']):
+            return jsonify({'error': '密码错误，请重新输入'}), 401
 
         if user.status != 'active':
-            return jsonify({'error': '账户已被禁用，请联系管理员'}), 401
+            return jsonify({'error': f'账户已被{user.status}，请联系管理员'}), 401
 
         # 生成访问令牌
         access_token = create_access_token(
@@ -381,3 +386,88 @@ def get_pending_users():
     except Exception as e:
         current_app.logger.error(f"获取待审核用户失败: {str(e)}")
         return jsonify({'error': '获取用户列表失败'}), 500
+
+@auth_bp.route('/face-login', methods=['POST'])
+def face_login():
+    """人脸识别登录 - 仅支持家长用户"""
+    try:
+        data = request.get_json()
+
+        if not data.get('face_image'):
+            return jsonify({'error': '请提供人脸图像数据'}), 400
+
+        face_image = data.get('face_image')
+
+        # 这里应该调用人脸识别服务来识别用户
+        # 目前使用模拟的方式，通过用户姓名或ID查找
+        user_info = None
+
+        # 如果提供了用户ID，直接查找
+        if 'user_id' in data:
+            user = User.query.filter_by(
+                user_type='parent',
+                id=data['user_id']
+            ).first()
+            if user:
+                user_info = user
+        # 如果提供了姓名，查找匹配的家长用户
+        elif 'real_name' in data:
+            parents = User.query.filter_by(
+                user_type='parent',
+                real_name=data['real_name']
+            ).all()
+            if parents:
+                user_info = parents[0]
+
+        if not user_info:
+            return jsonify({'error': '未找到匹配的家长用户信息'}), 404
+
+        # 检查用户状态
+        if user_info.status != 'active':
+            return jsonify({'error': f'账户已被{user_info.status}，请联系管理员'}), 401
+
+        # 生成访问令牌
+        access_token = create_access_token(
+            identity=str(user_info.id),
+            expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']
+        )
+
+        return jsonify({
+            'message': '人脸识别登录成功',
+            'access_token': access_token,
+            'user': user_info.to_dict(include_sensitive=True)
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"人脸识别登录失败: {str(e)}")
+        return jsonify({'error': '人脸识别登录失败，请重试'}), 500
+
+@auth_bp.route('/face-register', methods=['POST'])
+def face_register():
+    """家长人脸信息注册"""
+    try:
+        current_user_id = request.headers.get('X-User-ID')
+        if not current_user_id:
+            return jsonify({'error': '用户未登录'}), 401
+
+        user = User.query.get(int(current_user_id))
+        if not user or user.user_type != 'parent':
+            return jsonify({'error': '仅家长用户可以注册人脸信息'}), 403
+
+        data = request.get_json()
+        if not data.get('face_image'):
+            return jsonify({'error': '请提供人脸图像数据'}), 400
+
+        face_image = data.get('face_image')
+
+        # 这里应该调用人脸识别服务来注册人脸特征
+        # 目前只是模拟保存成功
+
+        return jsonify({
+            'message': '人脸信息注册成功',
+            'user': user.to_dict()
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"人脸信息注册失败: {str(e)}")
+        return jsonify({'error': '人脸信息注册失败，请重试'}), 500

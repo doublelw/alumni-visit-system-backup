@@ -6,6 +6,16 @@ Gunicorn生产环境配置文件
 
 import multiprocessing
 import os
+import sys
+
+# 添加项目路径到Python路径
+project_root = "/var/www/lsalumni"
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+    sys.path.insert(0, os.path.join(project_root, "backend"))
+
+# 设置工作目录
+os.chdir(project_root)
 
 # 服务器socket
 bind = "127.0.0.1:5000"

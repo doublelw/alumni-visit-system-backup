@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完整用户创建功能测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button { padding: 10px 20px; background: #007cba; color: white; border: none; cursor: pointer; margin: 5px; border-radius: 3px; }
+        button:hover { background: #005a87; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .step { margin: 15px 0; padding: 15px; border-left: 4px solid #007cba; background: #f8f9fa; border-radius: 0 5px 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 完整用户创建功能测试</h1>
+
+    <div class="info">
+        <h3>📋 测试说明：</h3>
+        <p>此测试将完整验证用户创建功能的每个环节：</p>
+        <ul>
+            <li>1. CORS预检请求测试</li>
+            <li>2. 管理员登录测试</li>
+            <li>3. 用户创建API测试</li>
+            <li>4. 完整流程集成测试</li>
+        </ul>
+        <p><strong>注意：</strong> 确保Flask服务器运行在 <code>http://127.0.0.1:5000</code></p>
+    </div>
+
+    <div class="step">
+        <h3>步骤1：CORS预检测试</h3>
+        <button onclick="testCORSPreflight()">测试CORS预检</button>
+        <div id="cors-result"></div>
+    </div>
+
+    <div class="step">
+        <h3>步骤2：管理员登录测试</h3>
+        <button onclick="testAdminLogin()">测试管理员登录</button>
+        <div id="login-result"></div>
+    </div>
+
+    <div class="step">
+        <h3>步骤3：用户创建测试</h3>
+        <button onclick="testUserCreation()" id="createUserBtn" disabled>创建测试用户</button>
+        <div id="create-result"></div>
+    </div>
+
+    <div class="step">
+        <h3>步骤4：完整流程测试</h3>
+        <button onclick="runCompleteTest()">运行完整测试</button>
+        <div id="complete-result"></div>
+    </div>
+
+    <div>
+        <button onclick="clearAllResults()">清除所有结果</button>
+    </div>
+
+    <div id="log-container">
+        <h4>📋 详细日志：</h4>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        const ADMIN_CONFIG = {
+            API_BASE_URL: 'http://127.0.0.1:5000/api'
+        };
+
+        let adminToken = null;
+
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            const logEntry = `[${timestamp}] ${prefix} ${message}\n`;
+            logContainer.textContent += logEntry;
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(message);
+        }
+
+        function showResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.textContent = message;
+            container.appendChild(resultDiv);
+        }
+
+        function clearAllResults() {
+            document.getElementById('log').textContent = '';
+            document.getElementById('cors-result').innerHTML = '';
+            document.getElementById('login-result').innerHTML = '';
+            document.getElementById('create-result').innerHTML = '';
+            document.getElementById('complete-result').innerHTML = '';
+            adminToken = null;
+            document.getElementById('createUserBtn').disabled = true;
+        }
+
+        // 步骤1：测试CORS预检
+        async function testCORSPreflight() {
+            log('=== 开始CORS预检测试 ===');
+            const resultContainer = document.getElementById('cors-result');
+            resultContainer.innerHTML = '';
+
+            try {
+                log('发送OPTIONS预检请求...');
+
+                const response = await fetch(ADMIN_CONFIG.API_BASE_URL + '/admin/users', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:8000',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type,Authorization'
+                    }
+                });
+
+                log(`响应状态: ${response.status} ${response.statusText}`);
+
+                if (response.ok) {
+                    const corsHeaders = {
+                        'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                        'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                        'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                    };
+                    log(`CORS头: ${JSON.stringify(corsHeaders, null, 2)}`);
+
+                    showResult('cors-result', '✅ CORS预检成功！', 'success');
+                    log('CORS预检测试通过');
+                } else {
+                    showResult('cors-result', `❌ CORS预检失败: ${response.status}`, 'error');
+                    log(`CORS预检失败: ${response.status}`);
+                }
+            } catch (error) {
+                log(`CORS预检异常: ${error.message}`);
+                showResult('cors-result', `❌ CORS预检异常: ${error.message}`, 'error');
+            }
+
+            log('=== CORS预检测试完成 ===');
+        }
+
+        // 步骤2：测试管理员登录
+        async function testAdminLogin() {
+            log('=== 开始管理员登录测试 ===');
+            const resultContainer = document.getElementById('login-result');
+            resultContainer.innerHTML = '';
+
+            try {
+                const loginData = {
+                    username: 'admin',
+                    password: 'admin123'
+                };
+
+                log('发送登录请求...');
+                const response = await fetch(ADMIN_CONFIG.API_BASE_URL + '/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(loginData)
+                });
+
+                log(`登录响应状态: ${response.status}`);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log('登录响应数据: ' + JSON.stringify(data, null, 2));
+
+                    if (data.access_token) {
+                        adminToken = data.access_token;
+                        localStorage.setItem('admin_token', adminToken);
+                        document.getElementById('createUserBtn').disabled = false;
+
+                        showResult('login-result', '✅ 管理员登录成功！', 'success');
+                        log('管理员登录成功，Token已保存');
+                    } else {
+                        showResult('login-result', '❌ 登录响应中没有token', 'error');
+                        log('登录响应中没有access_token');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    log(`登录失败响应: ${errorText}`);
+                    showResult('login-result', `❌ 登录失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`登录异常: ${error.message}`);
+                showResult('login-result', `❌ 登录异常: ${error.message}`, 'error');
+            }
+
+            log('=== 管理员登录测试完成 ===');
+        }
+
+        // 步骤3：测试用户创建
+        async function testUserCreation() {
+            log('=== 开始用户创建测试 ===');
+            const resultContainer = document.getElementById('create-result');
+            resultContainer.innerHTML = '';
+
+            if (!adminToken) {
+                showResult('create-result', '❌ 请先进行管理员登录', 'warning');
+                log('没有admin token，请先登录');
+                return;
+            }
+
+            try {
+                const testUser = {
+                    username: 'test_user_' + Date.now(),
+                    password: 'test123456',
+                    real_name: '测试用户',
+                    email: `test${Date.now()}@example.com`,
+                    phone: '13800138000',
+                    user_type: 'teacher'
+                };
+
+                log(`创建用户数据: ${JSON.stringify(testUser, null, 2)}`);
+
+                const response = await fetch(ADMIN_CONFIG.API_BASE_URL + '/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify(testUser)
+                });
+
+                log(`创建用户响应状态: ${response.status}`);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log('创建用户响应数据: ' + JSON.stringify(data, null, 2));
+
+                    if (data.message && data.user) {
+                        showResult('create-result', `✅ 用户创建成功！用户名: ${data.user.username}`, 'success');
+                        log('用户创建成功');
+                    } else {
+                        showResult('create-result', '❌ 用户创建响应格式异常', 'error');
+                        log('用户创建响应格式不符合预期');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    log(`用户创建失败响应: ${errorText}`);
+                    showResult('create-result', `❌ 用户创建失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`用户创建异常: ${error.message}`);
+                showResult('create-result', `❌ 用户创建异常: ${error.message}`, 'error');
+            }
+
+            log('=== 用户创建测试完成 ===');
+        }
+
+        // 步骤4：完整流程测试
+        async function runCompleteTest() {
+            log('=== 开始完整流程测试 ===');
+            const resultContainer = document.getElementById('complete-result');
+            resultContainer.innerHTML = '';
+
+            try {
+                showResult('complete-result', '🔄 正在运行完整测试...', 'info');
+
+                // 1. CORS预检
+                log('1. 测试CORS预检...');
+                const corsResponse = await fetch(ADMIN_CONFIG.API_BASE_URL + '/admin/users', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:8000',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type,Authorization'
+                    }
+                });
+
+                if (!corsResponse.ok) {
+                    throw new Error(`CORS预检失败: ${corsResponse.status}`);
+                }
+                log('✅ CORS预检通过');
+
+                // 2. 管理员登录
+                log('2. 管理员登录...');
+                const loginResponse = await fetch(ADMIN_CONFIG.API_BASE_URL + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+                });
+
+                if (!loginResponse.ok) {
+                    throw new Error(`登录失败: ${loginResponse.status}`);
+                }
+
+                const loginData = await loginResponse.json();
+                if (!loginData.access_token) {
+                    throw new Error('登录响应中没有token');
+                }
+                log('✅ 管理员登录成功');
+
+                // 3. 用户创建
+                log('3. 创建测试用户...');
+                const testUser = {
+                    username: 'complete_test_user_' + Date.now(),
+                    password: 'test123456',
+                    real_name: '完整测试用户',
+                    email: `complete${Date.now()}@test.com`,
+                    phone: '13800138000',
+                    user_type: 'teacher'
+                };
+
+                const createResponse = await fetch(ADMIN_CONFIG.API_BASE_URL + '/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${loginData.access_token}`
+                    },
+                    body: JSON.stringify(testUser)
+                });
+
+                if (!createResponse.ok) {
+                    throw new Error(`用户创建失败: ${createResponse.status}`);
+                }
+
+                const createData = await createResponse.json();
+                if (!createData.message || !createData.user) {
+                    throw new Error('用户创建响应格式异常');
+                }
+                log('✅ 用户创建成功');
+
+                showResult('complete-result', '🎉 完整流程测试全部通过！', 'success');
+                log('🎉 完整流程测试成功完成');
+
+            } catch (error) {
+                log(`完整流程测试失败: ${error.message}`);
+                showResult('complete-result', `❌ 完整流程测试失败: ${error.message}`, 'error');
+            }
+
+            log('=== 完整流程测试完成 ===');
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            log('=== 页面加载完成，准备测试 ===');
+
+            // 检查是否有已保存的token
+            const savedToken = localStorage.getItem('admin_token');
+            if (savedToken) {
+                adminToken = savedToken;
+                document.getElementById('createUserBtn').disabled = false;
+                log('发现已保存的admin token');
+            }
+
+            log('准备就绪，可以开始测试');
+        };
+    </script>
+</body>
+</html>

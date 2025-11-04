@@ -540,6 +540,14 @@ const VisitorVerification = {
             this.showVerificationMode('face');
         });
 
+        document.getElementById('studentFaceScanBtn').addEventListener('click', () => {
+            this.showVerificationMode('student_face');
+        });
+
+        document.getElementById('studentCodeBtn').addEventListener('click', () => {
+            this.showVerificationMode('student_code');
+        });
+
         // 绑定二维码扫描按钮
         document.getElementById('openCameraBtn').addEventListener('click', () => {
             this.showCameraScanArea();
@@ -575,13 +583,29 @@ const VisitorVerification = {
             this.resetImageUpload();
         });
 
-        
+  
         // 绑定人脸识别按钮
         document.getElementById('startFaceScanBtn').addEventListener('click', () => {
             this.startFaceScan();
         });
 
-        
+        // 绑定学生人脸识别按钮
+        document.getElementById('startStudentFaceScanBtn').addEventListener('click', () => {
+            this.startStudentFaceScan();
+        });
+
+        // 绑定申请码验证按钮
+        document.getElementById('verifyStudentCodeBtn').addEventListener('click', () => {
+            this.verifyStudentCode();
+        });
+
+        // 绑定申请码输入框回车事件
+        document.getElementById('studentCodeInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.verifyStudentCode();
+            }
+        });
+
         // 支持拖拽上传
         this.setupDragAndDrop();
     },
@@ -799,8 +823,10 @@ const VisitorVerification = {
 
             if (data.type === 'visit_application' && data.id) {
                 this.storeQRData(data.id);
+            } else if (data.type === 'student_exit' && data.id) {
+                this.storeQRData(data.id, 'student_exit');
             } else {
-                throw new Error('二维码不是有效的访问申请');
+                throw new Error('二维码不是有效的访问申请或学生出校申请');
             }
 
         } catch (error) {
@@ -809,18 +835,19 @@ const VisitorVerification = {
     },
 
     // 存储二维码数据并提示输入验证码
-    storeQRData(applicationId) {
-        this.qrData = applicationId;
-        this.showQRScanResult(`申请编号: ${applicationId} - 请输入验证码`);
+    storeQRData(applicationId, type = 'visit') {
+        this.qrData = { id: applicationId, type: type };
+        const typeName = type === 'student_exit' ? '学生出校' : '访问';
+        this.showQRScanResult(`${typeName}申请编号: ${applicationId} - 请输入验证码`);
 
         // 聚焦到验证码输入框
         document.getElementById('verificationCodeInput').focus();
 
-        SecurityUtils.showToast('扫码成功', `已识别申请编号 ${applicationId}，请输入验证码完成验证`, 'success');
+        SecurityUtils.showToast('扫码成功', `已识别${typeName}申请编号 ${applicationId}，请输入验证码完成验证`, 'success');
     },
 
     // 验证申请ID
-    async verifyApplicationId(applicationId) {
+    async verifyApplicationId(qrData) {
         try {
             // 获取验证码
             const verificationCode = document.getElementById('verificationCodeInput').value.trim();
@@ -837,22 +864,36 @@ const VisitorVerification = {
 
             SecurityUtils.showLoading('验证中...');
 
-            const data = await SecurityUtils.request('/visit/verify-qr', {
-                method: 'POST',
-                body: JSON.stringify({
-                    application_id: applicationId,
+            // 根据申请类型选择不同的API端点
+            let endpoint, requestData;
+            if (qrData.type === 'student_exit') {
+                endpoint = '/student-exit/applications/verify-code';
+                requestData = {
                     verification_code: verificationCode
-                })
+                };
+            } else {
+                endpoint = '/visit/verify-qr';
+                requestData = {
+                    application_id: qrData.id,
+                    verification_code: verificationCode
+                };
+            }
+
+            const data = await SecurityUtils.request(endpoint, {
+                method: 'POST',
+                body: JSON.stringify(requestData),
+                baseUrl: qrData.type === 'student_exit' ? '/api' : ''
             });
 
             // 显示识别结果
-            this.showQRScanResult(`申请编号: ${applicationId} - 验证成功`);
+            const typeName = qrData.type === 'student_exit' ? '学生出校' : '访问';
+            this.showQRScanResult(`${typeName}申请编号: ${qrData.id} - 验证成功`);
 
             SecurityState.currentLogId = data.log_id;
-            this.showVerificationResult(data);
+            this.showVerificationResult(data, qrData.type);
 
         } catch (error) {
-            this.showQRScanResult(`申请编号: ${applicationId} - ${error.message}`);
+            this.showQRScanResult(`申请编号: ${qrData.id} - ${error.message}`);
             SecurityUtils.showToast('验证失败', error.message, 'error');
         } finally {
             SecurityUtils.hideLoading();
@@ -869,7 +910,7 @@ const VisitorVerification = {
     // 显示验证模式
     showVerificationMode(mode) {
         // 只隐藏扫描验证区域，不隐藏主验证区域
-        const scanSections = ['qrScanSection', 'faceScanSection'];
+        const scanSections = ['qrScanSection', 'faceScanSection', 'studentFaceScanSection', 'studentCodeSection'];
         scanSections.forEach(sectionId => {
             const section = document.getElementById(sectionId);
             if (section) {
@@ -881,7 +922,9 @@ const VisitorVerification = {
         // 显示选中的验证区域
         const sectionMap = {
             'qr': 'qrScanSection',
-            'face': 'faceScanSection'
+            'face': 'faceScanSection',
+            'student_face': 'studentFaceScanSection',
+            'student_code': 'studentCodeSection'
         };
 
         const section = document.getElementById(sectionMap[mode]);
@@ -900,8 +943,20 @@ const VisitorVerification = {
         // 如果是人脸识别模式，初始化摄像头
         if (mode === 'face') {
             this.initCamera();
+        } else if (mode === 'student_face') {
+            this.initStudentCamera();
+        } else if (mode === 'student_code') {
+            // 申请码模式不需要摄像头，聚焦到输入框
+            setTimeout(() => {
+                const input = document.getElementById('studentCodeInput');
+                if (input) {
+                    input.focus();
+                    input.value = ''; // 清空之前的输入
+                }
+            }, 100);
         } else {
             this.stopCamera();
+            this.stopStudentCamera();
         }
     },
 
@@ -931,6 +986,39 @@ const VisitorVerification = {
     // 停止摄像头
     stopCamera() {
         const video = document.getElementById('faceVideo');
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+            video.style.display = 'none';
+            video.classList.remove('active');
+        }
+    },
+
+    // 初始化学生摄像头
+    async initStudentCamera() {
+        try {
+            const video = document.getElementById('studentFaceVideo');
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            });
+
+            video.srcObject = stream;
+            video.style.display = 'block';
+            video.classList.add('active');
+            video.play();
+
+        } catch (error) {
+            console.error('学生摄像头初始化失败:', error);
+            SecurityUtils.showToast('摄像头错误', '无法访问摄像头，请检查权限设置', 'error');
+        }
+    },
+
+    // 停止学生摄像头
+    stopStudentCamera() {
+        const video = document.getElementById('studentFaceVideo');
         if (video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
             video.srcObject = null;
@@ -978,6 +1066,502 @@ const VisitorVerification = {
         } catch (error) {
             SecurityUtils.showToast('人脸识别失败', error.message, 'error');
             this.showNoMatchMessage();
+        } finally {
+            SecurityUtils.hideLoading();
+        }
+    },
+
+    // 开始学生人脸扫描
+    async startStudentFaceScan() {
+        try {
+            SecurityUtils.showLoading('学生人脸识别中...');
+
+            const video = document.getElementById('studentFaceVideo');
+            const canvas = document.getElementById('studentFaceCanvas');
+            const context = canvas.getContext('2d');
+
+            // 设置canvas尺寸
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // 捕获当前帧
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 转换为base64
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+            // 发送人脸图像到后端进行学生身份比对
+            const data = await SecurityUtils.request('/student-exit/applications/by-face', {
+                method: 'POST',
+                body: JSON.stringify({
+                    face_image: imageData
+                }),
+                baseUrl: '/api'
+            });
+
+            if (data.student && data.applications) {
+                // 找到学生信息，显示出校申请详情
+                this.showStudentApplicationResults(data);
+            } else if (data.message) {
+                // 没有找到匹配，提示用户
+                this.showNoStudentMatchMessage(data.message);
+            } else {
+                this.showNoStudentMatchMessage('未找到匹配的学生信息');
+            }
+
+        } catch (error) {
+            SecurityUtils.showToast('学生人脸识别失败', error.message, 'error');
+            this.showNoStudentMatchMessage(error.message);
+        } finally {
+            SecurityUtils.hideLoading();
+        }
+    },
+
+    // 显示学生申请结果
+    showStudentApplicationResults(data) {
+        const resultDiv = document.getElementById('verificationResult');
+        resultDiv.classList.remove('hidden');
+
+        const { student, applications } = data;
+
+        resultDiv.innerHTML = `
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-6 fade-in">
+                <div class="flex items-center mb-4">
+                    <i class="ri-school-fill text-purple-600 text-2xl mr-3"></i>
+                    <h3 class="text-lg font-semibold text-purple-800">
+                        学生信息验证成功
+                    </h3>
+                </div>
+
+                <!-- 学生基本信息 -->
+                <div class="bg-white rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-gray-900 mb-2">学生信息</h4>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div><span class="text-gray-600">姓名:</span> <span class="font-medium">${student.real_name}</span></div>
+                        <div><span class="text-gray-600">学号:</span> <span class="font-medium">${student.student_id}</span></div>
+                        <div><span class="text-gray-600">班级:</span> <span class="font-medium">${student.class_id}</span></div>
+                        <div><span class="text-gray-600">年级:</span> <span class="font-medium">${student.grade}</span></div>
+                    </div>
+                </div>
+
+                ${applications.length > 0 ? `
+                    <h4 class="font-semibold text-gray-900 mb-3">出校申请记录 (${applications.length}个)</h4>
+                    <div class="space-y-3">
+                        ${applications.map(app => `
+                            <div class="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div>
+                                        <p class="font-medium text-gray-900">
+                                            出校时间: ${app.exit_date} ${app.exit_time_start}-${app.exit_time_end}
+                                        </p>
+                                        <p class="text-sm text-gray-600">原因: ${app.exit_reason}</p>
+                                        ${app.destination ? `<p class="text-sm text-gray-600">目的地: ${app.destination}</p>` : ''}
+                                    </div>
+                                    <div class="text-right">
+                                        ${this.getApplicationStatusBadge(app.application_status, app.parent_approval_status, app.teacher_approval_status)}
+                                        ${app.has_qr_code ? '<span class="inline-block mt-1 px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">✓ 有效二维码</span>' : ''}
+                                    </div>
+                                </div>
+                                ${app.application_status === 'approved' && app.has_qr_code ? `
+                                    <div class="flex justify-end space-x-2 mt-3">
+                                        <button onclick="VisitorVerification.allowStudentExit(${app.id})"
+                                                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">
+                                            <i class="ri-check-line mr-1"></i> 允许出校
+                                        </button>
+                                        <button onclick="VisitorVerification.denyStudentExit(${app.id})"
+                                                class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
+                                            <i class="ri-close-line mr-1"></i> 拒绝出校
+                                        </button>
+                                    </div>
+                                ` : app.application_status === 'approved' && !app.has_qr_code ? `
+                                    <div class="text-sm text-orange-600 mt-2">
+                                        <i class="ri-time-line mr-1"></i> 申请已通过，但二维码未生成或已过期
+                                    </div>
+                                ` : `
+                                    <div class="text-sm text-gray-500 mt-2">
+                                        <i class="ri-information-line mr-1"></i> ${this.getApplicationStatusText(app.application_status, app.parent_approval_status, app.teacher_approval_status)}
+                                    </div>
+                                `}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <p class="text-yellow-800">
+                            <i class="ri-information-line mr-2"></i>
+                            该学生暂无出校申请记录
+                        </p>
+                    </div>
+                `}
+
+                <div class="flex justify-center mt-4">
+                    <button onclick="VisitorVerification.clearResult()"
+                            class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                        <i class="ri-arrow-clockwise mr-2"></i> 重新扫描
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    // 获取申请状态标签
+    getApplicationStatusBadge(applicationStatus, parentStatus, teacherStatus) {
+        if (applicationStatus === 'approved') {
+            return '<span class="inline-block px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">已批准</span>';
+        } else if (applicationStatus === 'rejected') {
+            return '<span class="inline-block px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full">已拒绝</span>';
+        } else if (applicationStatus === 'pending') {
+            if (parentStatus === 'pending' && teacherStatus === 'pending') {
+                return '<span class="inline-block px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">待审批</span>';
+            } else if (parentStatus === 'approved' && teacherStatus === 'pending') {
+                return '<span class="inline-block px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full">待班主任审批</span>';
+            } else if (parentStatus === 'pending' && teacherStatus === 'approved') {
+                return '<span class="inline-block px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full">待家长审批</span>';
+            }
+        }
+        return '<span class="inline-block px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 rounded-full">未知状态</span>';
+    },
+
+    // 获取申请状态文本
+    getApplicationStatusText(applicationStatus, parentStatus, teacherStatus) {
+        if (applicationStatus === 'approved') {
+            return '申请已批准，可以出校';
+        } else if (applicationStatus === 'rejected') {
+            return '申请已被拒绝，无法出校';
+        } else if (applicationStatus === 'pending') {
+            if (parentStatus === 'pending' && teacherStatus === 'pending') {
+                return '申请等待家长和班主任审批';
+            } else if (parentStatus === 'approved' && teacherStatus === 'pending') {
+                return '申请等待班主任审批';
+            } else if (parentStatus === 'pending' && teacherStatus === 'approved') {
+                return '申请等待家长审批';
+            }
+        }
+        return '申请状态未知';
+    },
+
+    // 显示无匹配学生信息
+    showNoStudentMatchMessage(message) {
+        const resultDiv = document.getElementById('verificationResult');
+        resultDiv.classList.remove('hidden');
+
+        resultDiv.innerHTML = `
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 fade-in">
+                <div class="flex items-center mb-4">
+                    <i class="ri-user-unfollow-line text-yellow-600 text-2xl mr-3"></i>
+                    <h3 class="text-lg font-semibold text-yellow-800">
+                        未找到匹配的学生信息
+                    </h3>
+                </div>
+                <p class="text-yellow-700 mb-4">${message || '人脸识别失败，请重试'}</p>
+                <ul class="text-sm text-yellow-700 mb-4 list-disc list-inside">
+                    <li>学生可能未在系统中注册</li>
+                    <li>人脸信息可能未录入</li>
+                    <li>照片质量不佳或角度不正确</li>
+                </ul>
+
+                <div class="flex justify-center space-x-3">
+                    <button onclick="VisitorVerification.retryStudentFaceScan()"
+                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="ri-arrow-clockwise mr-2"></i> 重新拍摄
+                    </button>
+                    <button onclick="VisitorVerification.showOtherVerificationMethods()"
+                            class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="ri-list-ul mr-2"></i> 其他验证方式
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    // 重新学生人脸扫描
+    retryStudentFaceScan() {
+        this.clearResult();
+        setTimeout(() => {
+            this.showVerificationMode('student_face');
+        }, 100);
+    },
+
+    // 允许学生出校
+    async allowStudentExit(applicationId) {
+        try {
+            SecurityUtils.showLoading('处理中...');
+
+            const notes = prompt('请输入备注信息（可选）:');
+
+            // 记录学生出校成功
+            await SecurityUtils.request('/student-exit/applications/record-exit', {
+                method: 'POST',
+                body: JSON.stringify({
+                    application_id: applicationId,
+                    action: 'grant_access',
+                    notes: notes || '',
+                    exit_time: new Date().toISOString()
+                }),
+                baseUrl: '/api'
+            });
+
+            SecurityUtils.showToast('出校成功', '学生已允许出校', 'success');
+            this.clearResult();
+
+            // 刷新操作记录
+            await AccessLogs.loadLogs();
+
+        } catch (error) {
+            SecurityUtils.showToast('操作失败', error.message, 'error');
+        } finally {
+            SecurityUtils.hideLoading();
+        }
+    },
+
+    // 拒绝学生出校
+    async denyStudentExit(applicationId) {
+        try {
+            const reason = prompt('请输入拒绝理由:');
+            if (!reason) return;
+
+            SecurityUtils.showLoading('处理中...');
+
+            // 记录学生出校拒绝
+            await SecurityUtils.request('/student-exit/applications/record-exit', {
+                method: 'POST',
+                body: JSON.stringify({
+                    application_id: applicationId,
+                    action: 'deny_access',
+                    notes: reason,
+                    exit_time: new Date().toISOString()
+                }),
+                baseUrl: '/api'
+            });
+
+            SecurityUtils.showToast('操作成功', '已拒绝学生出校', 'info');
+            this.clearResult();
+
+            // 刷新操作记录
+            await AccessLogs.loadLogs();
+
+        } catch (error) {
+            SecurityUtils.showToast('操作失败', error.message, 'error');
+        } finally {
+            SecurityUtils.hideLoading();
+        }
+    },
+
+    // 验证学生申请码
+    async verifyStudentCode() {
+        try {
+            const codeInput = document.getElementById('studentCodeInput');
+            const code = codeInput.value.trim();
+
+            // 验证申请码格式
+            if (!code) {
+                SecurityUtils.showToast('输入错误', '请输入申请码', 'warning');
+                return;
+            }
+
+            if (!/^\d{6}$/.test(code)) {
+                SecurityUtils.showToast('格式错误', '申请码必须是6位数字', 'warning');
+                return;
+            }
+
+            SecurityUtils.showLoading('验证申请码中...');
+
+            // 发送申请码到后端验证
+            const data = await SecurityUtils.request('/student-exit/applications/verify-code', {
+                method: 'POST',
+                body: JSON.stringify({
+                    verification_code: code
+                }),
+                baseUrl: '/api'
+            });
+
+            if (data.student && data.application) {
+                // 验证成功，显示学生信息
+                this.showStudentCodeResults(data);
+            } else {
+                // 验证失败
+                this.showCodeVerificationError(data.error || '申请码无效或已过期');
+            }
+
+        } catch (error) {
+            SecurityUtils.showToast('验证失败', error.message, 'error');
+            this.showCodeVerificationError(error.message);
+        } finally {
+            SecurityUtils.hideLoading();
+        }
+    },
+
+    // 显示申请码验证结果
+    showStudentCodeResults(data) {
+        const resultDiv = document.getElementById('verificationResult');
+        resultDiv.classList.remove('hidden');
+
+        const { student, application } = data;
+
+        resultDiv.innerHTML = `
+            <div class="bg-green-50 border border-green-200 rounded-lg p-6 fade-in">
+                <div class="flex items-center mb-4">
+                    <i class="ri-check-double-fill text-green-600 text-2xl mr-3"></i>
+                    <h3 class="text-lg font-semibold text-green-800">
+                        申请码验证成功
+                    </h3>
+                </div>
+
+                <!-- 学生基本信息 -->
+                <div class="bg-white rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-gray-900 mb-2">学生信息</h4>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div><span class="text-gray-600">姓名:</span> <span class="font-medium">${student.real_name}</span></div>
+                        <div><span class="text-gray-600">学号:</span> <span class="font-medium">${student.student_id}</span></div>
+                        <div><span class="text-gray-600">班级:</span> <span class="font-medium">${student.class_id}</span></div>
+                        <div><span class="text-gray-600">年级:</span> <span class="font-medium">${student.grade}</span></div>
+                    </div>
+                </div>
+
+                <!-- 出校申请详情 -->
+                <div class="bg-white rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-gray-900 mb-2">出校申请信息</h4>
+                    <div class="space-y-2 text-sm">
+                        <div><span class="text-gray-600">出校时间:</span> <span class="font-medium">${application.exit_date} ${application.exit_time_start}-${application.exit_time_end}</span></div>
+                        <div><span class="text-gray-600">出校原因:</span> <span class="font-medium">${application.exit_reason}</span></div>
+                        ${application.destination ? `<div><span class="text-gray-600">目的地:</span> <span class="font-medium">${application.destination}</span></div>` : ''}
+                        <div><span class="text-gray-600">申请状态:</span> <span class="font-medium">${this.getApplicationStatusBadge(application.application_status, application.parent_approval_status, application.teacher_approval_status)}</span></div>
+                    </div>
+                </div>
+
+                <!-- 审批状态 -->
+                <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-blue-900 mb-2">审批状态</h4>
+                    <div class="text-sm text-blue-800">
+                        ${this.getApplicationStatusText(application.application_status, application.parent_approval_status, application.teacher_approval_status)}
+                    </div>
+                </div>
+
+                <div class="flex justify-center space-x-3">
+                    ${application.application_status === 'approved' ? `
+                        <button onclick="VisitorVerification.allowStudentExitByCode(${application.id})"
+                                class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="ri-check-line mr-2"></i> 允许出校
+                        </button>
+                        <button onclick="VisitorVerification.denyStudentExitByCode(${application.id})"
+                                class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                            <i class="ri-close-line mr-2"></i> 拒绝出校
+                        </button>
+                    ` : `
+                        <button onclick="VisitorVerification.clearResult()"
+                                class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                            <i class="ri-close-line mr-2"></i> 关闭
+                        </button>
+                    `}
+                </div>
+
+                <div class="text-center mt-3 text-xs text-gray-500">
+                    <i class="ri-information-line mr-1"></i> 申请码已失效，不可重复使用
+                </div>
+            </div>
+        `;
+
+        // 清空输入框
+        document.getElementById('studentCodeInput').value = '';
+    },
+
+    // 显示申请码验证错误
+    showCodeVerificationError(message) {
+        const resultDiv = document.getElementById('verificationResult');
+        resultDiv.classList.remove('hidden');
+
+        resultDiv.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-6 fade-in">
+                <div class="flex items-center mb-4">
+                    <i class="ri-error-warning-fill text-red-600 text-2xl mr-3"></i>
+                    <h3 class="text-lg font-semibold text-red-800">
+                        申请码验证失败
+                    </h3>
+                </div>
+                <p class="text-red-700 mb-4">${message || '申请码无效或已过期'}</p>
+                <ul class="text-sm text-red-700 mb-4 list-disc list-inside">
+                    <li>请确认申请码是否正确</li>
+                    <li>申请码可能已过期</li>
+                    <li>申请码已被使用</li>
+                    <li>申请可能已被取消
+                </ul>
+
+                <div class="flex justify-center space-x-3">
+                    <button onclick="VisitorVerification.clearResult(); VisitorVerification.showVerificationMode('student_code')"
+                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="ri-arrow-clockwise mr-2"></i> 重新输入
+                    </button>
+                    <button onclick="VisitorVerification.clearResult()"
+                            class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                        <i class="ri-close-line mr-2"></i> 关闭
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    // 通过申请码允许学生出校
+    async allowStudentExitByCode(applicationId) {
+        try {
+            SecurityUtils.showLoading('处理中...');
+
+            const notes = prompt('请输入备注信息（可选）:');
+
+            // 记录学生出校成功
+            await SecurityUtils.request('/student-exit/applications/record-exit', {
+                method: 'POST',
+                body: JSON.stringify({
+                    application_id: applicationId,
+                    action: 'grant_access',
+                    notes: notes || '',
+                    exit_time: new Date().toISOString(),
+                    verification_method: 'code'
+                }),
+                baseUrl: '/api'
+            });
+
+            SecurityUtils.showToast('出校成功', '学生已允许出校', 'success');
+            this.clearResult();
+
+            // 刷新操作记录
+            await AccessLogs.loadLogs();
+
+        } catch (error) {
+            SecurityUtils.showToast('操作失败', error.message, 'error');
+        } finally {
+            SecurityUtils.hideLoading();
+        }
+    },
+
+    // 通过申请码拒绝学生出校
+    async denyStudentExitByCode(applicationId) {
+        try {
+            const reason = prompt('请输入拒绝理由:');
+            if (!reason) return;
+
+            SecurityUtils.showLoading('处理中...');
+
+            // 记录学生出校拒绝
+            await SecurityUtils.request('/student-exit/applications/record-exit', {
+                method: 'POST',
+                body: JSON.stringify({
+                    application_id: applicationId,
+                    action: 'deny_access',
+                    notes: reason,
+                    exit_time: new Date().toISOString(),
+                    verification_method: 'code'
+                }),
+                baseUrl: '/api'
+            });
+
+            SecurityUtils.showToast('操作成功', '已拒绝学生出校', 'info');
+            this.clearResult();
+
+            // 刷新操作记录
+            await AccessLogs.loadLogs();
+
+        } catch (error) {
+            SecurityUtils.showToast('操作失败', error.message, 'error');
         } finally {
             SecurityUtils.hideLoading();
         }
@@ -1111,8 +1695,14 @@ const VisitorVerification = {
 
     
     // 显示验证结果
-    showVerificationResult(data) {
+    showVerificationResult(data, type = 'visit') {
         const resultDiv = document.getElementById('verificationResult');
+
+        // 处理学生出校申请
+        if (type === 'student_exit') {
+            this.showStudentExitResult(data);
+            return;
+        }
 
         if (data.valid && data.application) {
             // 检查是否有接待人

@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_migrate import Migrate
+from dotenv import load_dotenv
 import os
 
 # 全局扩展对象
@@ -24,6 +25,11 @@ def create_app(config_name=None):
     template_folder = os.path.join(project_root, 'frontend', 'templates')
     static_folder = os.path.join(project_root, 'frontend', 'static')
 
+    # 加载.env文件
+    env_path = os.path.join(project_root, '.env')
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+
     app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
     # 根据环境变量选择配置
@@ -40,7 +46,7 @@ def create_app(config_name=None):
     db.init_app(app)
     jwt.init_app(app)
     migrate.init_app(app, db)
-    CORS(app)
+    CORS(app, origins="*", allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
     
     # 注册蓝图
@@ -59,6 +65,7 @@ def create_app(config_name=None):
     from app.api.organization import organization_bp
     from app.routes.roles import roles_bp
     from app.routes.alumni import alumni_bp
+    from app.routes.student_exit import student_exit_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(users_bp, url_prefix='/api/users')
@@ -74,10 +81,19 @@ def create_app(config_name=None):
     app.register_blueprint(organization_bp)
     app.register_blueprint(roles_bp, url_prefix='/api/roles')
     app.register_blueprint(alumni_bp, url_prefix='/api/alumni')
+    app.register_blueprint(student_exit_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(web_bp)
 
-    
+    # 配置uploads静态文件路由
+    uploads_folder = os.path.join(project_root, 'backend', 'uploads')
+    if os.path.exists(uploads_folder):
+        @app.route('/uploads/<filename>')
+        def serve_uploaded_file(filename):
+            from flask import send_from_directory
+            return send_from_directory(uploads_folder, filename)
+
+
     # 错误处理
     @app.errorhandler(404)
     def not_found(error):

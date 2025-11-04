@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>用户类型持久化修复测试</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>用户类型持久化修复验证</h1>
+
+    <div class="test-description">
+        <h2>问题描述</h2>
+        <p>用户反馈：修改用户类型为学生后，页面显示student而不是学生。再次点击编辑后，弹出的编辑页面用户类型还是教师。说明修改没有保存到数据库或者编辑页面没有从数据库读取。</p>
+    </div>
+
+    <div class="test-steps">
+        <h2>测试步骤</h2>
+        <ol>
+            <li><strong>访问管理界面</strong>: <a href="/admin-login" target="_blank">http://localhost:5000/admin-login</a></li>
+            <li><strong>登录</strong>: 使用管理员账号 (用户名: admin, 密码: admin123)</li>
+            <li><strong>进入用户管理</strong>: 点击"用户管理"菜单</li>
+            <li><strong>选择用户</strong>: 点击任意用户的"编辑"按钮</li>
+            <li><strong>修改用户类型</strong>:
+                <ul>
+                    <li>将用户类型从"教师"改为"学生"</li>
+                    <li>观察表单字段动态变化（应显示学号、班级、年级字段）</li>
+                </ul>
+            </li>
+            <li><strong>保存修改</strong>: 点击"保存"按钮</li>
+            <li><strong>验证保存结果</strong>:
+                <ul>
+                    <li>查看用户列表，确认用户类型已更新为"学生"</li>
+                    <li>观察控制台输出：应显示"用户信息更新成功"</li>
+                </ul>
+            </li>
+            <li><strong>再次编辑验证</strong>:
+                <ul>
+                    <li>再次点击同一用户的"编辑"按钮</li>
+                    <li>确认编辑表单中用户类型显示为"学生"</li>
+                    <li>确认学号、班级、年级字段正确显示</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="expected-results">
+        <h2>预期结果</h2>
+        <ul>
+            <li>✅ 用户类型修改成功保存到数据库</li>
+            <li>✅ 页面刷新后显示正确的用户类型名称（如"学生"而不是"student"）</li>
+            <li>✅ 再次编辑时显示正确的用户类型选择</li>
+            <li>✅ 表单字段根据用户类型正确显示/隐藏</li>
+            <li>✅ 控制台显示成功日志</li>
+        </ul>
+    </div>
+
+    <div class="debug-info">
+        <h2>调试信息</h2>
+        <p>请观察控制台输出，应看到以下日志：</p>
+        <ul>
+            <li><code>📍 从API获取用户最新信息</code></li>
+            <li><code>📍 获取到用户最新信息: {user_data}</code></li>
+            <li><code>📍 编辑的用户数据: {form_data}</code></li>
+            <li><code>📍 更新响应: {response_data}</code></li>
+            <li><code>用户信息更新成功</code> (toast消息)</li>
+        </ul>
+    </div>
+
+    <div class="technical-fixes">
+        <h2>技术修复内容</h2>
+        <h3>1. 编辑用户数据获取优化</h3>
+        <pre><code>// 修复前：使用本地缓存数据
+const users = this.currentUsers || [];
+let user = users.find(u => u.id == userId);
+
+// 修复后：直接从API获取最新数据
+const userResponse = await fetch(ADMIN_CONFIG.API_BASE_URL + `/admin/users/${userId}`);
+const user = await userResponse.json();
+</code></pre>
+
+        <h3>2. 保存成功后数据刷新</h3>
+        <pre><code>// 保存成功后自动刷新用户列表
+if (data.message) {
+    AdminUtils.showToast('用户信息更新成功', 'success');
+    this.hideEditUserModal();
+    this.loadUsers(); // 重新加载用户列表
+}
+</code></pre>
+
+        <h3>3. 版本更新</h3>
+        <p>JavaScript版本从v3.1更新到v3.2，强制浏览器刷新缓存</p>
+    </div>
+
+    <div class="troubleshooting">
+        <h2>故障排除</h2>
+        <p>如果问题仍然存在：</p>
+        <ul>
+            <li>硬刷新浏览器页面 (Ctrl+F5)</li>
+            <li>清除浏览器缓存</li>
+            <li>检查浏览器开发者工具网络面板，确认API请求成功</li>
+            <li>检查数据库中的用户数据是否正确更新</li>
+        </ul>
+    </div>
+
+    <script>
+        console.log('🔧 用户类型持久化修复测试页面已加载');
+        console.log('📋 请按照上述步骤进行测试');
+    </script>
+</body>
+</html>

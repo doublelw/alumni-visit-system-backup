@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理界面测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-info {
+            background: #f0f8ff;
+            border: 1px solid #0066cc;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            max-width: 800px;
+        }
+        .error { background: #ffe6e6; color: #cc0000; border-color: #cc0000; }
+        .success { background: #e6ffe6; color: #006600; border-color: #006600; }
+        button {
+            padding: 10px 20px;
+            background: #007cba;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 3px;
+        }
+        button:hover { background: #005a87; }
+        textarea { width: 100%; height: 200px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>管理界面用户创建测试</h1>
+
+    <div class="debug-info">
+        <h3>步骤说明：</h3>
+        <ol>
+            <li>访问管理界面：<a href="http://127.0.0.1:5000/admin-login" target="_blank">http://127.0.0.1:5000/admin-login</a></li>
+            <li>使用 admin/admin123 登录</li>
+            <li>进入用户管理页面</li>
+            <li>按 F12 打开开发者工具</li>
+            <li>在 Console 中运行以下代码测试：</li>
+        </ol>
+    </div>
+
+    <div class="debug-info">
+        <h3>测试代码（在浏览器Console中运行）：</h3>
+        <button onclick="copyTestCode()">复制测试代码</button>
+        <textarea id="testCode" readonly>
+// 1. 检查认证状态
+const token = localStorage.getItem('admin_token');
+console.log('Token存在:', !!token);
+console.log('Token内容:', token ? token.substring(0, 50) + '...' : '无');
+
+// 2. 检查用户创建函数
+console.log('addUser函数存在:', typeof UsersPage?.addUser === 'function');
+console.log('UsersPage对象:', typeof UsersPage !== 'undefined');
+
+// 3. 手动测试用户创建
+if (token && typeof UsersPage?.addUser === 'function') {
+    console.log('准备测试用户创建...');
+
+    // 设置测试数据
+    document.getElementById('addUsername').value = 'testuser999';
+    document.getElementById('addPassword').value = 'testpass999';
+    document.getElementById('addRealName').value = '测试用户999';
+    document.getElementById('addEmail').value = 'test999@example.com';
+    document.getElementById('addPhone').value = '13800138099';
+    document.getElementById('addUserType').value = 'teacher';
+
+    console.log('测试数据已设置，手动点击创建按钮测试');
+
+    // 可以手动触发创建
+    // UsersPage.addUser();
+} else {
+    console.error('缺少token或addUser函数');
+}
+
+// 4. 检查API请求函数
+console.log('AdminUtils.request存在:', typeof AdminUtils?.request === 'function');
+
+// 5. 手动API测试
+if (token && typeof AdminUtils?.request === 'function') {
+    console.log('开始手动API测试...');
+
+    const testData = {
+        username: 'manualtest123',
+        password: 'manualpass123',
+        real_name: '手动测试用户',
+        email: 'manual@example.com',
+        phone: '13800138888',
+        user_type: 'teacher'
+    };
+
+    AdminUtils.request('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(testData)
+    }).then(response => {
+        console.log('API响应成功:', response);
+    }).catch(error => {
+        console.error('API请求失败:', error);
+    });
+}
+        </textarea>
+    </div>
+
+    <div class="debug-info">
+        <h3>如果创建失败，请检查：</h3>
+        <ul>
+            <li>浏览器开发者工具Console中的错误信息</li>
+            <li>Network标签页中的请求状态</li>
+            <li>localStorage中是否有有效的admin_token</li>
+        </ul>
+    </div>
+
+    <script>
+        function copyTestCode() {
+            const textarea = document.getElementById('testCode');
+            textarea.select();
+            document.execCommand('copy');
+
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '已复制！';
+            button.style.background = '#28a745';
+
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#007cba';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
