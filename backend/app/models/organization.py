@@ -36,6 +36,14 @@ class Organization(db.Model):
     contact_email = db.Column(db.String(100), comment='联系邮箱')
     address = db.Column(db.String(500), comment='地址')
 
+    # 班级特定信息
+    class_teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, comment='班主任用户ID')
+    head_teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, comment='年级组长用户ID')
+    teachers = db.relationship('User', foreign_keys=[User.organization_id], backref='managed_organizations', overlaps="organization,users")
+
+    # 社团特定信息
+    leader_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, comment='负责人用户ID')
+
     # 时间信息
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -44,12 +52,15 @@ class Organization(db.Model):
     # 关系
     children = db.relationship('Organization', backref='parent', remote_side=[id])
     creator = db.relationship('User', foreign_keys=[created_by])
+    class_teacher = db.relationship('User', foreign_keys=[class_teacher_id], backref='managed_classes')
+    head_teacher = db.relationship('User', foreign_keys=[head_teacher_id], backref='headed_classes')
+    leader = db.relationship('User', foreign_keys=[leader_id], backref='led_organizations')
     # 用户关系由User模型的organization backref定义
 
     def __repr__(self):
         return f'<Organization {self.name}>'
 
-    def to_dict(self, include_children=False):
+    def to_dict(self, include_children=False, include_users=False):
         """转换为字典"""
         data = {
             'id': self.id,
@@ -66,13 +77,25 @@ class Organization(db.Model):
             'contact_phone': self.contact_phone,
             'contact_email': self.contact_email,
             'address': self.address,
+            'class_teacher_id': self.class_teacher_id,
+            'head_teacher_id': self.head_teacher_id,
+            'leader_id': self.leader_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'created_by': self.created_by
         }
 
+        # 包含用户信息
+        if include_users:
+            if self.class_teacher:
+                data['class_teacher'] = self.class_teacher.to_dict()
+            if self.head_teacher:
+                data['head_teacher'] = self.head_teacher.to_dict()
+            if self.leader:
+                data['leader'] = self.leader.to_dict()
+
         if include_children:
-            data['children'] = [child.to_dict() for child in self.children if child.status == 'active']
+            data['children'] = [child.to_dict(include_users=include_users) for child in self.children if child.status == 'active']
 
         return data
 

@@ -47,8 +47,18 @@ class User(db.Model):
     # visit_applications = db.relationship('VisitApplication', foreign_keys='VisitApplication.applicant_id', backref='applicant')
     # approved_applications = db.relationship('VisitApplication', foreign_keys='VisitApplication.approved_by', backref='approver')
     # visit_records = db.relationship('VisitRecord', foreign_keys='VisitRecord.user_id')
-    # organization = db.relationship('Organization', backref='users', foreign_keys='User.organization_id')
+    organization = db.relationship('Organization', backref='users', foreign_keys='User.organization_id')
     # # roles关系通过UserRoleAssignment的user关系和UserRole的assignments关系间接访问
+
+    # 家长-学生关系 (一个家长可以有多个学生，一个学生可以有多个家长)
+    parent_students = db.relationship('User',
+                                    foreign_keys=[parent_student_id],
+                                    backref='parent_users',
+                                    remote_side=[id])
+    student_parents = db.relationship('User',
+                                     foreign_keys=[student_parent_id],
+                                     backref='student_children',
+                                     remote_side=[id])
 
     # 自动生成UUID
     def __init__(self, **kwargs):
@@ -104,9 +114,17 @@ class User(db.Model):
             data['alumni_profile'] = None
             data['has_face_data'] = False
 
-        # 临时禁用组织信息
-        # if self.organization:
-        #     data['organization'] = self.organization.to_dict()
+        # 包含组织信息
+        if self.organization:
+            data['organization'] = self.organization.to_dict()
+
+        # 包含关系信息
+        if include_sensitive:
+            # 家长-学生关系信息
+            if self.user_type == 'parent' and self.parent_students:
+                data['students'] = [student.to_dict() for student in self.parent_students]
+            elif self.user_type == 'student' and self.student_parents:
+                data['parents'] = [parent.to_dict() for parent in self.student_parents]
 
         return data
 
