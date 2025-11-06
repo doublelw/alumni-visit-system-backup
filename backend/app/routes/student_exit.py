@@ -178,6 +178,25 @@ def create_application():
                     emergency_contact = emergency_contact or parent.real_name
                     emergency_phone = emergency_phone or (parent.phone or '')
 
+        # 检查该学生当天是否已有申请
+        from datetime import date
+        exit_date = datetime.strptime(data['exit_date'], '%Y-%m-%d').date()
+        today = date.today()
+
+        # 只能申请当天或未来的日期
+        if exit_date < today:
+            return jsonify({'error': '不能申请过去的日期'}), 400
+
+        # 检查该学生当天是否已有申请
+        existing_application = StudentExitApplication.query.filter(
+            StudentExitApplication.student_id == student_id,
+            StudentExitApplication.exit_date == exit_date,
+            StudentExitApplication.application_status.notin_(['cancelled', 'rejected'])
+        ).first()
+
+        if existing_application:
+            return jsonify({'error': f'该学生在{exit_date}已有出校申请，每天只能申请一次'}), 400
+
         # 创建申请记录
         application = StudentExitApplication(
             student_id=student_id,
@@ -192,8 +211,25 @@ def create_application():
             emergency_phone=emergency_phone
         )
 
+        # 根据申请者类型设置自动审批状态
+        if current_user.user_type == 'teacher':
+            # 老师申请：自动默认老师通过，等待家长知晓
+            application.teacher_approval_status = 'approved'
+            application.teacher_approval_time = datetime.utcnow()
+            application.teacher_approval_note = '班主任代申请，自动通过教师审批'
+            application.teacher_approved_by = current_user.id
+        elif current_user.user_type == 'parent':
+            # 家长申请：自动默认家长通过（知晓），等待教师审批
+            application.parent_approval_status = 'approved'
+            application.parent_approval_time = datetime.utcnow()
+            application.parent_approval_note = '家长申请，自动知晓'
+            application.parent_approved_by = current_user.id
+
         db.session.add(application)
         db.session.commit()
+
+        # 更新总体审批状态
+        application.update_approval_status()
 
         return jsonify({
             'message': '申请提交成功',
@@ -239,7 +275,7 @@ def get_applications():
             pass
 
         # 按状态过滤
-        if status:
+        if status and status != 'all':
             query = query.filter_by(application_status=status)
 
         # 按创建时间倒序排列
@@ -379,13 +415,19 @@ def approve_application(application_id):
             application.parent_approved_by = current_user.id
 
         elif current_user.user_type == 'teacher' and current_user.is_class_teacher:
-            # 班主任审批 - 必须先有家长知晓
+            # 班主任审批
             if not application.can_approve(current_user.id, 'teacher'):
                 return jsonify({'error': '您没有权限审批此申请'}), 403
 
-            # 检查家长是否已经知晓
-            if application.parent_approval_status != 'approved':
-                return jsonify({'error': '请等待家长知晓后才能审批'}), 400
+            # 检查是否是班主任自己提交的申请，如果是则不允许审批
+            if application.applicant_id == current_user.id:
+                return jsonify({'error': '不能审批自己提交的申请'}), 403
+
+            # 检查是否需要家长知晓（只有学生申请时才需要家长知晓）
+            if application.applicant.user_type == 'student':
+                # 学生申请：需要家长知晓后才能审批
+                if application.parent_approval_status != 'approved':
+                    return jsonify({'error': '请等待家长知晓后才能审批'}), 400
 
             application.teacher_approval_status = 'approved' if approval_action == 'approve' else 'rejected'
             application.teacher_approval_time = datetime.utcnow()
@@ -427,12 +469,19 @@ def get_qr_code(application_id):
         if not can_view_application(current_user, application):
             return jsonify({'error': '没有权限查看此申请'}), 403
 
+        # 检查是否是当天的申请
+        from datetime import date
+        today = date.today()
+        if application.exit_date != today:
+            return jsonify({'error': '只能查看当天的离校申请二维码'}), 400
+
         # 检查二维码是否有效
         if not application.is_qr_code_valid():
             return jsonify({'error': '二维码无效或已过期'}), 400
 
         return jsonify({
             'qr_code': application.qr_code,
+            'verification_code': application.verification_code,
             'expires_at': application.qr_code_expires_at.isoformat() if application.qr_code_expires_at else None
         })
 
@@ -705,9 +754,14 @@ def get_recent_applications():
                 'exit_time': app.exit_time_start.strftime('%H:%M') if app.exit_time_start else None,
                 'status': app.application_status,
                 'application_status': app.application_status,
+                'teacher_approval_status': app.teacher_approval_status,
+                'parent_approval_status': app.parent_approval_status,
+                'teacher_approval_time': app.teacher_approval_time.isoformat() if app.teacher_approval_time else None,
+                'parent_approval_time': app.parent_approval_time.isoformat() if app.parent_approval_time else None,
                 'created_at': app.created_at.isoformat() if app.created_at else None,
                 'application_date': app.created_at.isoformat() if app.created_at else None,
-                'can_approve': app.can_approve(current_user.id, current_user.user_type)
+                'can_approve': app.can_approve(current_user.id, current_user.user_type),
+                'application_type': 'student_exit'
             } for app in applications]
         })
 
@@ -786,3 +840,63 @@ def get_pending_acknowledgment_applications():
     except Exception as e:
         current_app.logger.error(f"获取家长代办事项失败: {str(e)}")
         return jsonify({'error': '获取代办事项失败'}), 500
+
+@student_exit_bp.route('/applications/<int:application_id>/revoke', methods=['POST'])
+@jwt_required()
+def revoke_application(application_id):
+    """撤销学生出校申请的审批"""
+    try:
+        current_user_id = get_jwt_identity()
+        current_user = User.query.get(current_user_id)
+
+        if not current_user:
+            return jsonify({'error': '用户不存在'}), 404
+
+        application = StudentExitApplication.query.get(application_id)
+        if not application:
+            return jsonify({'error': '申请不存在'}), 404
+
+        # 权限检查：只有班主任和管理员可以撤销审批
+        if current_user.user_type not in ['teacher', 'admin']:
+            return jsonify({'error': '您没有权限撤销审批'}), 403
+
+        if current_user.user_type == 'teacher' and not current_user.is_class_teacher:
+            return jsonify({'error': '只有班主任可以撤销审批'}), 403
+
+        # 检查申请状态，只有已通过或已拒绝的申请才能撤销
+        if application.application_status not in ['approved', 'rejected']:
+            return jsonify({'error': '只能撤销已审批的申请'}), 400
+
+        # 重置审批状态
+        application.parent_approval_status = 'pending'
+        application.parent_approval_time = None
+        application.parent_approval_note = None
+        application.parent_approved_by = None
+
+        application.teacher_approval_status = 'pending'
+        application.teacher_approval_time = None
+        application.teacher_approval_note = None
+        application.teacher_approved_by = None
+
+        # 清除二维码
+        application.qr_code = None
+        application.qr_code_expires_at = None
+        application.verification_code = None
+
+        # 更新总体申请状态
+        application.application_status = 'pending'
+
+        db.session.commit()
+
+        return jsonify({
+            'message': '审批已撤销，申请重新变为待审核状态',
+            'application': application.to_dict()
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"撤销学生出校申请审批失败: {str(e)}")
+        current_app.logger.error(f"错误详情: {type(e).__name__}: {str(e)}")
+        import traceback
+        current_app.logger.error(f"错误追踪: {traceback.format_exc()}")
+        db.session.rollback()
+        return jsonify({'error': '撤销审批失败，请重试'}), 500

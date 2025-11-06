@@ -443,9 +443,69 @@ const DashboardPage = {
             this.initCharts(data.visit_trend, data.purpose_stats);
             this.loadRecentActivity();
             this.loadRecentCalendarEvents();
+            this.bindEvents();
         } catch (error) {
             console.error('加载仪表板数据失败:', error);
             AdminUtils.showToast('加载仪表板数据失败', 'error');
+        }
+    },
+
+    // 绑定事件
+    bindEvents() {
+        // 导出制卡数据按钮
+        const exportBtn = document.getElementById('exportCardDataBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                this.exportCardData();
+            });
+        }
+    },
+
+    // 导出制卡数据
+    async exportCardData() {
+        try {
+            AdminUtils.showToast('正在导出制卡数据...', 'info');
+
+            // 创建下载链接
+            const response = await fetch('/admin/export/card-data', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                // 获取文件名
+                const contentDisposition = response.headers.get('content-disposition');
+                let filename = '制卡中心数据导出.xlsx';
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                    if (filenameMatch && filenameMatch[1]) {
+                        filename = filenameMatch[1].replace(/['"]/g, '');
+                    }
+                }
+
+                // 获取文件数据
+                const blob = await response.blob();
+
+                // 创建下载链接
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                AdminUtils.showToast('制卡数据导出成功', 'success');
+            } else {
+                const error = await response.json();
+                AdminUtils.showToast(`导出失败: ${error.error || '未知错误'}`, 'error');
+            }
+        } catch (error) {
+            console.error('导出制卡数据失败:', error);
+            AdminUtils.showToast('导出制卡数据失败', 'error');
         }
     },
 
@@ -454,7 +514,8 @@ const DashboardPage = {
         document.getElementById('totalUsers').textContent = stats.total_users || 0;
         document.getElementById('totalAlumni').textContent = stats.total_alumni || 0;
         document.getElementById('todayVisits').textContent = stats.today_visits || 0;
-        document.getElementById('pendingCount').textContent =
+        // 只更新仪表板的待处理事项，不覆盖审核管理页面的统计
+        document.getElementById('dashboardPendingCount').textContent =
             (stats.pending_alumni || 0) + (stats.pending_visits || 0) + (stats.pending_vehicles || 0);
     },
 
@@ -823,6 +884,14 @@ const UsersPage = {
             });
         }
 
+        // 绑定导出制卡数据按钮
+        const exportCardDataBtn = document.getElementById('exportCardDataBtn');
+        if (exportCardDataBtn) {
+            exportCardDataBtn.addEventListener('click', () => {
+                this.exportCardData();
+            });
+        }
+
         // 搜索
         const searchInput = document.getElementById('userSearch');
         if (searchInput) {
@@ -858,7 +927,8 @@ const UsersPage = {
         if (editUserTypeSelect) {
             editUserTypeSelect.addEventListener('change', () => {
                 const visitableGroup = document.getElementById('visitableGroup');
-                if (editUserTypeSelect.value === 'teacher') {
+                // 所有用户类型都可以设置拜访权限
+                if (['teacher', 'admin', 'alumni', 'security'].includes(editUserTypeSelect.value)) {
                     visitableGroup.style.display = 'block';
                 } else {
                     visitableGroup.style.display = 'none';
@@ -898,6 +968,12 @@ const UsersPage = {
                 grade: document.getElementById('addGrade')?.value?.trim(),
                 is_class_teacher: document.getElementById('addIsClassTeacher')?.checked
             };
+
+            // 添加拜访权限设置
+            const visitableTypes = ['teacher', 'admin', 'alumni', 'security'];
+            if (visitableTypes.includes(formData.user_type)) {
+                formData.is_visitable = document.getElementById('addIsVisitable')?.checked || false;
+            }
 
             console.log('📍 收集到的表单数据:', formData);
 
@@ -1099,37 +1175,56 @@ const UsersPage = {
         const classIdGroup = document.getElementById('addClassIdGroup');
         const gradeGroup = document.getElementById('addGradeGroup');
         const isClassTeacherGroup = document.getElementById('addIsClassTeacherGroup');
+        const visitableGroup = document.getElementById('addVisitableGroup');
+        const visitableDivider = document.getElementById('addVisitableDivider');
+        const studentFieldsDivider = document.getElementById('addStudentFieldsDivider');
 
-        // 隐藏所有可选字段
+        // 隐藏所有可选字段和分割线
         if (studentIdGroup) studentIdGroup.style.display = 'none';
         if (employeeIdGroup) employeeIdGroup.style.display = 'none';
         if (classIdGroup) classIdGroup.style.display = 'none';
         if (gradeGroup) gradeGroup.style.display = 'none';
         if (isClassTeacherGroup) isClassTeacherGroup.style.display = 'none';
+        if (visitableGroup) visitableGroup.style.display = 'none';
+        if (visitableDivider) visitableDivider.style.display = 'none';
+        if (studentFieldsDivider) studentFieldsDivider.style.display = 'none';
 
         // 根据用户类型显示相应字段
         switch (userType) {
             case 'student':
+                if (studentFieldsDivider) studentFieldsDivider.style.display = 'block';
                 if (studentIdGroup) studentIdGroup.style.display = 'block';
                 if (classIdGroup) classIdGroup.style.display = 'block';
                 if (gradeGroup) gradeGroup.style.display = 'block';
                 break;
             case 'teacher':
+                if (visitableDivider) visitableDivider.style.display = 'block';
+                if (studentFieldsDivider) studentFieldsDivider.style.display = 'block';
                 if (employeeIdGroup) employeeIdGroup.style.display = 'block';
                 if (classIdGroup) classIdGroup.style.display = 'block';
                 if (isClassTeacherGroup) isClassTeacherGroup.style.display = 'block';
+                if (visitableGroup) visitableGroup.style.display = 'block';
                 break;
             case 'parent':
                 // 家长通常不需要这些字段
                 break;
             case 'alumni':
+                if (visitableDivider) visitableDivider.style.display = 'block';
+                if (studentFieldsDivider) studentFieldsDivider.style.display = 'block';
                 if (studentIdGroup) studentIdGroup.style.display = 'block';
+                if (visitableGroup) visitableGroup.style.display = 'block';
                 break;
             case 'security':
+                if (visitableDivider) visitableDivider.style.display = 'block';
+                if (studentFieldsDivider) studentFieldsDivider.style.display = 'block';
                 if (employeeIdGroup) employeeIdGroup.style.display = 'block';
+                if (visitableGroup) visitableGroup.style.display = 'block';
                 break;
             case 'admin':
+                if (visitableDivider) visitableDivider.style.display = 'block';
+                if (studentFieldsDivider) studentFieldsDivider.style.display = 'block';
                 if (employeeIdGroup) employeeIdGroup.style.display = 'block';
+                if (visitableGroup) visitableGroup.style.display = 'block';
                 break;
         }
     },
@@ -1208,11 +1303,11 @@ const UsersPage = {
                 <td>${user.phone}</td>
                 <td><span class="status-badge ${user.status}">${AdminUtils.getStatusText(user.status)}</span></td>
                 <td>
-                    ${user.user_type.includes('teacher') ? `
-                        <span class="visitable-badge ${user.is_visitable ? 'visitable' : 'not-visitable'}">
-                            ${user.is_visitable ? '自动可拜访' : '不可拜访'}
+                    ${user.is_visitable ? `
+                        <span class="visitable-badge visitable">
+                            可拜访 ${user.employee_id ? `(ID: ${user.employee_id})` : ''}
                         </span>
-                    ` : user.is_visitable ? '<span class="visitable-badge visitable">可拜访</span>' : '-'}
+                    ` : '-'}
                 </td>
                 <td>${AdminUtils.formatDate(user.created_at)}</td>
                 <td>
@@ -1599,7 +1694,7 @@ const UsersPage = {
     // 下载用户模板
     async downloadUserTemplate() {
         try {
-            const response = await fetch('/admin/users/template', {
+            const response = await fetch('/api/admin/users/template', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 }
@@ -1665,6 +1760,46 @@ const UsersPage = {
             AdminUtils.showToast('导出失败: ' + error.message, 'error');
         } finally {
             AdminUtils.hideLoading();
+        }
+    },
+
+    // 导出制卡数据
+    async exportCardData() {
+        try {
+            AdminUtils.showToast('正在导出制卡数据...', 'info');
+
+            const response = await fetch('/api/admin/export/card-data', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+
+                // 生成文件名
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+                a.download = `制卡数据_${dateStr}_${timeStr}.xlsx`;
+
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                AdminUtils.showToast('制卡数据导出成功', 'success');
+            } else {
+                const error = await response.json();
+                AdminUtils.showToast(`导出失败: ${error.error || '未知错误'}`, 'error');
+            }
+        } catch (error) {
+            console.error('导出制卡数据失败:', error);
+            AdminUtils.showToast('导出制卡数据失败', 'error');
         }
     },
 
@@ -1738,8 +1873,9 @@ const UsersPage = {
                 employee_id: document.getElementById('editEmployeeId').value.trim()
             };
 
-            // 如果包含教师类型，添加可拜访权限
-            if (selectedTypes.includes('teacher')) {
+            // 如果包含可设置拜访权限的用户类型，添加可拜访权限
+            const visitableTypes = ['teacher', 'admin', 'alumni', 'security'];
+            if (selectedTypes.some(type => visitableTypes.includes(type))) {
                 formData.is_visitable = document.getElementById('editIsVisitable').checked;
             }
 
@@ -2041,6 +2177,12 @@ const UsersPage = {
             document.getElementById('editClassId').value = user.class_id || '';
             document.getElementById('editGrade').value = user.grade || '';
             document.getElementById('editIsClassTeacher').checked = user.is_class_teacher || false;
+
+            // 设置拜访权限
+            const editIsVisitable = document.getElementById('editIsVisitable');
+            if (editIsVisitable) {
+                editIsVisitable.checked = user.is_visitable || false;
+            }
 
             // 根据用户类型显示相应字段
             this.updateEditUserFieldsVisibility(user.user_type);
@@ -2643,9 +2785,11 @@ const AlumniApprovePage = {
     },
 
     updateStatistics(stats) {
-        document.getElementById('pendingCount').textContent = stats.pending || 0;
-        document.getElementById('approvedCount').textContent = stats.approved || 0;
-        document.getElementById('rejectedCount').textContent = stats.rejected || 0;
+        // 注释掉这些统计更新，避免覆盖审核管理页面的统计
+        // 审核管理页面的统计由mobile.js中的loadReviewStatistics函数负责
+        // document.getElementById('pendingCount').textContent = stats.pending || 0;
+        // document.getElementById('approvedCount').textContent = stats.approved || 0;
+        // document.getElementById('rejectedCount').textContent = stats.rejected || 0;
         document.getElementById('totalCount').textContent = stats.total || 0;
     },
 
@@ -2968,15 +3112,63 @@ const VisitApplicationsPage = {
                 ...this.filters
             });
 
-            const data = await AdminUtils.request(`/visits/applications?${params}`);
+            // 分别加载访问申请和学生出校申请，处理可能的错误
+            let visitData = { applications: [], statistics: {}, pagination: { total: 0 } };
+            let studentExitData = { applications: [], statistics: {}, pagination: { total: 0 } };
 
-            this.updateStatistics(data.statistics);
-            this.renderApplicationsTable(data.applications);
-            this.renderPagination(data.pagination);
-            this.updateTotalCount(data.pagination.total);
+            try {
+                visitData = await AdminUtils.request(`/visits/applications?${params}`);
+            } catch (error) {
+                console.error('加载访问申请失败:', error);
+                AdminUtils.showToast('加载访问申请失败', 'warning');
+            }
+
+            try {
+                studentExitData = await AdminUtils.request(`/student-exit/applications?${params}`);
+            } catch (error) {
+                console.error('加载学生出校申请失败:', error);
+                // 如果只是功能不存在，不显示错误提示
+                if (error.message && error.message.includes('404')) {
+                    console.log('学生出校申请功能未启用');
+                } else {
+                    AdminUtils.showToast('加载学生出校申请失败', 'warning');
+                }
+            }
+
+            // 合并两种申请数据
+            const allApplications = [
+                ...visitData.applications.map(app => ({...app, application_type: 'visit'})),
+                ...studentExitData.applications.map(app => ({...app, application_type: 'student_exit'}))
+            ];
+
+            // 合并统计数据
+            const combinedStatistics = {
+                pending: (visitData.statistics?.pending || 0) + (studentExitData.statistics?.pending || 0),
+                approved: (visitData.statistics?.approved || 0) + (studentExitData.statistics?.approved || 0),
+                rejected: (visitData.statistics?.rejected || 0) + (studentExitData.statistics?.rejected || 0),
+                completed: (visitData.statistics?.completed || 0) + (studentExitData.statistics?.completed || 0)
+            };
+
+            // 合并分页信息
+            const combinedPagination = {
+                page: this.currentPage,
+                per_page: 20,
+                total: (visitData.pagination?.total || 0) + (studentExitData.pagination?.total || 0),
+                pages: Math.ceil(((visitData.pagination?.total || 0) + (studentExitData.pagination?.total || 0)) / 20)
+            };
+
+            this.updateStatistics(combinedStatistics);
+            this.renderApplicationsTable(allApplications);
+            this.renderPagination(combinedPagination);
+            this.updateTotalCount(combinedPagination.total);
+
+            // 如果两个API都失败了
+            if (visitData.applications.length === 0 && studentExitData.applications.length === 0) {
+                AdminUtils.showToast('暂无申请数据', 'info');
+            }
         } catch (error) {
-            console.error('加载访问申请失败:', error);
-            AdminUtils.showToast('加载访问申请失败', 'error');
+            console.error('加载申请失败:', error);
+            AdminUtils.showToast('加载申请失败', 'error');
         }
     },
 
@@ -2999,54 +3191,112 @@ const VisitApplicationsPage = {
             return;
         }
 
-        tbody.innerHTML = applications.map(app => `
-            <tr>
-                <td>
-                    <input type="checkbox"
-                           class="application-checkbox"
-                           data-id="${app.id}"
-                           ${this.selectedApplications.has(app.id) ? 'checked' : ''}
-                           onchange="VisitApplicationsPage.toggleSelection(${app.id}, this.checked)">
-                </td>
-                <td>
-                    <div class="user-info">
-                        <div class="user-name">${app.user ? app.user.real_name : '未知用户'}</div>
-                        <div class="user-phone">${app.user ? app.user.phone : '无'}</div>
-                        <div class="user-email">${app.user ? app.user.email : '无'}</div>
-                        ${app.alumni_profile ? `<div class="user-alumni">${app.alumni_profile.division} - ${app.alumni_profile.class_name}</div>` : ''}
-                    </div>
-                </td>
-                <td>${AdminUtils.formatDate(app.visit_date)}</td>
-                <td>${AdminUtils.formatTime(app.time_start)} - ${AdminUtils.formatTime(app.time_end)}</td>
-                <td>
-                    <div class="purpose-cell">
-                        <div class="purpose-text">${app.visit_purpose}</div>
-                        ${app.remarks ? `<div class="remarks-text">${app.remarks}</div>` : ''}
-                    </div>
-                </td>
-                <td>${app.interviewee || '-'}</td>
-                <td>
-                    ${app.vehicle ? `
-                        <div class="vehicle-info">
-                            <div class="vehicle-plate">${app.vehicle.plate_number}</div>
-                            <div class="vehicle-model">${app.vehicle.brand} ${app.vehicle.model}</div>
-                        </div>
-                    ` : '<span class="text-muted">无车辆</span>'}
-                </td>
-                <td>${AdminUtils.formatDateTime(app.created_at)}</td>
-                <td>
-                    <span class="status-badge ${app.status}">
-                        ${AdminUtils.getStatusText(app.status)}
-                    </span>
-                </td>
-                <td>${app.approver_name || '-'}</td>
-                <td>
-                    <div class="btn-group">
-                        ${this.renderActionButtons(app)}
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = applications.map(app => {
+            // 根据申请类型显示不同的信息
+            if (app.application_type === 'student_exit') {
+                // 学生出校申请
+                return `
+                    <tr>
+                        <td>
+                            <input type="checkbox"
+                                   class="application-checkbox"
+                                   data-id="${app.id}"
+                                   data-type="student_exit"
+                                   ${this.selectedApplications.has(`${app.id}_student_exit`) ? 'checked' : ''}
+                                   onchange="VisitApplicationsPage.toggleSelection(${app.id}, this.checked, 'student_exit')">
+                        </td>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-name">${app.student ? app.student.real_name : '未知学生'}</div>
+                                <div class="user-type">学生出校申请</div>
+                                <div class="user-class">${app.student ? app.student.class_name : '无班级信息'}</div>
+                                <div class="applicant-info">申请人: ${app.applicant ? app.applicant.real_name : '未知'} (${app.applicant ? app.applicant.user_type : ''})</div>
+                            </div>
+                        </td>
+                        <td>${AdminUtils.formatDate(app.exit_date)}</td>
+                        <td>${AdminUtils.formatTime(app.exit_time_start)} - ${AdminUtils.formatTime(app.exit_time_end)}</td>
+                        <td>
+                            <div class="purpose-cell">
+                                <div class="purpose-text">${app.exit_reason}</div>
+                                ${app.remarks ? `<div class="remarks-text">${app.remarks}</div>` : ''}
+                            </div>
+                        </td>
+                        <td>-</td>
+                        <td>
+                            <span class="text-muted">学生出校</span>
+                        </td>
+                        <td>${AdminUtils.formatDateTime(app.created_at)}</td>
+                        <td>
+                            <div class="review-actions">
+                                <div class="status-row">
+                                    <span class="status-badge ${app.application_status}">
+                                        ${this.getStudentExitStatusText(app.application_status)}
+                                    </span>
+                                </div>
+                                <div class="approver-info">审核人：${this.getApproverName(app)}</div>
+                                <div class="action-buttons">
+                                    ${this.renderStudentExitActionButtons(app)}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // 访问申请（原有逻辑）
+                return `
+                    <tr>
+                        <td>
+                            <input type="checkbox"
+                                   class="application-checkbox"
+                                   data-id="${app.id}"
+                                   data-type="visit"
+                                   ${this.selectedApplications.has(`${app.id}_visit`) ? 'checked' : ''}
+                                   onchange="VisitApplicationsPage.toggleSelection(${app.id}, this.checked, 'visit')">
+                        </td>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-name">${app.user ? app.user.real_name : '未知用户'}</div>
+                                <div class="user-type">访问申请</div>
+                                <div class="user-phone">${app.user ? app.user.phone : '无'}</div>
+                                <div class="user-email">${app.user ? app.user.email : '无'}</div>
+                                ${app.alumni_profile ? `<div class="user-alumni">${app.alumni_profile.division} - ${app.alumni_profile.class_name}</div>` : ''}
+                            </div>
+                        </td>
+                        <td>${AdminUtils.formatDate(app.visit_date)}</td>
+                        <td>${AdminUtils.formatTime(app.time_start)} - ${AdminUtils.formatTime(app.time_end)}</td>
+                        <td>
+                            <div class="purpose-cell">
+                                <div class="purpose-text">${app.visit_purpose}</div>
+                                ${app.remarks ? `<div class="remarks-text">${app.remarks}</div>` : ''}
+                            </div>
+                        </td>
+                        <td>${app.interviewee || '-'}</td>
+                        <td>
+                            ${app.vehicle ? `
+                                <div class="vehicle-info">
+                                    <div class="vehicle-plate">${app.vehicle.plate_number}</div>
+                                    <div class="vehicle-model">${app.vehicle.brand} ${app.vehicle.model}</div>
+                                </div>
+                            ` : '<span class="text-muted">无车辆</span>'}
+                        </td>
+                        <td>${AdminUtils.formatDateTime(app.created_at)}</td>
+                        <td>
+                            <div class="review-actions">
+                                <div class="status-row">
+                                    <span class="status-badge ${app.status}">
+                                        ${AdminUtils.getStatusText(app.status)}
+                                    </span>
+                                </div>
+                                <div class="approver-info">审核人：${app.approver_name || '-'}</div>
+                                <div class="action-buttons">
+                                    ${this.renderActionButtons(app)}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }).join('');
 
         // 更新全选状态
         this.updateSelectAllState();
@@ -3124,11 +3374,12 @@ const VisitApplicationsPage = {
         container.innerHTML = html;
     },
 
-    toggleSelection(appId, checked) {
+    toggleSelection(appId, checked, type = 'visit') {
+        const key = `${appId}_${type}`;
         if (checked) {
-            this.selectedApplications.add(appId);
+            this.selectedApplications.add(key);
         } else {
-            this.selectedApplications.delete(appId);
+            this.selectedApplications.delete(key);
         }
         this.updateBatchActionButton();
     },
@@ -3466,6 +3717,174 @@ const VisitApplicationsPage = {
         } catch (error) {
             AdminUtils.showToast('数据导出失败', 'error');
         }
+    },
+
+    // 学生出校申请相关辅助函数
+    getStudentExitStatusText(status) {
+        const statusMap = {
+            'pending': '待审批',
+            'parent_approved': '家长通过',
+            'teacher_approved': '老师通过',
+            'approved': '已通过',
+            'rejected': '已拒绝',
+            'completed': '已完成',
+            'cancelled': '已取消'
+        };
+        return statusMap[status] || status;
+    },
+
+    getApproverName(app) {
+        if (app.application_type === 'student_exit') {
+            // 学生出校申请的审批人
+            if (app.parent_approved_by && app.teacher_approved_by) {
+                return '家长、老师已审批';
+            } else if (app.parent_approved_by) {
+                return '家长已审批';
+            } else if (app.teacher_approved_by) {
+                return '老师已审批';
+            }
+            return '-';
+        } else {
+            // 访问申请的审批人
+            return app.approver_name || '-';
+        }
+    },
+
+    renderStudentExitActionButtons(app) {
+        switch (app.application_status) {
+            case 'pending':
+            case 'parent_approved':
+            case 'teacher_approved':
+                return `
+                    <button class="btn btn-sm btn-success" onclick="VisitApplicationsPage.approveStudentExit(${app.id})" title="通过">
+                        <i class="ri-check-line"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="VisitApplicationsPage.rejectStudentExit(${app.id})" title="拒绝">
+                        <i class="ri-close-line"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline" onclick="VisitApplicationsPage.viewStudentExitDetails(${app.id})" title="查看详情">
+                        <i class="ri-eye-line"></i>
+                    </button>
+                `;
+            case 'approved':
+                return `
+                    <button class="btn btn-sm btn-warning" onclick="VisitApplicationsPage.cancelStudentExit(${app.id})" title="取消">
+                        <i class="ri-close-line"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline" onclick="VisitApplicationsPage.viewStudentExitDetails(${app.id})" title="查看详情">
+                        <i class="ri-eye-line"></i>
+                    </button>
+                `;
+            case 'rejected':
+                return `
+                    <button class="btn btn-sm btn-success" onclick="VisitApplicationsPage.reapproveStudentExit(${app.id})" title="重新审核">
+                        <i class="ri-refresh-line"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline" onclick="VisitApplicationsPage.viewStudentExitDetails(${app.id})" title="查看详情">
+                        <i class="ri-eye-line"></i>
+                    </button>
+                `;
+            default:
+                return `
+                    <button class="btn btn-sm btn-outline" onclick="VisitApplicationsPage.viewStudentExitDetails(${app.id})" title="查看详情">
+                        <i class="ri-eye-line"></i>
+                    </button>
+                `;
+        }
+    },
+
+    // 学生出校申请审批方法
+    async approveStudentExit(applicationId) {
+        AdminUtils.showConfirm('确定要通过该学生出校申请吗？', async () => {
+            try {
+                const response = await AdminUtils.request(`/student-exit/applications/${applicationId}/approve`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        approve: true,
+                        note: '管理员审批通过'
+                    })
+                });
+
+                if (response.success) {
+                    AdminUtils.showToast('审批通过', 'success');
+                    this.loadApplications(); // 刷新列表
+                } else {
+                    AdminUtils.showToast(response.message || '审批失败', 'error');
+                }
+            } catch (error) {
+                console.error('审批失败:', error);
+                AdminUtils.showToast('审批失败', 'error');
+            }
+        });
+    },
+
+    async rejectStudentExit(applicationId) {
+        AdminUtils.showConfirm('确定要拒绝该学生出校申请吗？', async () => {
+            try {
+                const response = await AdminUtils.request(`/student-exit/applications/${applicationId}/approve`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        approve: false,
+                        note: '管理员审批拒绝'
+                    })
+                });
+
+                if (response.success) {
+                    AdminUtils.showToast('已拒绝申请', 'info');
+                    this.loadApplications(); // 刷新列表
+                } else {
+                    AdminUtils.showToast(response.message || '操作失败', 'error');
+                }
+            } catch (error) {
+                console.error('操作失败:', error);
+                AdminUtils.showToast('操作失败', 'error');
+            }
+        });
+    },
+
+    async viewStudentExitDetails(applicationId) {
+        // 这里可以实现学生出校申请的详情查看功能
+        AdminUtils.showToast('详情查看功能开发中', 'info');
+    },
+
+    async cancelStudentExit(applicationId) {
+        AdminUtils.showConfirm('确定要取消该学生出校申请吗？', async () => {
+            try {
+                const response = await AdminUtils.request(`/student-exit/applications/${applicationId}/cancel`, {
+                    method: 'POST'
+                });
+
+                if (response.success) {
+                    AdminUtils.showToast('已取消申请', 'info');
+                    this.loadApplications(); // 刷新列表
+                } else {
+                    AdminUtils.showToast(response.message || '操作失败', 'error');
+                }
+            } catch (error) {
+                console.error('操作失败:', error);
+                AdminUtils.showToast('操作失败', 'error');
+            }
+        });
+    },
+
+    async reapproveStudentExit(applicationId) {
+        AdminUtils.showConfirm('确定要重新审核该学生出校申请吗？', async () => {
+            try {
+                const response = await AdminUtils.request(`/student-exit/applications/${applicationId}/reapprove`, {
+                    method: 'POST'
+                });
+
+                if (response.success) {
+                    AdminUtils.showToast('已重新提交审核', 'info');
+                    this.loadApplications(); // 刷新列表
+                } else {
+                    AdminUtils.showToast(response.message || '操作失败', 'error');
+                }
+            } catch (error) {
+                console.error('操作失败:', error);
+                AdminUtils.showToast('操作失败', 'error');
+            }
+        });
     }
 };
 
@@ -4036,7 +4455,7 @@ const VehiclesPage = {
 const StatisticsPage = {
     async load() {
         try {
-            const data = await AdminUtils.request('/admin/statistics');
+            const data = await AdminUtils.request('/admin/statistics?type=overview');
             this.updateStats(data);
             this.initCharts(data);
         } catch (error) {
@@ -4046,14 +4465,54 @@ const StatisticsPage = {
     },
 
     updateStats(data) {
-        document.getElementById('totalApplications').textContent = data.total_applications || 0;
-        document.getElementById('approvedApplications').textContent =
-            data.application_stats.find(s => s.status === 'approved')?.count || 0;
-        // 更新其他统计数据
+        // 获取总用户数
+        const totalUsers = data.total_users || 0;
+        document.getElementById('totalUsers').textContent = totalUsers;
+
+        // 获取注册校友数
+        const alumniCount = data.total_alumni || 0;
+        document.getElementById('totalAlumni').textContent = alumniCount;
+
+        // 获取今日访问数
+        const todayVisits = data.time_statistics?.today_visits || 0;
+        document.getElementById('todayVisits').textContent = todayVisits;
+
+        // 计算待处理事项（待审批的申请）
+        const pendingCount = data.application_stats?.find(s => s.status === 'pending')?.count || 0;
+        // 更新仪表板的待处理事项，不覆盖审核管理页面的统计
+        document.getElementById('dashboardPendingCount').textContent = pendingCount;
     },
 
     initCharts(data) {
         // 实现统计图表
+        this.renderVisitTrendChart(data.time_statistics || {});
+        this.renderApplicationStatusChart(data.application_stats || []);
+        this.renderDivisionChart(data.division_stats || []);
+    },
+
+    renderVisitTrendChart(timeStats) {
+        // 渲染访问趋势图表
+        const ctx = document.getElementById('visitTrendChart');
+        if (ctx && ctx.getContext) {
+            // 这里可以集成 Chart.js 或其他图表库
+            console.log('渲染访问趋势图表:', timeStats);
+        }
+    },
+
+    renderApplicationStatusChart(appStats) {
+        // 渲染申请状态分布图
+        const ctx = document.getElementById('applicationStatusChart');
+        if (ctx && ctx.getContext) {
+            console.log('渲染申请状态图表:', appStats);
+        }
+    },
+
+    renderDivisionChart(divisionStats) {
+        // 渲染学部分布图
+        const ctx = document.getElementById('divisionChart');
+        if (ctx && ctx.getContext) {
+            console.log('渲染学部分布图表:', divisionStats);
+        }
     }
 };
 

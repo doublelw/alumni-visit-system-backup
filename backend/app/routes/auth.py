@@ -17,6 +17,81 @@ auth_bp = Blueprint('auth', __name__)
 def test():
     return jsonify({'message': 'Auth blueprint is working!'})
 
+@auth_bp.route('/test-users')
+def get_test_users():
+    """获取测试用户列表（用于登录页自动填充）"""
+    try:
+        # 获取所有活跃的测试用户
+        test_users = User.query.filter_by(status='active').all()
+
+        # 按用户类型分类并添加显示信息
+        user_categories = {
+            'alumni': [],
+            'teacher': [],
+            'student': [],
+            'parent': [],
+            'security': [],
+            'admin': []
+        }
+
+        # 定义已知用户的正确密码
+        known_passwords = {
+            'admin': 'admin123',
+            'zhang_xiaoming': 'student123',
+            'li_laoshi': 'teacher123',
+            'zhang_fumu': 'parent123',
+            'student01': '123456',
+            'security01': '123456',
+            'security02': '123456',
+            'teacher01': '123456',
+            'parent01': '123456',
+            'alumni001': 'test123456',
+            'security001': 'security123',
+            'security002': 'security123',
+            'test_security_api': 'test123456',
+            'test_student004': 'test123456'
+        }
+
+        for user in test_users:
+            # 只包含常见的测试用户类型
+            if user.user_type in user_categories:
+                user_info = {
+                    'username': user.username,
+                    'real_name': user.real_name,
+                    'user_type': user.user_type,
+                    'password': known_passwords.get(user.username, '123456'),
+                    'display_name': user.real_name or user.username
+                }
+
+                # 限制每种类型最多显示2个用户，避免界面过于拥挤
+                if len(user_categories[user.user_type]) < 2:
+                    user_categories[user.user_type].append(user_info)
+
+        # 格式化返回数据，与前端现有的按钮布局匹配
+        response_data = {
+            'success': True,
+            'users': {
+                'alumni001': user_categories['alumni'][0] if user_categories['alumni'] else None,
+                'li_laoshi': user_categories['teacher'][0] if user_categories['teacher'] else None,
+                'zhang_xiaoming': user_categories['student'][0] if user_categories['student'] else None,
+                'zhang_fumu': user_categories['parent'][0] if user_categories['parent'] else None,
+                'admin': user_categories['admin'][0] if user_categories['admin'] else None,
+                'security001': user_categories['security'][0] if user_categories['security'] else None
+            }
+        }
+
+        # 过滤掉None值
+        response_data['users'] = {k: v for k, v in response_data['users'].items() if v is not None}
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        current_app.logger.error(f"获取测试用户列表失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': '获取测试用户列表失败'
+        }), 500
+
 def validate_email(email):
     """验证邮箱格式"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'

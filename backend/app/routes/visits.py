@@ -429,6 +429,11 @@ def get_visit_applications():
         applications_list = []
         for app in pagination.items:
             app_data = app.to_dict()
+
+            # 检查当前用户是否有审批权限
+            has_approval_permission, _ = check_approval_permission(current_user, app)
+            app_data['can_approve'] = has_approval_permission
+
             # 添加申请人信息
             applicant_user = User.query.get(app.applicant_id)
             if applicant_user:

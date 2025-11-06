@@ -164,15 +164,20 @@
         .applications-list, .approvals-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
         }
 
         .application-item, .approval-item {
             background: #fff;
             border: 1px solid #e1e5e9;
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 8px;
+            padding: 12px 16px;
             transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-left: 4px solid var(--primary-color);
         }
 
         .application-item:hover, .approval-item:hover {
@@ -180,27 +185,49 @@
             box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
         }
 
+        .application-item {
+            flex-direction: row;
+            gap: 16px;
+        }
+
         .application-header, .approval-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1;
         }
 
         .student-info {
             display: flex;
             flex-direction: column;
+            gap: 2px;
+        }
+
+        .application-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .application-statuses {
+            display: flex;
+            flex-direction: column;
             gap: 4px;
+            align-items: flex-end;
+            min-width: 120px;
         }
 
         .student-name {
             font-weight: 600;
             color: #333;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .student-class {
-            font-size: 14px;
+            font-size: 12px;
             color: #666;
         }
 
@@ -331,6 +358,155 @@
                 margin-right: 0;
                 margin-bottom: 2px;
             }
+        }
+
+        /* 优化最近申请卡片布局 */
+        .application-purpose {
+            font-size: 13px;
+            color: #555;
+            margin: 4px 0;
+            line-height: 1.3;
+        }
+
+        .application-time {
+            font-size: 12px;
+            color: #777;
+            margin: 2px 0;
+        }
+
+        .application-target {
+            font-size: 12px;
+            color: #666;
+            margin: 2px 0;
+        }
+
+        .application-type {
+            font-size: 11px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .application-date {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .application-status {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.approved {
+            background-color: #28a745;
+        }
+
+        .status-dot.pending {
+            background-color: #ffc107;
+        }
+
+        .status-dot.rejected {
+            background-color: #dc3545;
+        }
+
+        /* 待审批申请样式 */
+        .pending-approval-item {
+            background: #fff;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .pending-approval-item:hover {
+            border-color: #4a90e2;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
+        }
+
+        .approval-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .approval-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .approval-type {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .approval-date {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .approval-details p {
+            margin: 4px 0;
+            font-size: 12px;
+            color: #555;
+        }
+
+        .approval-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .approval-actions .btn {
+            font-size: 11px;
+            padding: 4px 8px;
+            line-height: 1.2;
+        }
+
+        /* 快速审核操作按钮优化 */
+        .quick-review-actions {
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .quick-review-actions .btn {
+            font-size: 11px;
+            padding: 4px 8px;
+            line-height: 1.2;
+        }
+
+        .quick-review-actions .btn i {
+            font-size: 12px;
+        }
+
+        .review-hint {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #999;
         }
     </style>
 </head>
@@ -939,6 +1115,7 @@
                     <section class="review-filters">
                         <div class="filter-tabs">
                             <button class="filter-tab active" data-status="pending">待审核</button>
+                            <button class="filter-tab" data-status="teacher_approved">待家长确认</button>
                             <button class="filter-tab" data-status="approved">已通过</button>
                             <button class="filter-tab" data-status="rejected">已拒绝</button>
                             <button class="filter-tab" data-status="all">全部</button>
@@ -949,6 +1126,11 @@
                     <section class="review-list">
                         <div class="application-cards" id="reviewApplicationsList">
                             <!-- 动态加载申请列表 -->
+                        </div>
+
+                        <!-- 分页容器 -->
+                        <div class="pagination-container" id="reviewPagination">
+                            <!-- 动态加载分页 -->
                         </div>
                     </section>
                 </main>
@@ -966,6 +1148,17 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- 登录错误提示区域 -->
+                <div id="loginErrorAlert" style="display: none; margin-bottom: 15px; padding: 10px; border-radius: 6px; border: 1px solid #f5c6cb; background-color: #f8d7da; color: #721c24; font-size: 14px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="ri-error-warning-line" style="font-size: 16px;"></i>
+                        <div>
+                            <strong style="font-weight: 600;">登录失败</strong>
+                            <div id="loginErrorMessage" style="margin-top: 2px; font-size: 13px;"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <form id="loginForm">
                     <div class="form-group">
                         <label for="username">用户名</label>
@@ -989,53 +1182,43 @@
                 <div class="test-accounts" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
                     <p style="font-size: 12px; color: #666; margin-bottom: 12px;">🎓 测试账号（点击自动填充）：</p>
 
-                    <!-- 第一行：基础用户类型 -->
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
-                        <button type="button" class="btn-test-account"
-                                onclick="fillTestAccount('alumni001', 'test123456')"
-                                style="padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #e3f2fd, #bbdefb); color: #1565c0; border: 1px solid #90caf9; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                            🎓 校友用户
-                        </button>
-                        <button type="button" class="btn-test-account"
-                                onclick="fillTestAccount('li_laoshi', 'teacher123')"
-                                style="padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #fff3e0, #ffe0b2); color: #e65100; border: 1px solid #ffcc80; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                            👨‍🏫 教师用户
-                        </button>
-                        <button type="button" class="btn-test-account"
-                                onclick="fillTestAccount('zhang_xiaoming', 'student123')"
-                                style="padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #f3e5f5, #e1bee7); color: #6a1b9a; border: 1px solid #ce93d8; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                            👨‍🎓 学生用户
-                        </button>
-                        <button type="button" class="btn-test-account"
-                                onclick="fillTestAccount('zhang_fumu', 'parent123')"
-                                style="padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #e8f5e8, #c8e6c9); color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                            👨‍👩‍👧‍👦 家长用户
-                        </button>
+                    <!-- 加载状态 -->
+                    <div id="testAccountsLoading" style="text-align: center; padding: 20px; color: #666;">
+                        <i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i>
+                        <p style="margin: 8px 0 0 0; font-size: 11px;">正在加载测试账号...</p>
                     </div>
 
-                    <!-- 第二行：管理和服务人员 -->
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button type="button" class="btn-test-account"
-                                onclick="fillTestAccount('admin', 'admin123')"
-                                style="padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #ffebee, #ffcdd2); color: #b71c1c; border: 1px solid #ef9a9a; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                            👑 系统管理员
-                        </button>
-                        <button type="button" class="btn-test-account"
-                                onclick="fillTestAccount('security001', 'security123')"
-                                style="padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #e0f2f1, #b2dfdb); color: #00695c; border: 1px solid #80cbc4; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                            🛡️ 保安人员
-                        </button>
+                    <!-- 动态生成的测试账号按钮 -->
+                    <div id="testAccountsContainer" style="display: none;">
+                        <!-- 第一行：基础用户类型 -->
+                        <div id="testAccountsRow1" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                            <!-- 动态生成按钮 -->
+                        </div>
+
+                        <!-- 第二行：管理和服务人员 -->
+                        <div id="testAccountsRow2" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <!-- 动态生成按钮 -->
+                        </div>
+
+                        <!-- 账号说明 -->
+                        <div style="margin-top: 12px; padding: 8px; background: #f8f9fa; border-radius: 4px; border-left: 3px solid #007bff;">
+                            <p style="font-size: 10px; color: #6c757d; margin: 0; line-height: 1.4;">
+                                💡 <strong>提示：</strong>账号来源于数据库真实用户，不同用户类型拥有不同的功能权限<br>
+                                🎓 校友：快速申请、电子校友卡<br>
+                                👨‍🏫 教师：学生出校申请、审批管理<br>
+                                👨‍🎓 学生：出校申请、校园服务<br>
+                                👨‍👩‍👧‍👦 家长：为孩子申请出校
+                            </p>
+                        </div>
                     </div>
 
-                    <!-- 账号说明 -->
-                    <div style="margin-top: 12px; padding: 8px; background: #f8f9fa; border-radius: 4px; border-left: 3px solid #007bff;">
-                        <p style="font-size: 10px; color: #6c757d; margin: 0; line-height: 1.4;">
-                            💡 <strong>提示：</strong>不同用户类型拥有不同的功能权限<br>
-                            🎓 校友：快速申请、电子校友卡<br>
-                            👨‍🏫 教师：学生出校申请、审批管理<br>
-                            👨‍🎓 学生：出校申请、校园服务<br>
-                            👨‍👩‍👧‍👦 家长：为孩子申请出校
-                        </p>
+                    <!-- 错误状态 -->
+                    <div id="testAccountsError" style="display: none; text-align: center; padding: 15px; color: #dc3545;">
+                        <i class="ri-error-warning-line"></i>
+                        <p style="margin: 8px 0 0 0; font-size: 11px;">加载测试账号失败，请手动输入</p>
+                        <button type="button" onclick="loadTestAccounts()" style="margin-top: 8px; padding: 4px 8px; font-size: 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            重试
+                        </button>
                     </div>
                 </div>
 
@@ -1667,7 +1850,135 @@
 
     <!-- 测试账号自动填充函数 -->
     <script>
-        function fillTestAccount(username, password) {
+        // 全局变量存储测试账号数据
+        let testAccountsData = {};
+
+        // 加载测试账号数据
+        async function loadTestAccounts() {
+            const loadingDiv = document.getElementById('testAccountsLoading');
+            const containerDiv = document.getElementById('testAccountsContainer');
+            const errorDiv = document.getElementById('testAccountsError');
+
+            // 显示加载状态
+            loadingDiv.style.display = 'block';
+            containerDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+
+            try {
+                // 添加时间戳来破坏缓存
+                const timestamp = Date.now();
+                const response = await fetch(`/api/auth/test-users?t=${timestamp}`);
+                const data = await response.json();
+
+                if (data.success && data.users) {
+                    testAccountsData = data.users;
+                    renderTestAccountButtons(data.users);
+
+                    // 显示容器，隐藏加载状态
+                    loadingDiv.style.display = 'none';
+                    containerDiv.style.display = 'block';
+                } else {
+                    throw new Error(data.error || '获取测试账号失败');
+                }
+            } catch (error) {
+                console.error('加载测试账号失败:', error);
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // 渲染测试账号按钮
+        function renderTestAccountButtons(users) {
+            const row1 = document.getElementById('testAccountsRow1');
+            const row2 = document.getElementById('testAccountsRow2');
+
+            // 清空现有按钮
+            row1.innerHTML = '';
+            row2.innerHTML = '';
+
+            // 定义按钮样式配置
+            const buttonConfigs = {
+                'alumni': {
+                    emoji: '🎓',
+                    text: '校友用户',
+                    colors: ['#e3f2fd', '#bbdefb', '#1565c0', '#90caf9']
+                },
+                'teacher': {
+                    emoji: '👨‍🏫',
+                    text: '教师用户',
+                    colors: ['#fff3e0', '#ffe0b2', '#e65100', '#ffcc80']
+                },
+                'student': {
+                    emoji: '👨‍🎓',
+                    text: '学生用户',
+                    colors: ['#f3e5f5', '#e1bee7', '#6a1b9a', '#ce93d8']
+                },
+                'parent': {
+                    emoji: '👨‍👩‍👧‍👦',
+                    text: '家长用户',
+                    colors: ['#e8f5e8', '#c8e6c9', '#2e7d32', '#a5d6a7']
+                },
+                'admin': {
+                    emoji: '👑',
+                    text: '系统管理员',
+                    colors: ['#ffebee', '#ffcdd2', '#b71c1c', '#ef9a9a']
+                },
+                'security': {
+                    emoji: '🛡️',
+                    text: '保安人员',
+                    colors: ['#e0f2f1', '#b2dfdb', '#00695c', '#80cbc4']
+                }
+            };
+
+            // 按行分配用户
+            const row1Types = ['alumni', 'teacher', 'student', 'parent'];
+            const row2Types = ['admin', 'security'];
+
+            // 处理第一行
+            row1Types.forEach(userType => {
+                const user = Object.values(users).find(u => u && u.user_type === userType);
+                if (user) {
+                    row1.appendChild(createTestAccountButton(user, buttonConfigs[userType]));
+                }
+            });
+
+            // 处理第二行
+            row2Types.forEach(userType => {
+                const user = Object.values(users).find(u => u && u.user_type === userType);
+                if (user) {
+                    row2.appendChild(createTestAccountButton(user, buttonConfigs[userType]));
+                }
+            });
+        }
+
+        // 创建测试账号按钮
+        function createTestAccountButton(user, config) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn-test-account';
+            button.onclick = () => fillTestAccount(user.username, user.password, user.real_name);
+
+            // 设置按钮样式
+            const [bg1, bg2, color, border] = config.colors;
+            button.style.cssText = `
+                padding: 6px 10px;
+                font-size: 11px;
+                background: linear-gradient(135deg, ${bg1}, ${bg2});
+                color: ${color};
+                border: 1px solid ${border};
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 500;
+            `;
+
+            button.innerHTML = `${config.emoji} ${config.text}`;
+            button.title = `用户名: ${user.username}\n姓名: ${user.real_name}\n类型: ${user.user_type}`;
+
+            return button;
+        }
+
+        // 填充测试账号到登录表单
+        function fillTestAccount(username, password, realName = null) {
             // 填充登录表单
             document.getElementById('username').value = username;
             document.getElementById('password').value = password;
@@ -1683,12 +1994,106 @@
                 usernameField.style.backgroundColor = '';
                 passwordField.style.backgroundColor = '';
             }, 1000);
+
+            // 显示提示信息
+            if (realName) {
+                showLoginInfo(`已自动填充用户: ${realName} (${username})`);
+            }
         }
+
+        // 显示登录错误提示
+        function showLoginError(message) {
+            const errorAlert = document.getElementById('loginErrorAlert');
+            const errorMessage = document.getElementById('loginErrorMessage');
+
+            // 支持HTML内容（用于注册链接）
+            if (message.includes('<a')) {
+                errorMessage.innerHTML = message;
+            } else {
+                errorMessage.textContent = message;
+            }
+
+            errorAlert.style.display = 'block';
+
+            // 滚动到错误提示位置
+            errorAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // 5秒后自动隐藏错误提示
+            setTimeout(() => {
+                hideLoginError();
+            }, 5000);
+        }
+
+        // 隐藏登录错误提示
+        function hideLoginError() {
+            const errorAlert = document.getElementById('loginErrorAlert');
+            errorAlert.style.display = 'none';
+        }
+
+        // 显示登录提示信息
+        function showLoginInfo(message) {
+            // 创建提示元素
+            const infoDiv = document.createElement('div');
+            infoDiv.style.cssText = `
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+                border-radius: 4px;
+                padding: 8px 12px;
+                font-size: 11px;
+                margin-top: 5px;
+                z-index: 1000;
+                white-space: nowrap;
+            `;
+            infoDiv.textContent = message;
+
+            // 添加到登录表单
+            const loginForm = document.getElementById('loginForm');
+            loginForm.style.position = 'relative';
+            loginForm.appendChild(infoDiv);
+
+            // 2秒后自动移除
+            setTimeout(() => {
+                if (infoDiv.parentNode) {
+                    infoDiv.parentNode.removeChild(infoDiv);
+                }
+            }, 2000);
+        }
+
+        // 页面加载完成后设置登录表单事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            // 延迟加载测试账号
+            setTimeout(loadTestAccounts, 500);
+
+            // 监听登录表单提交
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    // 隐藏之前的错误提示
+                    hideLoginError();
+                });
+            }
+
+            // 监听用户名输入框变化，如果用户开始输入就隐藏错误提示
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+
+            if (usernameInput) {
+                usernameInput.addEventListener('input', hideLoginError);
+            }
+            if (passwordInput) {
+                passwordInput.addEventListener('input', hideLoginError);
+            }
+        });
     </script>
 
     <!-- 引入脚本 -->
-    <script src="/static/js/config.js?v=2.3"></script>
-    <script src="/static/js/mobile.js?v=8.1"></script>
+    <script src="/static/js/config.js?v=2.4"></script>
+    <script src="/static/js/mobile.js?v=8.7"></script>
     <!-- 引入学生出校申请脚本 -->
     <script src="/static/js/student-exit.js?v=1.2"></script>
     <!-- 引入校友卡脚本 -->

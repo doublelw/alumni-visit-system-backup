@@ -400,6 +400,13 @@ body {
     margin-bottom: var(--spacing-xl);
 }
 
+.page-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+}
+
 .page-header h1 {
     font-size: var(--font-size-xxl);
     margin-bottom: var(--spacing-xs);
@@ -409,6 +416,12 @@ body {
 .page-header p {
     color: var(--text-secondary);
     font-size: var(--font-size-md);
+}
+
+.page-header-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
 }
 
 .page-actions {
@@ -954,12 +967,13 @@ body {
 
 .modal-content {
     background: var(--surface);
-    border-radius: var(--radius-xl);
+    border-radius: 8px;
     width: 90%;
     max-width: 500px;
-    box-shadow: var(--shadow-xl);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     transform: translateY(20px);
     transition: all 0.3s ease;
+    margin: 10px !important;
 }
 
 .modal.active .modal-content {
@@ -967,22 +981,26 @@ body {
 }
 
 .modal-header {
-    padding: var(--spacing-lg);
-    border-bottom: 1px solid var(--border);
+    padding: 15px 20px !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+    background: #fff !important;
 }
 
 .modal-header h3 {
-    font-size: var(--font-size-lg);
-    color: var(--text-primary);
+    font-size: 16px !important;
+    margin: 0 !important;
+    color: #333 !important;
 }
 
 .modal-body {
-    padding: var(--spacing-lg);
+    padding: 0 !important;
+    background: #fff !important;
 }
 
 .modal-footer {
-    padding: var(--spacing-lg);
-    border-top: 1px solid var(--border);
+    padding: 12px 20px !important;
+    border-top: 1px solid #e0e0e0 !important;
+    background: #fff !important;
     display: flex;
     gap: var(--spacing-sm);
     justify-content: flex-end;
@@ -3693,4 +3711,107 @@ body {
 .btn-danger:hover {
     background: #d32f2f;
     border-color: #d32f2f;
+}
+
+/* 审批管理界面新布局样式 */
+.review-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 0;
+    min-width: 100px;
+}
+
+.status-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.approver-info {
+    font-size: 11px;
+    color: #666;
+    text-align: center;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+
+.action-buttons .btn-group {
+    display: flex;
+    gap: 4px;
+}
+
+/* 调整表格中申请人信息和访问目的的显示 */
+.user-info {
+    min-width: 150px;
+}
+
+.purpose-cell {
+    max-width: 300px;
+}
+
+.purpose-text {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.4;
+}
+
+.remarks-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* 调整状态徽章样式 */
+.status-badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+    .review-actions {
+        gap: 6px;
+    }
+
+    .status-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .action-buttons {
+        justify-content: flex-start;
+    }
+}
+
+/* 为审核操作按钮添加更好的样式 */
+.action-buttons .btn {
+    padding: 3px 6px;
+    font-size: 11px;
+    line-height: 1.2;
+    min-width: 28px;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-buttons .btn i {
+    font-size: 12px;
+    margin: 0;
 }

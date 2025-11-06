@@ -122,9 +122,15 @@ class User(db.Model):
         if include_sensitive:
             # 家长-学生关系信息
             if self.user_type == 'parent' and self.parent_students:
-                data['students'] = [student.to_dict() for student in self.parent_students]
+                try:
+                    data['students'] = [student.to_dict() for student in self.parent_students]
+                except (TypeError, AttributeError):
+                    data['students'] = []
             elif self.user_type == 'student' and self.student_parents:
-                data['parents'] = [parent.to_dict() for parent in self.student_parents]
+                try:
+                    data['parents'] = [parent.to_dict() for parent in self.student_parents]
+                except (TypeError, AttributeError):
+                    data['parents'] = []
 
         return data
 

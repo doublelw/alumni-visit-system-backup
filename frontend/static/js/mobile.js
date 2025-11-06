@@ -407,6 +407,21 @@ const Auth = {
             Utils.showToast('登录成功', 'success');
             return data;
         } catch (error) {
+            // 显示登录错误提示（如果登录模态框是打开的）
+            if (typeof showLoginError === 'function') {
+                let errorMessage = error.message;
+
+                // 根据错误类型提供不同的提示信息
+                if (error.message.includes('用户名或密码错误') || error.message.includes('密码错误')) {
+                    errorMessage = '用户名或密码错误，请检查后重试';
+                } else if (error.message.includes('用户不存在') || error.message.includes('not found')) {
+                    errorMessage = '用户不存在，请检查用户名或<a href="/register" style="color: #007bff; text-decoration: underline;">立即注册</a>';
+                } else if (error.message.includes('登录失败，请稍后重试') || error.message.includes('500')) {
+                    errorMessage = '服务器错误，请稍后重试或联系管理员';
+                }
+
+                showLoginError(errorMessage);
+            }
             Utils.showToast(error.message, 'error');
             throw error;
         }
@@ -1020,6 +1035,9 @@ const HomePage = {
             // 加载最近申请
             await this.loadRecentApplications();
 
+            // 加载待审批申请
+            await this.loadPendingApprovals();
+
             // 加载校历活动
             await this.loadCalendarEvents();
 
@@ -1070,50 +1088,36 @@ const HomePage = {
             try {
                 // 2. 加载学生出校申请
                 console.log('正在加载学生出校申请...');
-                const studentExitResponse = await fetch('/api/student-exit/applications/recent', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${AppState.token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+                // 添加时间戳防止缓存
+                const timestamp = Date.now();
+                const studentExitData = await Utils.request(`/api/student-exit/applications/recent?t=${timestamp}`);
 
-                console.log('学生出校API响应状态:', studentExitResponse.status, studentExitResponse.statusText);
+                console.log('学生出校API响应:', studentExitData);
 
-                if (studentExitResponse.ok) {
-                    const studentExitData = await studentExitResponse.json();
+                if (studentExitData.success && studentExitData.applications && studentExitData.applications.length > 0) {
                     console.log('学生出校API响应数据:', {
                         success: studentExitData.success,
                         applicationCount: studentExitData.applications?.length || 0,
                         applications: studentExitData.applications
                     });
 
-                    if (studentExitData.success && studentExitData.applications && studentExitData.applications.length > 0) {
-                        // 为学生出校申请添加类型标识
-                        const studentExitApplications = studentExitData.applications.map(app => {
-                            console.log('处理学生出校申请:', app);
-                            return {
-                                ...app,
-                                application_type: 'student_exit',
-                                application_status: app.status || app.application_status,
-                                applicant_name: app.student_name || app.applicant_name,
-                                visit_date: app.exit_date,
-                                visit_time: app.exit_time,
-                                purpose: app.reason
-                            };
-                        });
-                        allApplications = allApplications.concat(studentExitApplications);
-                        console.log(`成功添加${studentExitApplications.length}个学生出校申请`);
-                    } else {
-                        console.log('没有找到学生出校申请或API返回格式错误');
-                    }
-                } else {
-                    const errorText = await studentExitResponse.text();
-                    console.error('学生出校API调用失败:', {
-                        status: studentExitResponse.status,
-                        statusText: studentExitResponse.statusText,
-                        errorText: errorText
+                    // 为学生出校申请添加类型标识
+                    const studentExitApplications = studentExitData.applications.map(app => {
+                        console.log('处理学生出校申请:', app);
+                        return {
+                            ...app,
+                            application_type: 'student_exit',
+                            application_status: app.status || app.application_status,
+                            applicant_name: app.student_name || app.applicant_name,
+                            visit_date: app.exit_date,
+                            visit_time: app.exit_time,
+                            purpose: app.reason
+                        };
                     });
+                    allApplications = allApplications.concat(studentExitApplications);
+                    console.log(`成功添加${studentExitApplications.length}个学生出校申请`);
+                } else {
+                    console.log('没有找到学生出校申请或API返回格式错误');
                 }
             } catch (error) {
                 console.error('加载学生出校申请异常:', error);
@@ -1167,6 +1171,204 @@ const HomePage = {
             } else if (container) {
                 container.innerHTML = '<p class="text-center text-secondary">加载失败</p>';
             }
+        }
+    },
+
+    // 加载待审批申请
+    async loadPendingApprovals() {
+        try {
+            console.log('加载待审批申请...');
+
+            // 只有家长和老师才显示待审批申请
+            if (!AppState.user || !['parent', 'teacher'].includes(AppState.user.user_type)) {
+                const pendingSection = document.getElementById('pendingApprovalsSection');
+                if (pendingSection) {
+                    pendingSection.style.display = 'none';
+                }
+                return;
+            }
+
+            const data = await Utils.request('/api/student-exit/applications/pending-approval');
+            const container = document.getElementById('pendingApprovalsList');
+            const pendingSection = document.getElementById('pendingApprovalsSection');
+
+            console.log('获取到的待审批申请数据:', data);
+
+            if (!container || !pendingSection) {
+                console.warn('待审批申请容器不存在');
+                return;
+            }
+
+            const applications = data.applications || [];
+            console.log(`找到${applications.length}个待审批申请`);
+
+            if (applications.length === 0) {
+                pendingSection.style.display = 'none';
+                return;
+            }
+
+            // 显示待审批申请区域
+            pendingSection.style.display = 'block';
+
+            // 渲染待审批申请列表
+            const htmlContent = applications.map(app => this.renderPendingApprovalApplication(app)).join('');
+            container.innerHTML = htmlContent;
+
+            // 绑定事件
+            this.bindPendingApprovalEvents();
+
+        } catch (error) {
+            console.error('加载待审批申请失败:', error);
+            const pendingSection = document.getElementById('pendingApprovalsSection');
+            if (pendingSection) {
+                pendingSection.style.display = 'none';
+            }
+        }
+    },
+
+    // 渲染待审批申请
+    renderPendingApprovalApplication(app) {
+        const userType = AppState.user.user_type;
+        const isStudentExit = true; // 这个API只返回学生出校申请
+
+        return `
+            <div class="pending-approval-item" data-id="${app.id}">
+                <div class="approval-content">
+                    <div class="approval-header">
+                        <span class="approval-type">学生出校申请</span>
+                        <span class="approval-date">${Utils.formatDate(app.exit_date)}</span>
+                    </div>
+                    <div class="approval-details">
+                        <p><strong>学生:</strong> ${app.student_name || '未知'}</p>
+                        <p><strong>事由:</strong> ${app.exit_reason}</p>
+                        <p><strong>时间:</strong> ${app.exit_time || ''}</p>
+                    </div>
+                </div>
+                <div class="approval-actions">
+                    ${userType === 'parent' ? `
+                        <button class="btn btn-success btn-sm acknowledge-btn" data-id="${app.id}">
+                            <i class="ri-check-line"></i> 确认知晓
+                        </button>
+                    ` : `
+                        <button class="btn btn-success btn-sm approve-btn" data-id="${app.id}">
+                            <i class="ri-check-line"></i> 批准
+                        </button>
+                        <button class="btn btn-danger btn-sm reject-btn" data-id="${app.id}">
+                            <i class="ri-close-line"></i> 拒绝
+                        </button>
+                    `}
+                </div>
+            </div>
+        `;
+    },
+
+    // 绑定待审批申请事件
+    bindPendingApprovalEvents() {
+        const userType = AppState.user.user_type;
+
+        if (userType === 'parent') {
+            // 家长确认事件
+            document.querySelectorAll('.acknowledge-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const applicationId = parseInt(btn.dataset.id);
+                    await this.parentAcknowledgeApproval(applicationId);
+                });
+            });
+        } else if (userType === 'teacher') {
+            // 老师批准/拒绝事件
+            document.querySelectorAll('.approve-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const applicationId = parseInt(btn.dataset.id);
+                    await this.teacherApproveApplication(applicationId);
+                });
+            });
+
+            document.querySelectorAll('.reject-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const applicationId = parseInt(btn.dataset.id);
+                    await this.teacherRejectApplication(applicationId);
+                });
+            });
+        }
+    },
+
+    // 家长确认待审批申请
+    async parentAcknowledgeApproval(applicationId) {
+        try {
+            const data = await Utils.request(`/api/student-exit/applications/${applicationId}/acknowledge`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    note: '家长已知晓并同意此申请'
+                })
+            });
+
+            if (data.success || data.message) {
+                Utils.showToast(data.message || '已确认知晓此申请', 'success');
+                // 重新加载待审批申请
+                await this.loadPendingApprovals();
+                // 重新加载最近申请
+                await this.loadRecentApplications();
+            } else {
+                Utils.showToast(data.error || '确认失败', 'error');
+            }
+        } catch (error) {
+            console.error('家长确认申请失败:', error);
+            Utils.showToast('确认失败，请重试', 'error');
+        }
+    },
+
+    // 老师批准申请
+    async teacherApproveApplication(applicationId) {
+        try {
+            const data = await Utils.request(`/api/student-exit/applications/${applicationId}/approve`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'approve',
+                    note: '班主任批准'
+                })
+            });
+
+            if (data.success || data.message) {
+                Utils.showToast(data.message || '已批准申请', 'success');
+                // 重新加载待审批申请
+                await this.loadPendingApprovals();
+                // 重新加载最近申请
+                await this.loadRecentApplications();
+            } else {
+                Utils.showToast(data.error || '批准失败', 'error');
+            }
+        } catch (error) {
+            console.error('老师批准申请失败:', error);
+            Utils.showToast('批准失败，请重试', 'error');
+        }
+    },
+
+    // 老师拒绝申请
+    async teacherRejectApplication(applicationId) {
+        try {
+            const data = await Utils.request(`/api/student-exit/applications/${applicationId}/approve`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'reject',
+                    note: '班主任拒绝'
+                })
+            });
+
+            if (data.success || data.message) {
+                Utils.showToast(data.message || '已拒绝申请', 'success');
+                // 重新加载待审批申请
+                await this.loadPendingApprovals();
+                // 重新加载最近申请
+                await this.loadRecentApplications();
+            } else {
+                Utils.showToast(data.error || '拒绝失败', 'error');
+            }
+        } catch (error) {
+            console.error('老师拒绝申请失败:', error);
+            Utils.showToast('拒绝失败，请重试', 'error');
         }
     },
 
@@ -1325,8 +1527,14 @@ const HomePage = {
     // 渲染最近申请卡片
     renderRecentApplication(app) {
         const isTeacherOrAdmin = AppState.user.user_type === 'teacher' || AppState.user.user_type === 'admin';
-        const statusClass = Utils.getStatusClass(app.application_status);
-        const statusText = Utils.getStatusText(app.application_status);
+        // 根据申请类型选择正确的状态函数
+        const isStudentExit = app.application_type === 'student_exit';
+        const statusClass = isStudentExit ?
+            StudentExitUtils.getStatusClass(app.application_status) :
+            Utils.getStatusClass(app.application_status);
+        const statusText = isStudentExit ?
+            StudentExitUtils.getStatusText(app.application_status) :
+            Utils.getStatusText(app.application_status);
 
         // 检查是否可以删除（只能删除自己的申请，且状态为pending或cancelled）
         const canDelete = AppState.user &&
@@ -1334,62 +1542,109 @@ const HomePage = {
                            ['pending', 'cancelled'].includes(app.application_status);
 
         // 根据申请类型确定显示信息
-        const isStudentExit = app.application_type === 'student_exit';
         const applicationTypeText = isStudentExit ? '学生出校' : '访问申请';
-        const displayDate = Utils.formatDate(isStudentExit ? app.visit_date : app.visit_date);
-        const displayPurpose = isStudentExit ? app.purpose : app.visit_purpose;
-        const displayTime = isStudentExit ? (app.visit_time || '') : (app.visit_time || '');
+        const displayDate = isStudentExit ? Utils.formatDate(app.exit_date) : Utils.formatDate(app.visit_date);
+        const displayPurpose = isStudentExit ? app.reason : app.visit_purpose;
+        const displayTime = isStudentExit ? (app.exit_time || '') : (app.visit_time || '');
+
+        // 获取详细的审批状态
+        const approvalStatuses = this.getDetailedApprovalStatus(app, isStudentExit);
 
         return `
             <div class="recent-application-container" data-id="${app.id}" data-type="${app.application_type || 'visit'}">
                 <div class="application-item recent-application-card ${isTeacherOrAdmin ? 'clickable' : ''}"
                      data-id="${app.id}" data-status="${app.application_status}" data-type="${app.application_type || 'visit'}">
-                    <div class="application-header">
-                        <span class="application-type">${applicationTypeText}</span>
-                        <span class="application-date">${displayDate}</span>
-                        <span class="application-status ${statusClass}">
+
+                    <div class="application-content">
+                        <div class="application-header">
+                            <span class="application-type">${applicationTypeText}</span>
+                            <span class="application-date">${displayDate}</span>
+                            ${displayTime ? `<span class="application-time">${displayTime}</span>` : ''}
+                        </div>
+                        <div class="application-purpose">${displayPurpose}</div>
+                        <div class="application-target" style="font-weight: 500; color: #333;">
+                            ${isStudentExit ?
+                                (app.applicant_name ? `申请人: ${app.applicant_name}` :
+                                 app.student_name ? `学生: ${app.student_name}` :
+                                 '申请人信息') :
+                                (isTeacherOrAdmin && app.applicant ?
+                                    `申请人: ${app.applicant.real_name}` :
+                                    (app.target_person ? `拜访对象: ${app.target_person}` :
+                                     app.visitor_name ? `访客: ${app.visitor_name}` : '访客信息')
+                                )
+                            }
+                        </div>
+                    </div>
+
+                    <div class="application-statuses">
+                        <div class="application-status ${statusClass}">
                             ${statusText}
-                        </span>
-                    </div>
-                    <div class="application-purpose">${displayPurpose}</div>
-                    ${displayTime ? `<div class="application-time">时间: ${displayTime}</div>` : ''}
-                    <div class="application-target">
-                        ${isStudentExit ?
-                            (app.applicant_name ? `学生: ${app.applicant_name}` : '') :
-                            (isTeacherOrAdmin && app.applicant ?
-                                `申请人: ${app.applicant.real_name}` :
-                                (app.target_person ? `拜访对象: ${app.target_person}` : '')
-                            )
-                        }
-                    </div>
-                    ${isTeacherOrAdmin && app.application_status === 'pending' ? `
-                    <div class="quick-review-actions">
-                        <button class="btn btn-success btn-sm quick-approve-btn" data-id="${app.id}">
-                            <i class="ri-check-line"></i>
-                            通过
-                        </button>
-                        <button class="btn btn-danger btn-sm quick-reject-btn" data-id="${app.id}">
-                            <i class="ri-close-line"></i>
-                            拒绝
-                        </button>
-                    </div>
-                    ` : ''}
-                    ${canDelete ? `
-                    <div class="delete-action">
+                        </div>
+                        ${approvalStatuses.teacherStatus}
+                        ${approvalStatuses.parentStatus}
+                        ${isTeacherOrAdmin && ['pending', 'parent_approved'].includes(app.application_status) && app.can_approve ? `
+                        <div class="quick-review-actions">
+                            <button class="btn btn-success btn-sm quick-approve-btn" data-id="${app.id}">
+                                <i class="ri-check-line"></i>
+                                通过
+                            </button>
+                            <button class="btn btn-danger btn-sm quick-reject-btn" data-id="${app.id}">
+                                <i class="ri-close-line"></i>
+                                拒绝
+                            </button>
+                        </div>
+                        ` : ''}
+                        ${canDelete ? `
                         <button class="btn btn-danger btn-sm delete-application-btn" data-id="${app.id}">
                             <i class="ri-delete-bin-line"></i>
-                            删除
                         </button>
+                        ` : ''}
                     </div>
-                    ` : ''}
-                    ${isTeacherOrAdmin ? `
-                    <div class="review-hint">
-                        <small><i class="ri-arrow-right-line"></i> 点击查看详情或进入审核页面</small>
-                    </div>
-                    ` : ''}
                 </div>
             </div>
         `;
+    },
+
+    // 获取详细的审批状态
+    getDetailedApprovalStatus(app, isStudentExit) {
+        let teacherStatus = '';
+        let parentStatus = '';
+
+        if (isStudentExit) {
+            // 学生出校申请的状态显示
+            const teacherApprovalStatus = app.teacher_approval_status || 'pending';
+            const parentApprovalStatus = app.parent_approval_status || 'pending';
+            const applicationStatus = app.application_status || 'pending';
+
+            teacherStatus = `
+                <div class="status-indicator">
+                    <span class="status-dot ${teacherApprovalStatus === 'approved' ? 'approved' : 'pending'}"></span>
+                    <span>老师${teacherApprovalStatus === 'approved' ? '已通过' : teacherApprovalStatus === 'rejected' ? '已拒绝' : '未审批'}</span>
+                </div>
+            `;
+
+            // 只有老师审批通过后才显示家长状态
+            if (teacherApprovalStatus === 'approved') {
+                parentStatus = `
+                    <div class="status-indicator">
+                        <span class="status-dot ${parentApprovalStatus === 'approved' ? 'approved' : parentApprovalStatus === 'rejected' ? 'rejected' : 'pending'}"></span>
+                        <span>家长${parentApprovalStatus === 'approved' ? '已同意' : parentApprovalStatus === 'rejected' ? '已拒绝' : '未确认'}</span>
+                    </div>
+                `;
+            }
+        } else {
+            // 访问申请的状态显示
+            const applicationStatus = app.application_status || 'pending';
+
+            teacherStatus = `
+                <div class="status-indicator">
+                    <span class="status-dot ${applicationStatus === 'approved' ? 'approved' : applicationStatus === 'rejected' ? 'rejected' : 'pending'}"></span>
+                    <span>老师${applicationStatus === 'approved' ? '已通过' : applicationStatus === 'rejected' ? '已拒绝' : '未审批'}</span>
+                </div>
+            `;
+        }
+
+        return { teacherStatus, parentStatus };
     },
 
     // 绑定申请卡片点击事件
@@ -1468,8 +1723,13 @@ const HomePage = {
 
             Utils.showToast(`申请已${approve ? '通过' : '拒绝'}`, 'success');
 
-            // 重新加载最近申请
+            // 重新加载最近申请，强制刷新缓存
             await this.loadRecentApplications();
+
+            // 如果在审核管理页面，也刷新审核列表
+            if (typeof ReviewPage !== 'undefined' && ReviewPage.loadApplications) {
+                await ReviewPage.loadApplications();
+            }
         } catch (error) {
             Utils.showToast(error.message, 'error');
         }
@@ -1537,6 +1797,12 @@ const HomePage = {
 
     // 跳转到审核页面
     goToReviewPage(statusFilter = 'pending') {
+        // 检查用户权限 - 学生账号不能访问审批管理
+        if (AppState.user && AppState.user.user_type === 'student') {
+            Utils.showToast('学生账号没有权限访问审批管理页面', 'error');
+            return;
+        }
+
         // 隐藏所有页面
         document.querySelectorAll('.page').forEach(page => {
             page.classList.remove('active');
@@ -1726,7 +1992,16 @@ const HomePage = {
                 console.log('teacherApproval点击事件触发');
                 e.preventDefault();
                 e.stopPropagation();
-                PageManager.switchPage(APP_CONFIG.PAGES.APPROVAL);
+
+                // 检查ReviewPage是否已加载，如果未加载则等待或使用替代方法
+                if (typeof ReviewPage !== 'undefined' && ReviewPage.goToReviewPage) {
+                    console.log('使用ReviewPage.goToReviewPage跳转');
+                    ReviewPage.goToReviewPage('pending');
+                } else {
+                    console.log('ReviewPage未加载，使用替代跳转方法');
+                    // 替代方法：手动实现审批页面跳转逻辑
+                    HomePage.fallbackToReviewPage('pending');
+                }
             });
             console.log('teacherApproval事件绑定成功');
         }
@@ -1736,9 +2011,81 @@ const HomePage = {
         console.log('=== 快捷操作绑定完成 ===');
     },
 
+    // 审批页面跳转的备用方法（用于处理代码加载顺序问题）
+    fallbackToReviewPage(statusFilter = 'pending') {
+        console.log('使用备用方法跳转到审批页面，状态筛选:', statusFilter);
+
+        // 检查用户权限 - 学生账号不能访问审批管理
+        if (AppState.user && AppState.user.user_type === 'student') {
+            Utils.showToast('学生账号没有权限访问审批管理页面', 'error');
+            return;
+        }
+
+        // 隐藏所有页面
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+
+        // 显示审核页面
+        const reviewPage = document.getElementById('reviewPage');
+        if (reviewPage) {
+            reviewPage.classList.add('active');
+            Utils.showToast('正在加载审批数据...', 'success');
+
+            // 设置初始筛选状态
+            if (typeof ReviewPage !== 'undefined') {
+                ReviewPage.currentFilter = statusFilter;
+                ReviewPage.load();
+            } else {
+                // 如果ReviewPage还没加载，尝试延迟加载
+                setTimeout(() => {
+                    if (typeof ReviewPage !== 'undefined') {
+                        ReviewPage.currentFilter = statusFilter;
+                        ReviewPage.load();
+                    } else {
+                        // 最后的备用方案：直接显示页面提示用户稍等
+                        console.warn('ReviewPage对象仍未加载，请刷新页面重试');
+                        Utils.showToast('页面加载中，请稍后...', 'warning');
+                    }
+                }, 500);
+            }
+
+            // 设置对应的筛选标签为激活状态
+            setTimeout(() => {
+                document.querySelectorAll('.filter-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                    if (tab.dataset.status === statusFilter) {
+                        tab.classList.add('active');
+                    }
+                });
+            }, 100);
+
+            // 更新底部导航栏状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const reviewNav = document.querySelector('[data-page="reviewPage"]');
+            if (reviewNav) {
+                reviewNav.classList.add('active');
+            }
+
+            // 更新页面标题
+            const pageTitle = document.querySelector('.page-title');
+            if (pageTitle) {
+                pageTitle.textContent = '审批管理';
+            }
+
+            console.log('备用方法跳转审批页面完成');
+        } else {
+            console.error('找不到审批页面元素');
+            Utils.showToast('页面加载失败，请刷新重试', 'error');
+        }
+    },
+
     // 显示学生离校验证码
     async showStudentExitQRCode() {
         try {
+            console.log('=== 开始显示学生离校验证码 ===');
             Utils.showLoading('生成离校验证码...');
 
             // 检查用户类型
@@ -1747,16 +2094,18 @@ const HomePage = {
                 return;
             }
 
-            // 获取已通过的学生出校申请
+            // 获取已通过的学生出校申请（今天的）
             let apiUrl = '/api/student-exit/applications';
             let params = new URLSearchParams({
                 'status': 'approved',
-                'limit': '1'
+                'limit': '10'  // 获取更多记录以筛选当天的
             });
 
             if (AppState.user.user_type === 'student') {
                 params.append('student_id', AppState.user.id);
             }
+
+            console.log('请求参数:', params.toString());
 
             const response = await fetch(`${apiUrl}?${params}`, {
                 method: 'GET',
@@ -1771,45 +2120,152 @@ const HomePage = {
             }
 
             const data = await response.json();
+            console.log('获取到的申请数据:', data);
+            console.log('data.success:', data.success);
+            console.log('data.applications:', data.applications);
+            console.log('data.applications.length:', data.applications ? data.applications.length : 'undefined');
 
-            if (!data.success || !data.applications || data.applications.length === 0) {
+            if (!data.applications || data.applications.length === 0) {
+                console.log('条件检查失败，显示提示信息');
+                console.log('!data.applications =', !data.applications);
+                console.log('data.applications.length === 0 =', data.applications ? data.applications.length === 0 : 'data.applications is undefined');
                 Utils.showToast('暂无已通过的出校申请', 'info');
                 return;
             }
 
-            const application = data.applications[0];
+            // 筛选出今天的申请
+            const today = new Date().toISOString().split('T')[0];
+            console.log('今天的日期:', today);
+            console.log('所有申请的详细数据:', data.applications);
 
-            // 生成验证码内容
-            const qrContent = JSON.stringify({
-                type: 'student_exit',
-                application_id: application.id,
-                student_name: application.student_name,
-                exit_date: application.exit_date,
-                exit_time: application.exit_time,
-                status: application.status,
-                timestamp: new Date().toISOString()
+            const todayApplications = data.applications.filter(app => {
+                // 更灵活的日期比较
+                let isToday = false;
+                if (app.exit_date) {
+                    // 如果已经是YYYY-MM-DD格式，直接比较
+                    if (app.exit_date.includes('-')) {
+                        isToday = app.exit_date === today;
+                    } else {
+                        // 如果是其他格式，尝试转换
+                        try {
+                            const appDate = new Date(app.exit_date);
+                            isToday = appDate.toISOString().split('T')[0] === today;
+                        } catch (e) {
+                            console.warn('日期格式错误:', app.exit_date);
+                        }
+                    }
+                }
+
+                console.log('检查申请:', {
+                    id: app.id,
+                    exit_date: app.exit_date,
+                    application_status: app.application_status,
+                    is_today: isToday,
+                    is_approved: app.application_status === 'approved'
+                });
+                return isToday && app.application_status === 'approved';
             });
 
-            // 生成QR码
+            console.log('今天的申请:', todayApplications);
+
+            // 临时调试：暂时不限制日期，显示所有已批准的申请
+            if (todayApplications.length === 0) {
+                console.log('没有今天的申请，尝试使用所有已批准的申请进行调试');
+                // 暂时使用第一个已批准的申请进行调试
+                const allApproved = data.applications.filter(app => app.application_status === 'approved');
+                if (allApproved.length > 0) {
+                    console.log('使用第一个已批准的申请进行调试:', allApproved[0]);
+                    todayApplications.push(allApproved[0]);
+                }
+            }
+
+            if (todayApplications.length === 0) {
+                console.log('没有找到任何已批准的申请，显示提示信息');
+                Utils.showToast('没有已通过的离校申请', 'info');
+                return;
+            }
+
+            // 取第一个申请
+            const application = todayApplications[0];
+            console.log('选择的申请:', application);
+
+            // 获取该申请的二维码
+            try {
+                console.log('开始获取二维码，申请ID:', application.id);
+                const qrResponse = await Utils.request(`/api/student-exit/applications/${application.id}/qr-code`);
+                console.log('二维码响应:', qrResponse);
+
+                if (!qrResponse.qr_code && !qrResponse.verification_code) {
+                    console.log('二维码响应数据为空:', qrResponse);
+                    Utils.showToast('无法生成验证码，请稍后重试', 'error');
+                    return;
+                }
+
+                console.log('准备显示二维码模态框');
+                // 继续处理二维码显示...
+                try {
+                    HomePage.displayQRCodeModal(application, qrResponse);
+                    console.log('二维码模态框显示调用完成');
+                } catch (modalError) {
+                    console.error('显示模态框时出错:', modalError);
+                    Utils.showToast('显示验证码失败: ' + modalError.message, 'error');
+                }
+
+            } catch (qrError) {
+                console.error('获取二维码失败:', qrError);
+                Utils.showToast('获取二维码失败: ' + (qrError.message || '未知错误'), 'error');
+                return;
+            }
+
+        } catch (error) {
+            console.error('生成离校验证码失败:', error);
+            Utils.showToast('生成验证码失败，请重试', 'error');
+        } finally {
+            Utils.hideLoading();
+        }
+    },
+
+    // 显示二维码模态框
+    displayQRCodeModal(application, qrResponse) {
+        console.log('=== 开始创建二维码模态框 ===');
+        console.log('申请数据:', application);
+        console.log('二维码数据:', qrResponse);
+
+        try {
+            // 生成QR码容器
             const qrContainer = document.createElement('div');
             qrContainer.style.textAlign = 'center';
             qrContainer.style.padding = '20px';
 
-            const qrCodeDiv = document.createElement('div');
-            qrCodeDiv.id = 'studentExitQRCodeDisplay';
-            qrCodeDiv.style.marginBottom = '20px';
+            // 显示验证码
+            const verificationCodeDiv = document.createElement('div');
+            verificationCodeDiv.style.fontSize = '24px';
+            verificationCodeDiv.style.fontWeight = 'bold';
+            verificationCodeDiv.style.color = '#333';
+            verificationCodeDiv.style.marginBottom = '20px';
+            verificationCodeDiv.style.letterSpacing = '4px';
+            verificationCodeDiv.textContent = qrResponse.verification_code || '暂无验证码';
+
+            // 创建二维码容器
+            const qrCodeCanvas = document.createElement('canvas');
+            qrCodeCanvas.id = 'studentExitQRCodeDisplay';
+            qrCodeCanvas.style.width = '200px';
+            qrCodeCanvas.style.height = '200px';
+            qrCodeCanvas.style.marginBottom = '20px';
 
             const infoDiv = document.createElement('div');
             infoDiv.style.fontSize = '14px';
             infoDiv.style.color = '#666';
             infoDiv.innerHTML = `
-                <p><strong>学生：</strong>${application.student_name}</p>
-                <p><strong>出校日期：</strong>${application.exit_date}</p>
-                <p><strong>出校时间：</strong>${application.exit_time}</p>
+                <p><strong>学生：</strong>${application.student_name || '未知'}</p>
+                <p><strong>出校日期：</strong>${application.exit_date || ''}</p>
+                <p><strong>出校时间：</strong>${application.exit_time_start || ''}</p>
                 <p><strong>状态：</strong><span style="color: #28a745;">已通过</span></p>
+                <p style="color: #ff9800; font-size: 12px;">验证码有效期至 ${qrResponse.expires_at ? new Date(qrResponse.expires_at).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'}) : '当天23:59'}</p>
             `;
 
-            qrContainer.appendChild(qrCodeDiv);
+            qrContainer.appendChild(verificationCodeDiv);
+            qrContainer.appendChild(qrCodeCanvas);
             qrContainer.appendChild(infoDiv);
 
             // 创建模态框
@@ -1895,22 +2351,45 @@ const HomePage = {
             modalContent.appendChild(modalHeader);
             modalContent.appendChild(modalBody);
             modal.appendChild(modalContent);
+
+            console.log('模态框创建完成，准备添加到页面');
             document.body.appendChild(modal);
+            console.log('模态框已添加到页面');
 
             // 生成QR码
             setTimeout(async () => {
                 if (typeof QRCode !== 'undefined') {
-                    await QRCode.toCanvas(qrCodeDiv, qrContent, {
-                        width: 200,
-                        height: 200,
-                        margin: 2,
-                        color: {
-                            dark: '#000000',
-                            light: '#FFFFFF'
-                        }
-                    });
+                    try {
+                        // 使用后端返回的二维码数据生成QR码
+                        const qrData = qrResponse.qr_code ? JSON.parse(qrResponse.qr_code) : {
+                            type: 'student_exit',
+                            id: application.id,
+                            student_name: application.student_name,
+                            verification_code: qrResponse.verification_code,
+                            exit_date: application.exit_date
+                        };
+
+                        console.log('生成QR码，数据:', qrData);
+
+                        await QRCode.toCanvas(qrCodeCanvas, JSON.stringify(qrData), {
+                            width: 200,
+                            height: 200,
+                            margin: 2,
+                            color: {
+                                dark: '#000000',
+                                light: '#FFFFFF'
+                            }
+                        });
+                        console.log('QR码生成成功');
+                    } catch (error) {
+                        console.error('生成QR码失败:', error);
+                        // 如果生成失败，显示简单的文字信息
+                        qrCodeCanvas.style.display = 'none';
+                    }
                 } else {
+                    console.error('QR码生成库未加载');
                     Utils.showToast('QR码生成库未加载', 'error');
+                    qrCodeCanvas.style.display = 'none';
                 }
             }, 100);
 
@@ -1922,10 +2401,8 @@ const HomePage = {
             });
 
         } catch (error) {
-            console.error('生成离校验证码失败:', error);
-            Utils.showToast('生成验证码失败，请重试', 'error');
-        } finally {
-            Utils.hideLoading();
+            console.error('创建模态框失败:', error);
+            Utils.showToast('显示验证码失败', 'error');
         }
     },
 
@@ -2188,6 +2665,9 @@ const VisitPage = {
                 document.getElementById('customTargetName').value = '';
                 document.getElementById('customTargetPhone').value = '';
             }
+
+            // 清除相关字段的验证状态
+            this.clearFieldValidation();
         });
 
         // 拜访对象部门变化事件
@@ -2239,11 +2719,7 @@ const VisitPage = {
             this.addCompanion();
         });
 
-        // 学生出校申请添加同行人按钮事件
-        document.getElementById('addExitCompanion')?.addEventListener('click', () => {
-            this.addExitCompanion();
-        });
-
+        
         // 学生出校申请表单提交事件
         // 学生出校申请表单提交事件将在显示模态框时绑定
 
@@ -2252,6 +2728,9 @@ const VisitPage = {
             e.preventDefault();
             this.submitParentExitApplication();
         });
+
+        // 初始化实时字段验证
+        this.setupFieldValidation();
     },
 
     // 提交学生出校申请
@@ -2809,14 +3288,11 @@ const VisitPage = {
         // 验证拜访对象信息（基于工作ID）
         const targetWorkId = getValue('targetWorkId');
         const targetPerson = getValue('targetPerson');
-        const targetDepartment = getValue('targetDepartment');
 
         if (!targetWorkId) {
             errors.push('请填写拜访对象工作ID');
         } else if (!targetPerson) {
             errors.push('请输入有效的工作ID以自动填充拜访对象信息');
-        } else if (!targetDepartment) {
-            errors.push('拜访对象部门信息不完整');
         }
 
         // 验证时间逻辑
@@ -2839,11 +3315,167 @@ const VisitPage = {
         }
 
         if (errors.length > 0) {
+            console.log('表单验证错误详情:', errors);
             Utils.showToast(errors.join('；'), 'error');
             return false;
         }
 
         return true;
+    },
+
+    // 实时字段验证
+    setupFieldValidation() {
+        const fields = [
+            { id: 'visitDate', required: true, message: '请选择访问日期' },
+            { id: 'timeStart', required: true, message: '请选择开始时间' },
+            { id: 'timeEnd', required: true, message: '请选择结束时间' },
+            { id: 'visitPurpose', required: true, message: '请填写访问事由' },
+            { id: 'visitorName', required: true, message: '请填写访问人姓名' },
+            { id: 'visitorPhone', required: true, message: '请填写访问人电话' },
+            { id: 'visitorIdCard', required: true, message: '请填写访问人身份证号' },
+            { id: 'targetWorkId', required: true, message: '请填写拜访对象工作ID' }
+        ];
+
+        fields.forEach(field => {
+            const element = document.getElementById(field.id);
+            if (element) {
+                // 添加输入事件监听
+                element.addEventListener('input', () => this.validateField(field));
+                element.addEventListener('change', () => this.validateField(field));
+                element.addEventListener('blur', () => this.validateField(field));
+            }
+        });
+
+        // 时间字段特殊处理
+        const timeStartElement = document.getElementById('timeStart');
+        const timeEndElement = document.getElementById('timeEnd');
+        if (timeStartElement && timeEndElement) {
+            timeStartElement.addEventListener('change', () => this.validateTimeFields());
+            timeEndElement.addEventListener('change', () => this.validateTimeFields());
+        }
+
+        // 工作ID特殊处理
+        const targetWorkIdElement = document.getElementById('targetWorkId');
+        if (targetWorkIdElement) {
+            targetWorkIdElement.addEventListener('input', () => {
+                this.validateField({ id: 'targetWorkId', required: true, message: '请填写拜访对象工作ID' });
+                // 延迟验证拜访对象信息，因为API调用需要时间
+                setTimeout(() => this.validateTargetPerson(), 500);
+            });
+        }
+    },
+
+    // 验证单个字段
+    validateField(field) {
+        const element = document.getElementById(field.id);
+        if (!element) return true;
+
+        const value = element.value || '';
+        const isValid = !field.required || value.trim() !== '';
+
+        this.setFieldValidationState(element, isValid, field.message);
+
+        return isValid;
+    },
+
+    // 验证时间字段
+    validateTimeFields() {
+        const timeStartElement = document.getElementById('timeStart');
+        const timeEndElement = document.getElementById('timeEnd');
+
+        if (!timeStartElement || !timeEndElement) return true;
+
+        const timeStart = timeStartElement.value;
+        const timeEnd = timeEndElement.value;
+
+        let startValid = true;
+        let endValid = true;
+
+        if (!timeStart) {
+            this.setFieldValidationState(timeStartElement, false, '请选择开始时间');
+            startValid = false;
+        } else {
+            this.setFieldValidationState(timeStartElement, true, '');
+        }
+
+        if (!timeEnd) {
+            this.setFieldValidationState(timeEndElement, false, '请选择结束时间');
+            endValid = false;
+        } else if (timeStart && timeStart >= timeEnd) {
+            this.setFieldValidationState(timeEndElement, false, '结束时间必须晚于开始时间');
+            endValid = false;
+        } else {
+            this.setFieldValidationState(timeEndElement, true, '');
+        }
+
+        return startValid && endValid;
+    },
+
+    // 验证拜访对象信息
+    validateTargetPerson() {
+        const targetWorkIdElement = document.getElementById('targetWorkId');
+        const targetPersonElement = document.getElementById('targetPerson');
+
+        if (!targetWorkIdElement || !targetPersonElement) return true;
+
+        const targetWorkId = targetWorkIdElement.value.trim();
+        const targetPerson = targetPersonElement.value.trim();
+
+        if (!targetWorkId) {
+            this.setFieldValidationState(targetWorkIdElement, false, '请填写拜访对象工作ID');
+            return false;
+        }
+
+        if (!targetPerson) {
+            this.setFieldValidationState(targetWorkIdElement, false, '请输入有效的工作ID以自动填充拜访对象信息');
+            return false;
+        }
+
+        this.setFieldValidationState(targetWorkIdElement, true, '');
+        return true;
+    },
+
+    // 设置字段验证状态
+    setFieldValidationState(element, isValid, errorMessage) {
+        if (!element) return;
+
+        // 移除之前的状态类
+        element.classList.remove('is-valid', 'is-invalid');
+
+        // 查找或创建错误消息元素
+        let errorElement = element.parentNode.querySelector('.field-error-message');
+        if (!errorElement) {
+            errorElement = document.createElement('div');
+            errorElement.className = 'field-error-message';
+            element.parentNode.appendChild(errorElement);
+        }
+
+        if (isValid) {
+            element.classList.add('is-valid');
+            errorElement.textContent = '';
+            errorElement.style.display = 'none';
+        } else {
+            element.classList.add('is-invalid');
+            errorElement.textContent = errorMessage;
+            errorElement.style.display = 'block';
+            errorElement.style.color = '#dc3545';
+            errorElement.style.fontSize = '0.875rem';
+            errorElement.style.marginTop = '0.25rem';
+        }
+    },
+
+    // 清除所有字段验证状态
+    clearFieldValidation() {
+        const elements = document.querySelectorAll('.is-valid, .is-invalid');
+        elements.forEach(element => {
+            element.classList.remove('is-valid', 'is-invalid');
+        });
+
+        const errorMessages = document.querySelectorAll('.field-error-message');
+        errorMessages.forEach(element => {
+            element.textContent = '';
+            element.style.display = 'none';
+        });
     },
 
     // 加载申请历史
@@ -2902,7 +3534,7 @@ const VisitPage = {
     renderHistoryActions(app) {
         let actions = '';
 
-        if (app.application_status === 'pending') {
+        if (['pending', 'parent_approved', 'teacher_approved'].includes(app.application_status)) {
             actions += `
                 <button class="btn btn-sm btn-warning" onclick="VisitPage.cancelApplication(${app.id})">
                     <i class="ri-close-line"></i> 取消申请
@@ -4028,6 +4660,70 @@ const ProfilePage = {
         }
     },
 
+    // 加载审核统计数据
+    async loadReviewStatistics() {
+        try {
+            // 获取访客申请统计数据
+            const visitPending = await Utils.request('/api/visits/applications?status=pending&per_page=1');
+            const visitApproved = await Utils.request('/api/visits/applications?status=approved&per_page=1');
+            const visitRejected = await Utils.request('/api/visits/applications?status=rejected&per_page=1');
+
+            // 获取学生出校申请统计数据
+            const studentPending = await Utils.request('/api/student-exit/applications?status=pending&per_page=1');
+            const studentApproved = await Utils.request('/api/student-exit/applications?status=approved&per_page=1');
+            const studentRejected = await Utils.request('/api/student-exit/applications?status=rejected&per_page=1');
+            const studentTeacherApproved = await Utils.request('/api/student-exit/applications?status=teacher_approved&per_page=1');
+
+            // 计算总数 - 兼容不同的数据结构
+            const visitPendingTotal = visitPending.pagination?.total || visitPending.total || 0;
+            const visitApprovedTotal = visitApproved.pagination?.total || visitApproved.total || 0;
+            const visitRejectedTotal = visitRejected.pagination?.total || visitRejected.total || 0;
+            const studentPendingTotal = studentPending.pagination?.total || studentPending.total || 0;
+            const studentApprovedTotal = studentApproved.pagination?.total || studentApproved.total || 0;
+            const studentRejectedTotal = studentRejected.pagination?.total || studentRejected.total || 0;
+            const studentTeacherApprovedTotal = studentTeacherApproved.pagination?.total || studentTeacherApproved.total || 0;
+
+            const totalPending = visitPendingTotal + studentPendingTotal;
+            const totalApproved = visitApprovedTotal + studentApprovedTotal;
+            const totalRejected = visitRejectedTotal + studentRejectedTotal;
+
+            // 更新统计显示
+            const pendingElement = document.getElementById('pendingCount');
+            const approvedElement = document.getElementById('approvedCount');
+            const rejectedElement = document.getElementById('rejectedCount');
+            const dashboardPendingElement = document.getElementById('dashboardPendingCount');
+
+            if (pendingElement) {
+                // 只显示真正待审核的数量，不包括待家长确认的
+                pendingElement.textContent = totalPending;
+            }
+            if (approvedElement) {
+                approvedElement.textContent = totalApproved;
+            }
+            if (rejectedElement) {
+                rejectedElement.textContent = totalRejected;
+            }
+            if (dashboardPendingElement) {
+                // 仪表板待处理事项 = 待审核 + 待家长确认
+                const totalDashboardPending = totalPending + studentTeacherApprovedTotal;
+                dashboardPendingElement.textContent = totalDashboardPending;
+            }
+
+        } catch (error) {
+            console.error('加载审核统计失败:', error);
+            // 设置默认值
+            const pendingElement = document.getElementById('pendingCount');
+            const approvedElement = document.getElementById('approvedCount');
+            const rejectedElement = document.getElementById('rejectedCount');
+            const dashboardPendingElement = document.getElementById('dashboardPendingCount');
+
+            if (pendingElement) pendingElement.textContent = '0';
+            if (approvedElement) approvedElement.textContent = '0';
+            if (rejectedElement) rejectedElement.textContent = '0';
+            if (dashboardPendingElement) dashboardPendingElement.textContent = '0';
+        }
+    },
+
     // 加载校友档案
     async loadAlumniProfile() {
         try {
@@ -4621,6 +5317,59 @@ const ProfilePage = {
     }
 };
 
+// 学生离校申请相关工具函数
+const StudentExitUtils = {
+    getStatusText(status) {
+        const statusMap = {
+            'pending': '待审核',
+            'parent_approved': '家长已同意',
+            'teacher_approved': '等待家长知晓',
+            'approved': '已通过',
+            'rejected': '已拒绝',
+            'processing': '处理中',
+            'completed': '已完成',
+            'cancelled': '已取消'
+        };
+        return statusMap[status] || status;
+    },
+
+    getStatusClass(status) {
+        const classMap = {
+            'pending': 'status-pending',
+            'parent_approved': 'status-processing',
+            'teacher_approved': 'status-processing',
+            'approved': 'status-approved',
+            'rejected': 'status-rejected',
+            'processing': 'status-processing',
+            'completed': 'status-completed',
+            'cancelled': 'status-cancelled'
+        };
+        return classMap[status] || 'status-unknown';
+    },
+
+    getExitTypeText(type) {
+        const typeMap = {
+            'weekend': '周末离校',
+            'holiday': '节假日离校',
+            'graduation': '毕业离校',
+            'temporary': '临时离校',
+            'emergency': '紧急离校'
+        };
+        return typeMap[type] || type;
+    },
+
+    formatDate(dateString) {
+        if (!dateString) return '未设置';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('zh-CN');
+    },
+
+    formatTime(timeString) {
+        if (!timeString) return '未设置';
+        return timeString.substring(0, 5);
+    }
+};
+
 // 审核管理页面逻辑
 const ReviewPage = {
     currentFilter: 'pending',
@@ -4629,15 +5378,38 @@ const ReviewPage = {
 
     // 加载页面
     async load() {
+        // 检查用户权限 - 学生账号不能访问审批管理
+        if (AppState.user && AppState.user.user_type === 'student') {
+            Utils.showToast('学生账号没有权限访问审批管理页面', 'error');
+            // 返回首页
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            const homePage = document.getElementById('homePage');
+            if (homePage) {
+                homePage.classList.add('active');
+            }
+            return;
+        }
+
         await this.loadApplications();
+        // 使用 HomePage 的统计函数
+        if (typeof HomePage !== 'undefined' && HomePage.loadReviewStatistics) {
+            await HomePage.loadReviewStatistics();
+        }
         this.bindEvents();
     },
 
     // 绑定事件
     bindEvents() {
         // 筛选标签
-        document.querySelectorAll('.filter-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
+        const filterTabs = document.querySelectorAll('.filter-tab');
+        console.log(`找到 ${filterTabs.length} 个筛选标签`);
+        filterTabs.forEach((tab, index) => {
+            console.log(`绑定第 ${index + 1} 个筛选标签:`, tab.dataset.status);
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('筛选标签被点击:', tab.dataset.status);
                 this.setFilter(tab.dataset.status);
             });
         });
@@ -4665,6 +5437,7 @@ const ReviewPage = {
 
     // 设置筛选器
     setFilter(status) {
+        console.log('设置筛选器:', status);
         this.currentFilter = status;
         this.currentPage = 1;
 
@@ -4673,6 +5446,7 @@ const ReviewPage = {
             tab.classList.remove('active');
             if (tab.dataset.status === status) {
                 tab.classList.add('active');
+                console.log('激活标签:', status);
             }
         });
 
@@ -4690,18 +5464,99 @@ const ReviewPage = {
         try {
             Utils.showLoading('加载申请列表...');
 
-            let apiUrl = `/api/visits/applications?status=${this.currentFilter}&page=${this.currentPage}&per_page=${this.itemsPerPage}`;
+            // 添加时间戳防止缓存
+            const timestamp = Date.now();
+            let allApplications = [];
 
+            // 1. 加载访问申请
+            let visitApiUrl = `/api/visits/applications?status=${this.currentFilter}&page=${this.currentPage}&per_page=${this.itemsPerPage}&t=${timestamp}`;
             if (searchKeyword) {
-                apiUrl += `&search=${encodeURIComponent(searchKeyword)}`;
+                visitApiUrl += `&search=${encodeURIComponent(searchKeyword)}`;
             }
 
-            const data = await Utils.request(apiUrl);
-            this.renderApplications(data);
+            try {
+                const visitData = await Utils.request(visitApiUrl);
+                if (visitData.applications && visitData.applications.length > 0) {
+                    // 为访问申请添加类型标识
+                    const visitApplications = visitData.applications.map(app => ({
+                        ...app,
+                        application_type: 'visit',
+                        application_status: app.application_status || app.status
+                    }));
+                    allApplications = allApplications.concat(visitApplications);
+                    console.log(`成功加载 ${visitApplications.length} 个访问申请`);
+                } else {
+                    console.log('没有找到访问申请数据');
+                }
+            } catch (error) {
+                console.warn('加载访问申请失败:', error);
+                Utils.showToast('加载访问申请失败', 'warning');
+            }
+
+            // 2. 加载学生出校申请
+            try {
+                let studentExitApiUrl = `/api/student-exit/applications?status=${this.currentFilter}&page=${this.currentPage}&per_page=${this.itemsPerPage}&t=${timestamp}`;
+                if (searchKeyword) {
+                    studentExitApiUrl += `&search=${encodeURIComponent(searchKeyword)}`;
+                }
+
+                const studentExitData = await Utils.request(studentExitApiUrl);
+                if (studentExitData.applications && studentExitData.applications.length > 0) {
+                    // 为学生出校申请添加类型标识
+                    const studentExitApplications = studentExitData.applications.map(app => ({
+                        ...app,
+                        application_type: 'student_exit',
+                        application_status: app.application_status,
+                        applicant_name: app.student_name,
+                        visit_date: app.exit_date,
+                        visit_time: app.exit_time,
+                        purpose: app.reason
+                    }));
+                    allApplications = allApplications.concat(studentExitApplications);
+                    console.log(`成功加载 ${studentExitApplications.length} 个学生出校申请`);
+                } else {
+                    console.log('没有找到学生出校申请数据');
+                }
+            } catch (error) {
+                console.warn('加载学生出校申请失败:', error);
+                // 如果只是功能不存在，不显示错误提示
+                if (error.message && error.message.includes('404')) {
+                    console.log('学生出校申请功能未启用');
+                } else {
+                    Utils.showToast('加载学生出校申请失败', 'warning');
+                }
+            }
+
+            // 合并数据并渲染
+            const combinedData = {
+                applications: allApplications,
+                total: allApplications.length,
+                page: this.currentPage,
+                per_page: this.itemsPerPage,
+                pagination: {
+                    current_page: this.currentPage,
+                    pages: 1,
+                    total: allApplications.length,
+                    per_page: this.itemsPerPage
+                }
+            };
+
+            this.renderApplications(combinedData);
+
+            // 更新统计数据
+            if (typeof HomePage !== 'undefined' && HomePage.loadReviewStatistics) {
+                await HomePage.loadReviewStatistics();
+            }
+
+            // 如果两个API都没有数据，显示提示信息
+            if (allApplications.length === 0) {
+                Utils.showToast('暂无申请数据', 'info');
+            }
 
             Utils.hideLoading();
         } catch (error) {
             Utils.hideLoading();
+            console.error('加载申请列表失败:', error);
             Utils.showToast('加载申请列表失败', 'error');
         }
     },
@@ -4724,69 +5579,157 @@ const ReviewPage = {
         this.renderPagination(data.pagination);
     },
 
+    // 获取申请人姓名
+    getApplicantName(app, isStudentExit) {
+        if (isStudentExit) {
+            // 学生离校申请：优先显示 student_name，其次是 applicant_name，最后是 applicant.real_name
+            if (app.student_name) {
+                return app.student_name;
+            } else if (app.applicant_name) {
+                return app.applicant_name;
+            } else if (app.applicant && app.applicant.real_name) {
+                return app.applicant.real_name;
+            } else {
+                return `学生申请 #${app.id}`;
+            }
+        } else {
+            // 访客申请：优先显示 applicant_name，其次是 applicant.real_name
+            if (app.applicant_name) {
+                return app.applicant_name;
+            } else if (app.applicant && app.applicant.real_name) {
+                return app.applicant.real_name;
+            } else {
+                return '未知申请人';
+            }
+        }
+    },
+
     // 渲染申请项
     renderApplicationItem(app) {
-        const statusClass = Utils.getStatusClass(app.application_status);
-        const statusText = Utils.getStatusText(app.application_status);
+        // 判断申请类型
+        const isStudentExit = app.exit_date !== undefined || app.application_type === 'student_exit';
+
+        let statusClass, statusText, title, details;
+
+        if (isStudentExit) {
+            // 学生离校申请
+            statusClass = StudentExitUtils.getStatusClass(app.application_status);
+            statusText = StudentExitUtils.getStatusText(app.application_status);
+            title = `${StudentExitUtils.getExitTypeText(app.exit_type || 'temporary')}申请`;
+
+            const returnDate = app.return_date || app.return_time || '';
+            const returnTime = app.return_time || app.return_time_end || '';
+
+            details = `
+                <div><strong>离校类型:</strong> ${StudentExitUtils.getExitTypeText(app.exit_type || 'temporary')}</div>
+                <div><strong>离校时间:</strong> ${StudentExitUtils.formatDate(app.exit_date)} ${StudentExitUtils.formatTime(app.exit_time_start || '')}</div>
+                ${returnDate || returnTime ? `<div><strong>返校时间:</strong> ${StudentExitUtils.formatDate(returnDate)} ${StudentExitUtils.formatTime(returnTime)}</div>` : ''}
+                <div><strong>离校事由:</strong> ${app.exit_reason || '未提供'}</div>
+                <div><strong>联系电话:</strong> ${app.contact_phone || '未提供'}</div>
+            `;
+        } else {
+            // 访客申请
+            statusClass = Utils.getStatusClass(app.application_status);
+            statusText = Utils.getStatusText(app.application_status);
+            title = '访客申请';
+
+            details = `
+                <div><strong>拜访对象:</strong> ${app.target_person || '未指定'}</div>
+                <div><strong>访问时间:</strong> ${Utils.formatTime(app.visit_time_start || app.time_start)} - ${Utils.formatTime(app.visit_time_end || app.time_end)}</div>
+                <div><strong>访问事由:</strong> ${app.visit_purpose || '未提供'}</div>
+                ${app.visitor_phone ? `<div><strong>联系电话:</strong> ${app.visitor_phone}</div>` : ''}
+            `;
+        }
 
         return `
-            <div class="application-item" data-id="${app.id}">
-                <div class="application-header">
-                    <div class="applicant-info">
-                        <span class="applicant-name">${app.applicant ? app.applicant.real_name : '未知'}</span>
-                        <span class="application-date">${Utils.formatDate(app.visit_date)}</span>
+            <div class="application-item" data-id="${app.id}" data-type="${isStudentExit ? 'student_exit' : 'visit'}" style="flex-direction: column !important; padding: 0 !important; margin-bottom: 6px !important; border-radius: 6px !important; overflow: hidden !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important; border: 1px solid var(--border) !important; background: var(--surface) !important;">
+                <!-- 头部区域 -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-light) 100%); color: white;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 28px; height: 28px; background: rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white;">
+                            <i class="ri-user-3-line"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: white;">${this.getApplicantName(app, isStudentExit)}</h3>
+                            <p style="margin: 1px 0 0 0; font-size: 10px; color: rgba(255, 255, 255, 0.8);">${Utils.formatDate(isStudentExit ? app.exit_date : app.visit_date)}</p>
+                        </div>
                     </div>
-                    <span class="application-status ${statusClass}">${statusText}</span>
+                    <span class="application-status ${statusClass}" style="background: rgba(255, 255, 255, 0.2) !important; color: white !important; border: none !important; font-weight: 500 !important; padding: 3px 8px !important; border-radius: 12px !important; font-size: 10px !important;">${statusText}</span>
                 </div>
-                <div class="application-content">
-                    <div class="application-purpose">${app.visit_purpose}</div>
-                    <div class="application-details">
-                        <div><strong>拜访对象:</strong> ${app.target_person || '未指定'}</div>
-                        <div><strong>访问时间:</strong> ${Utils.formatTime(app.visit_time_start)} - ${Utils.formatTime(app.visit_time_end)}</div>
-                        <div><strong>联系电话:</strong> ${app.visitor_phone || '未提供'}</div>
+
+                <!-- 内容区域 -->
+                <div style="padding: 8px 10px;">
+                    <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-primary);">
+                        <i class="ri-file-list-3-line" style="color: var(--primary-color); font-size: 12px;"></i>
+                        <span>${title}</span>
                     </div>
+
+                    <div style="background: var(--background-secondary); border-radius: 4px; padding: 6px 8px; margin-bottom: 6px;">
+                        ${details.replace(/div>/g, 'div style="margin-bottom: 3px; font-size: 11px; color: var(--text-secondary);">').replace(/strong>/g, 'strong style="color: var(--text-primary); font-weight: 500; min-width: 60px; display: inline-block;">')}
+                    </div>
+
                     ${app.review_note ? `
-                        <div class="review-note">
-                            <strong>审核意见:</strong> ${app.review_note}
+                        <div style="background: #f8f9fa; border-left: 3px solid var(--info-color); border-radius: 3px; padding: 5px 8px; display: flex; align-items: flex-start; gap: 5px; margin-bottom: 6px;">
+                            <i class="ri-message-3-line" style="color: var(--info-color); font-size: 12px; margin-top: 1px;"></i>
+                            <div style="flex: 1; font-size: 11px; color: var(--text-secondary);">
+                                <strong style="color: var(--text-primary);">审核意见:</strong> ${app.review_note}
+                            </div>
                         </div>
                     ` : ''}
                 </div>
-                <div class="application-actions">
-                    ${this.renderApplicationActions(app)}
+
+                <!-- 操作区域 -->
+                <div style="padding: 6px 10px; background: var(--background-secondary); border-top: 1px solid var(--border);">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        ${this.renderApplicationActions(app, isStudentExit)}
+                    </div>
                 </div>
             </div>
         `;
     },
 
     // 渲染申请操作按钮
-    renderApplicationActions(app) {
-        let actions = '';
+    renderApplicationActions(app, isStudentExit = false) {
+        let actionButtons = '';
 
-        if (app.application_status === 'pending') {
-            actions += `
-                <button class="btn btn-success btn-sm approve-btn" data-id="${app.id}">
-                    <i class="ri-check-line"></i> 通过
+        if (['pending', 'parent_approved'].includes(app.application_status) && app.can_approve) {
+            actionButtons += `
+                <button class="btn btn-success btn-sm approve-btn" data-id="${app.id}" data-type="${isStudentExit ? 'student_exit' : 'visit'}" style="min-width: 50px; display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 10px; padding: 5px 8px; border-radius: 3px; margin-right: 4px;">
+                    <i class="ri-check-line"></i>
+                    通过
                 </button>
-                <button class="btn btn-danger btn-sm reject-btn" data-id="${app.id}">
-                    <i class="ri-close-line"></i> 拒绝
+                <button class="btn btn-danger btn-sm reject-btn" data-id="${app.id}" data-type="${isStudentExit ? 'student_exit' : 'visit'}" style="min-width: 50px; display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 10px; padding: 5px 8px; border-radius: 3px; margin-right: 4px;">
+                    <i class="ri-close-line"></i>
+                    拒绝
                 </button>
             `;
         } else if (app.application_status === 'approved' || app.application_status === 'rejected') {
-            // 为已审批的申请添加撤销按钮
-            actions += `
-                <button class="btn btn-warning btn-sm revoke-btn" data-id="${app.id}">
-                    <i class="ri-refresh-line"></i> 撤销审批
-                </button>
-            `;
+            // 为已审批的申请添加撤销按钮 - 只有老师和管理员可以撤销
+            const userType = AppState.user ? AppState.user.user_type : '';
+            const isTeacherOrAdmin = userType === 'teacher' || userType === 'admin';
+
+            if (isTeacherOrAdmin) {
+                actionButtons += `
+                    <button class="btn btn-warning btn-sm revoke-btn" data-id="${app.id}" data-type="${isStudentExit ? 'student_exit' : 'visit'}" style="min-width: 50px; display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 10px; padding: 5px 8px; border-radius: 3px; margin-right: 4px;">
+                        <i class="ri-refresh-line"></i>
+                        撤销
+                    </button>
+                `;
+            }
         }
 
-        actions += `
-            <button class="btn btn-info btn-sm details-btn" data-id="${app.id}">
-                <i class="ri-eye-line"></i> 详情
-            </button>
+        // 详情按钮始终在右侧
+        return `
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                    ${actionButtons}
+                </div>
+                <button class="btn btn-primary btn-sm details-btn" data-id="${app.id}" data-type="${isStudentExit ? 'student_exit' : 'visit'}" style="min-width: 60px; display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 10px; padding: 5px 8px; border-radius: 3px; background: var(--primary-color); color: white; border: none;">
+                    <i class="ri-eye-line"></i>
+                    查看详情
+                </button>
+            </div>
         `;
-
-        return actions;
     },
 
     // 绑定申请操作事件
@@ -4795,7 +5738,8 @@ const ReviewPage = {
         document.querySelectorAll('.approve-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const id = btn.dataset.id;
-                await this.reviewApplication(id, true);
+                const type = btn.dataset.type;
+                await this.reviewApplication(id, true, '', type);
             });
         });
 
@@ -4803,9 +5747,10 @@ const ReviewPage = {
         document.querySelectorAll('.reject-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const id = btn.dataset.id;
+                const type = btn.dataset.type;
                 const reason = prompt('请输入拒绝理由:');
                 if (reason && reason.trim()) {
-                    await this.reviewApplication(id, false, reason.trim());
+                    await this.reviewApplication(id, false, reason.trim(), type);
                 } else {
                     Utils.showToast('请输入拒绝理由', 'warning');
                 }
@@ -4816,39 +5761,68 @@ const ReviewPage = {
         document.querySelectorAll('.revoke-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const id = btn.dataset.id;
-                await this.revokeApplication(id);
+                const type = btn.dataset.type;
+                await this.revokeApplication(id, type);
             });
         });
 
         // 详情按钮
         document.querySelectorAll('.details-btn').forEach(btn => {
+            console.log(`[DEBUG] 绑定详情按钮事件: ID=${btn.dataset.id}, type=${btn.dataset.type}`);
             btn.addEventListener('click', () => {
                 const id = btn.dataset.id;
-                this.showApplicationDetails(id);
+                const type = btn.dataset.type;
+                console.log(`[DEBUG] 点击详情按钮: ID=${id}, type=${type}`);
+                this.showApplicationDetails(id, type);
             });
         });
     },
 
     // 审核申请
-    async reviewApplication(id, approve, note = '') {
+    async reviewApplication(id, approve, note = '', type = 'visit') {
         try {
-            await Utils.request(`/api/visits/applications/${id}/approve`, {
-                method: 'POST',
-                body: JSON.stringify({
+            const endpoint = type === 'student_exit'
+                ? `/api/student-exit/applications/${id}/approve`
+                : `/api/visits/applications/${id}/approve`;
+
+            // 学生离校申请和访客申请使用不同的数据格式
+            const requestData = type === 'student_exit'
+                ? {
+                    action: approve ? 'approve' : 'reject',
+                    note: note
+                }
+                : {
                     approve: approve,
                     note: note
-                })
+                };
+
+            await Utils.request(endpoint, {
+                method: 'POST',
+                body: JSON.stringify(requestData)
             });
 
             Utils.showToast(`申请已${approve ? '通过' : '拒绝'}`, 'success');
+            // 重新加载审批管理页面
             await this.loadApplications();
+            // 重新加载统计信息
+            if (typeof HomePage !== 'undefined' && HomePage.loadReviewStatistics) {
+                await HomePage.loadReviewStatistics();
+            }
+            // 重新加载待审批申请（如果在首页）
+            if (typeof HomePage !== 'undefined' && HomePage.loadPendingApprovals) {
+                await HomePage.loadPendingApprovals();
+            }
+            // 重新加载最近申请
+            if (typeof HomePage !== 'undefined' && HomePage.loadRecentApplications) {
+                await HomePage.loadRecentApplications();
+            }
         } catch (error) {
             Utils.showToast(error.message, 'error');
         }
     },
 
     // 撤销审批
-    async revokeApplication(id) {
+    async revokeApplication(id, type = 'visit') {
         try {
             // 确认撤销
             const confirmed = confirm('确定要撤销这个申请的审批吗？撤销后申请将重新变为待审核状态。');
@@ -4858,12 +5832,29 @@ const ReviewPage = {
 
             Utils.showLoading('撤销审批中...');
 
-            await Utils.request(`/api/visits/applications/${id}/revoke`, {
+            const endpoint = type === 'student_exit'
+                ? `/api/student-exit/applications/${id}/revoke`
+                : `/api/visits/applications/${id}/revoke`;
+
+            await Utils.request(endpoint, {
                 method: 'POST'
             });
 
             Utils.showToast('审批已撤销', 'success');
+            // 重新加载审批管理页面
             await this.loadApplications();
+            // 重新加载统计信息
+            if (typeof HomePage !== 'undefined' && HomePage.loadReviewStatistics) {
+                await HomePage.loadReviewStatistics();
+            }
+            // 重新加载待审批申请（如果在首页）
+            if (typeof HomePage !== 'undefined' && HomePage.loadPendingApprovals) {
+                await HomePage.loadPendingApprovals();
+            }
+            // 重新加载最近申请
+            if (typeof HomePage !== 'undefined' && HomePage.loadRecentApplications) {
+                await HomePage.loadRecentApplications();
+            }
         } catch (error) {
             // 处理详细的权限错误信息
             let errorMessage = error.message;
@@ -4878,58 +5869,335 @@ const ReviewPage = {
     },
 
     // 显示申请详情
-    async showApplicationDetails(id) {
+    async showApplicationDetails(id, type = 'visit') {
         try {
-            const data = await Utils.request(`/api/visits/applications/${id}`);
-            const app = data.application;
+            console.log(`[DEBUG] 显示申请详情: ID=${id}, type=${type}`);
+            const endpoint = type === 'student_exit'
+                ? `/api/student-exit/applications/${id}`
+                : `/api/visits/applications/${id}`;
 
-            // 创建详情模态框内容
-            const detailsContent = `
-                <div class="application-details">
-                    <h4>申请详情</h4>
-                    <div class="detail-section">
-                        <h5>申请人信息</h5>
-                        <p><strong>姓名:</strong> ${app.applicant ? app.applicant.real_name : '未知'}</p>
-                        <p><strong>电话:</strong> ${app.visitor_phone || '未提供'}</p>
-                        <p><strong>邮箱:</strong> ${app.visitor_email || '未提供'}</p>
-                        <p><strong>身份证:</strong> ${app.visitor_id_card || '未提供'}</p>
+            const data = await Utils.request(endpoint);
+            const app = data.application;
+            console.log(`[DEBUG] API返回的申请数据:`, app);
+
+            // 判断申请类型
+            const isStudentExit = app.exit_date !== undefined || app.application_type === 'student_exit';
+            console.log(`[DEBUG] 是否为学生出校申请: ${isStudentExit}`);
+
+            let detailsContent;
+
+            if (isStudentExit) {
+                // 学生离校申请详情
+                const studentName = this.getApplicantName(app, true);
+                console.log(`[DEBUG] 获取到的学生姓名: "${studentName}"`);
+                console.log(`[DEBUG] 用于姓名提取的原始数据:`, {
+                    student_name: app.student_name,
+                    applicant_name: app.applicant_name,
+                    applicant: app.applicant
+                });
+                detailsContent = `
+                    <div class="application-details" style="text-align: left; padding: 10px;">
+                        <h4 style="text-align: center; margin-bottom: 15px; color: #333;">学生离校申请详情</h4>
+                        <div class="detail-section" style="margin-bottom: 15px;">
+                            <h5 style="color: #333; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; font-size: 14px;">申请人信息</h5>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>学生姓名:</strong> ${studentName}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>班级:</strong> ${app.class_name || '未提供'}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>联系电话:</strong> ${app.emergency_phone || app.contact_phone || '未提供'}</p>
+                        </div>
+                        <div class="detail-section" style="margin-bottom: 15px;">
+                            <h5 style="color: #333; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; font-size: 14px;">离校信息</h5>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>离校类型:</strong> ${StudentExitUtils.getExitTypeText(app.exit_type || 'temporary')}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>离校日期:</strong> ${StudentExitUtils.formatDate(app.exit_date)}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>离校时间:</strong> ${StudentExitUtils.formatTime(app.exit_time_start || '')}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>返校日期:</strong> ${StudentExitUtils.formatDate(app.return_date)}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>返校时间:</strong> ${StudentExitUtils.formatTime(app.return_time || '')}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>离校事由:</strong> ${app.exit_reason || '未提供'}</p>
+                        </div>
+                        <div class="detail-section" style="margin-bottom: 10px;">
+                            <h5 style="color: #333; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; font-size: 14px;">申请状态</h5>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>当前状态:</strong> <span class="status-${app.application_status}">${StudentExitUtils.getStatusText(app.application_status)}</span></p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>老师审批:</strong> ${app.teacher_approval_status === 'approved' ? '✅ 已通过' : app.teacher_approval_status === 'rejected' ? '❌ 已拒绝' : '⏳ 未审批'}</p>
+                            ${app.teacher_approval_status === 'approved' ? `
+                                <p style="margin: 6px 0; font-size: 13px;"><strong>家长确认:</strong> ${app.parent_approval_status === 'approved' ? '✅ 已确认' : '⏳ 未确认'}</p>
+                            ` : ''}
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>申请时间:</strong> ${new Date(app.created_at).toLocaleString('zh-CN')}</p>
+                            ${app.teacher_approval_time ? `
+                                <p style="margin: 6px 0; font-size: 13px;"><strong>老师审批时间:</strong> ${new Date(app.teacher_approval_time).toLocaleString('zh-CN')}</p>
+                            ` : ''}
+                            ${app.parent_approval_time ? `
+                                <p style="margin: 6px 0; font-size: 13px;"><strong>家长确认时间:</strong> ${new Date(app.parent_approval_time).toLocaleString('zh-CN')}</p>
+                            ` : ''}
+                        </div>
                     </div>
-                    <div class="detail-section">
-                        <h5>访问信息</h5>
-                        <p><strong>访问日期:</strong> ${Utils.formatDate(app.visit_date)}</p>
-                        <p><strong>访问时间:</strong> ${Utils.formatTime(app.visit_time_start)} - ${Utils.formatTime(app.visit_time_end)}</p>
-                        <p><strong>访问事由:</strong> ${app.visit_purpose}</p>
-                        <p><strong>拜访对象:</strong> ${app.target_person || '未指定'}</p>
-                        <p><strong>对象电话:</strong> ${app.target_phone || '未提供'}</p>
+                `;
+            } else {
+                // 访客申请详情
+                const visitorName = app.visitor_name || (app.applicant ? app.applicant.real_name : '未知访客');
+                detailsContent = `
+                    <div class="application-details" style="text-align: left; padding: 10px;">
+                        <h4 style="text-align: center; margin-bottom: 15px; color: #333;">访客申请详情</h4>
+                        <div class="detail-section" style="margin-bottom: 15px;">
+                            <h5 style="color: #333; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; font-size: 14px;">访客信息</h5>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>访客姓名:</strong> ${visitorName}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>联系电话:</strong> ${app.visitor_phone || '未提供'}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>身份证:</strong> ${app.visitor_id_card || '未提供'}</p>
+                        </div>
+                        <div class="detail-section" style="margin-bottom: 15px;">
+                            <h5 style="color: #333; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; font-size: 14px;">访问信息</h5>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>访问日期:</strong> ${Utils.formatDate(app.visit_date)}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>访问时间:</strong> ${Utils.formatTime(app.visit_time_start || app.time_start)} - ${Utils.formatTime(app.visit_time_end || app.time_end)}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>访问事由:</strong> ${app.visit_purpose}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>拜访对象:</strong> ${app.target_person || '未指定'}</p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>对象电话:</strong> ${app.target_phone || '未提供'}</p>
+                        </div>
+                        <div class="detail-section" style="margin-bottom: 10px;">
+                            <h5 style="color: #333; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; font-size: 14px;">申请状态</h5>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>当前状态:</strong> <span class="status-${app.application_status}">${Utils.getStatusText(app.application_status)}</span></p>
+                            <p style="margin: 6px 0; font-size: 13px;"><strong>申请时间:</strong> ${new Date(app.created_at).toLocaleString('zh-CN')}</p>
+                            ${app.reviewed_at ? `
+                                <p style="margin: 6px 0; font-size: 13px;"><strong>审核时间:</strong> ${new Date(app.reviewed_at).toLocaleString('zh-CN')}</p>
+                            ` : ''}
+                            ${app.reviewed_by ? `
+                                <p style="margin: 6px 0; font-size: 13px;"><strong>审核人:</strong> ${app.reviewer_name || '未知'}</p>
+                            ` : ''}
+                            ${app.review_note ? `
+                                <p style="margin: 6px 0; font-size: 13px;"><strong>审核意见:</strong> ${app.review_note}</p>
+                            ` : ''}
+                        </div>
                     </div>
-                    <div class="detail-section">
-                        <h5>申请状态</h5>
-                        <p><strong>当前状态:</strong> <span class="status-${app.application_status}">${Utils.getStatusText(app.application_status)}</span></p>
-                        <p><strong>申请时间:</strong> ${new Date(app.created_at).toLocaleString('zh-CN')}</p>
-                        ${app.reviewed_at ? `
-                            <p><strong>审核时间:</strong> ${new Date(app.reviewed_at).toLocaleString('zh-CN')}</p>
-                        ` : ''}
-                        ${app.reviewed_by ? `
-                            <p><strong>审核人:</strong> ${app.reviewer_name || '未知'}</p>
-                        ` : ''}
-                        ${app.review_note ? `
-                            <p><strong>审核意见:</strong> ${app.review_note}</p>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
+                `;
+            }
+
+            // 生成操作按钮
+            const actionButtons = this.generateActionButtons(app, isStudentExit);
 
             // 显示详情模态框
-            alert(detailsContent); // 简单显示，实际应该使用模态框
+            UI.showModal('applicationDetailsModal');
+            const modalBody = document.querySelector('#applicationDetailsModal .modal-body');
+            const modalFooter = document.querySelector('#applicationDetailsModal .modal-footer');
+
+            if (modalBody) {
+                modalBody.innerHTML = detailsContent;
+                if (modalFooter) {
+                    modalFooter.innerHTML = actionButtons;
+                }
+            } else {
+                // 如果模态框不存在，创建一个临时的模态框
+                const modalHtml = `
+                    <div class="modal" id="tempApplicationDetailsModal" style="background: rgba(0,0,0,0.5) !important;">
+                        <div class="modal-dialog modal-lg" style="margin: 10px auto !important; max-width: 500px !important;">
+                            <div class="modal-content" style="margin: 0 !important; padding: 0 !important; border: none !important; border-radius: 8px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;">
+                                <div class="modal-header" style="padding: 15px 20px !important; border-bottom: 1px solid #e0e0e0 !important; background: #fff !important;">
+                                    <h5 class="modal-title" style="margin: 0 !important; font-size: 16px !important; color: #333 !important;">申请详情</h5>
+                                    <button type="button" class="btn-close" onclick="UI.hideModal('tempApplicationDetailsModal')" style="font-size: 18px !important; opacity: 0.7 !important;"></button>
+                                </div>
+                                <div class="modal-body" style="padding: 0 !important; text-align: left; background: #fff !important;">
+                                    ${detailsContent}
+                                </div>
+                                <div class="modal-footer" style="padding: 12px 20px !important; border-top: 1px solid #e0e0e0 !important; background: #fff !important;">
+                                    ${actionButtons}
+                                    <button type="button" class="btn btn-secondary" onclick="UI.hideModal('tempApplicationDetailsModal')" style="font-size: 13px !important; padding: 6px 12px !important;">关闭</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const tempModal = document.getElementById('tempApplicationDetailsModal');
+                if (tempModal) {
+                    UI.showModal('tempApplicationDetailsModal');
+                    // 绑定操作按钮事件
+                    this.bindActionButtons(tempModal, app, isStudentExit);
+                    // 手动绑定关闭事件，移除临时模态框
+                    const closeButtons = tempModal.querySelectorAll('.btn-close, .btn-secondary');
+                    closeButtons.forEach(button => {
+                        button.addEventListener('click', () => {
+                            UI.hideModal('tempApplicationDetailsModal');
+                            tempModal.remove();
+                        });
+                    });
+                } else {
+                    // 绑定现有模态框的操作按钮事件
+                    this.bindActionButtons(document, app, isStudentExit);
+                }
+            }
         } catch (error) {
             Utils.showToast('加载申请详情失败', 'error');
+        }
+    },
+
+    // 生成操作按钮
+    generateActionButtons(app, isStudentExit) {
+        if (!AppState.user) return '';
+
+        const userType = AppState.user.user_type;
+        let buttons = '';
+
+        if (isStudentExit) {
+            // 学生出校申请的按钮
+            if (userType === 'parent' && app.teacher_approval_status === 'approved' && app.parent_approval_status === 'pending') {
+                // 家长确认按钮（只有老师审批通过后才显示）
+                buttons += `
+                    <button type="button" class="btn btn-success" onclick="ReviewPage.parentAcknowledge(${app.id})">
+                        <i class="ri-check-line"></i> 确认知晓
+                    </button>
+                `;
+            } else if (userType === 'teacher' && AppState.user.is_class_teacher && app.teacher_approval_status === 'pending') {
+                // 班主任审批按钮
+                buttons += `
+                    <button type="button" class="btn btn-success" onclick="ReviewPage.teacherApprove(${app.id})">
+                        <i class="ri-check-line"></i> 批准
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="ReviewPage.teacherReject(${app.id})">
+                        <i class="ri-close-line"></i> 拒绝
+                    </button>
+                `;
+            }
+        } else {
+            // 访问申请的按钮
+            if (userType === 'teacher' && ['pending'].includes(app.application_status)) {
+                buttons += `
+                    <button type="button" class="btn btn-success" onclick="ReviewPage.approveVisit(${app.id})">
+                        <i class="ri-check-line"></i> 批准
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="ReviewPage.rejectVisit(${app.id})">
+                        <i class="ri-close-line"></i> 拒绝
+                    </button>
+                `;
+            }
+        }
+
+        return buttons;
+    },
+
+    // 绑定操作按钮事件
+    bindActionButtons(container, app, isStudentExit) {
+        // 这里可以添加更复杂的事件绑定逻辑
+        // 目前使用onclick内联事件，简单直接
+    },
+
+    // 家长确认申请
+    async parentAcknowledge(applicationId) {
+        try {
+            const data = await Utils.request('/api/student-exit/applications/' + applicationId + '/acknowledge', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    note: '家长已知晓并同意此申请'
+                })
+            });
+
+            if (data.success) {
+                Utils.showToast('已确认知晓此申请', 'success');
+                // 关闭模态框
+                UI.hideModal('applicationDetailsModal');
+                UI.hideModal('tempApplicationDetailsModal');
+                // 刷新列表
+                if (typeof HomePage !== 'undefined' && HomePage.loadRecentApplications) {
+                    await HomePage.loadRecentApplications();
+                }
+                if (typeof ReviewPage !== 'undefined' && ReviewPage.loadApplications) {
+                    await ReviewPage.loadApplications();
+                }
+            } else {
+                Utils.showToast(data.error || '确认失败', 'error');
+            }
+        } catch (error) {
+            console.error('家长确认申请失败:', error);
+            Utils.showToast('确认失败，请重试', 'error');
+        }
+    },
+
+    // 老师批准申请
+    async teacherApprove(applicationId) {
+        try {
+            const data = await Utils.request('/api/student-exit/applications/' + applicationId + '/approve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'approve',
+                    note: '班主任批准'
+                })
+            });
+
+            if (data.success) {
+                Utils.showToast('已批准申请', 'success');
+                UI.hideModal('applicationDetailsModal');
+                UI.hideModal('tempApplicationDetailsModal');
+                // 刷新列表
+                if (typeof HomePage !== 'undefined' && HomePage.loadRecentApplications) {
+                    await HomePage.loadRecentApplications();
+                }
+                if (typeof ReviewPage !== 'undefined' && ReviewPage.loadApplications) {
+                    await ReviewPage.loadApplications();
+                }
+            } else {
+                Utils.showToast(data.error || '批准失败', 'error');
+            }
+        } catch (error) {
+            console.error('老师批准申请失败:', error);
+            Utils.showToast('批准失败，请重试', 'error');
+        }
+    },
+
+    // 老师拒绝申请
+    async teacherReject(applicationId) {
+        try {
+            const data = await Utils.request('/api/student-exit/applications/' + applicationId + '/approve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'reject',
+                    note: '班主任拒绝'
+                })
+            });
+
+            if (data.success) {
+                Utils.showToast('已拒绝申请', 'success');
+                UI.hideModal('applicationDetailsModal');
+                UI.hideModal('tempApplicationDetailsModal');
+                // 刷新列表
+                if (typeof HomePage !== 'undefined' && HomePage.loadRecentApplications) {
+                    await HomePage.loadRecentApplications();
+                }
+                if (typeof ReviewPage !== 'undefined' && ReviewPage.loadApplications) {
+                    await ReviewPage.loadApplications();
+                }
+            } else {
+                Utils.showToast(data.error || '拒绝失败', 'error');
+            }
+        } catch (error) {
+            console.error('老师拒绝申请失败:', error);
+            Utils.showToast('拒绝失败，请重试', 'error');
         }
     },
 
     // 渲染分页
     renderPagination(pagination) {
         const container = document.getElementById('reviewPagination');
-        if (!container || pagination.total_pages <= 1) {
+        if (!container) {
+            console.warn('reviewPagination container not found');
+            return;
+        }
+
+        // 检查分页数据是否存在
+        if (!pagination) {
+            console.warn('pagination data is undefined');
+            container.innerHTML = '';
+            return;
+        }
+
+        // 兼容不同的分页数据结构
+        const totalPages = pagination.total_pages || pagination.pages || 1;
+        const currentPage = pagination.current_page || pagination.page || 1;
+
+        if (totalPages <= 1) {
             container.innerHTML = '';
             return;
         }
@@ -4937,19 +6205,19 @@ const ReviewPage = {
         let paginationHtml = '<div class="pagination">';
 
         // 上一页
-        if (pagination.current_page > 1) {
-            paginationHtml += `<button class="btn btn-sm" onclick="ReviewPage.goToPage(${pagination.current_page - 1})">上一页</button>`;
+        if (currentPage > 1) {
+            paginationHtml += `<button class="btn btn-sm" onclick="ReviewPage.goToPage(${currentPage - 1})">上一页</button>`;
         }
 
         // 页码
-        for (let i = 1; i <= pagination.total_pages; i++) {
-            const activeClass = i === pagination.current_page ? 'active' : '';
+        for (let i = 1; i <= totalPages; i++) {
+            const activeClass = i === currentPage ? 'active' : '';
             paginationHtml += `<button class="btn btn-sm ${activeClass}" onclick="ReviewPage.goToPage(${i})">${i}</button>`;
         }
 
         // 下一页
-        if (pagination.current_page < pagination.total_pages) {
-            paginationHtml += `<button class="btn btn-sm" onclick="ReviewPage.goToPage(${pagination.current_page + 1})">下一页</button>`;
+        if (currentPage < totalPages) {
+            paginationHtml += `<button class="btn btn-sm" onclick="ReviewPage.goToPage(${currentPage + 1})">下一页</button>`;
         }
 
         paginationHtml += '</div>';

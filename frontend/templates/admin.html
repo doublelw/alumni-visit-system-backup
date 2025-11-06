@@ -641,8 +641,12 @@
             <!-- 仪表板页面 -->
             <div class="page active" id="dashboardPage">
                 <div class="page-header">
-                    <h1>仪表板</h1>
-                    <p>系统概览和关键指标</p>
+                    <div class="page-header-content">
+                        <div>
+                            <h1>仪表板</h1>
+                            <p>系统概览和关键指标</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 统计卡片 -->
@@ -682,7 +686,7 @@
                             <i class="ri-time-line"></i>
                         </div>
                         <div class="stat-content">
-                            <h3 id="pendingCount">0</h3>
+                            <h3 id="dashboardPendingCount">0</h3>
                             <p>待处理事项</p>
                         </div>
                     </div>
@@ -757,6 +761,10 @@
                             <button class="btn btn-info" id="batchExportBtn">
                                 <i class="ri-download-line"></i>
                                 批量导出
+                            </button>
+                            <button class="btn btn-warning" id="exportCardDataBtn">
+                                <i class="ri-download-line"></i>
+                                导出制卡数据
                             </button>
                             <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;">
                                 <i class="ri-delete-bin-line"></i>
@@ -1251,16 +1259,14 @@
                                 <th>
                                     <input type="checkbox" id="selectAllVisits">
                                 </th>
-                                <th>申请人信息</th>
-                                <th>访问日期</th>
-                                <th>访问时间</th>
-                                <th>访问目的</th>
-                                <th>被访人</th>
-                                <th>车辆信息</th>
-                                <th>申请时间</th>
-                                <th>状态</th>
-                                <th>审核人</th>
-                                <th>操作</th>
+                                <th style="width: 25%;">申请人信息</th>
+                                <th style="width: 8%;">访问日期</th>
+                                <th style="width: 10%;">访问时间</th>
+                                <th style="width: 30%;">访问目的</th>
+                                <th style="width: 8%;">被访人</th>
+                                <th style="width: 8%;">车辆信息</th>
+                                <th style="width: 8%;">申请时间</th>
+                                <th style="width: 3%;">审核操作</th>
                             </tr>
                         </thead>
                         <tbody id="visitApplicationsTableBody">
@@ -2288,7 +2294,7 @@
     <script src="/static/js/config.js?v=2.3"></script>
 
     <!-- 引入脚本 -->
-    <script src="/static/js/admin.js?v=4.2"></script>
+    <script src="/static/js/admin.js?v=4.4"></script>
     <script src="/static/js/relationship-management.js?v=1.0"></script>
 <!-- 拜访对象模态框 -->
 <div class="modal" id="targetPersonModal">
@@ -2415,32 +2421,50 @@
                         </select>
                     </div>
 
-                    <div class="form-group" id="addStudentIdGroup">
-                        <label for="addStudentId">学号</label>
-                        <input type="text" id="addStudentId" class="form-control">
+                    <hr class="form-divider">
+
+                    <div class="form-row" id="addVisitableGroup" style="display: none;">
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="addIsVisitable">
+                                可拜访权限
+                            </label>
+                            <small class="form-hint">开启后，该用户可作为被拜访对象</small>
+                        </div>
                     </div>
 
-                    <div class="form-group" id="addEmployeeIdGroup">
-                        <label for="addEmployeeId">工号</label>
-                        <input type="text" id="addEmployeeId" class="form-control">
+                    <hr class="form-divider" style="display: none;" id="addStudentFieldsDivider">
+
+                    <div class="form-row">
+                        <div class="form-group" id="addStudentIdGroup">
+                            <label for="addStudentId">学号</label>
+                            <input type="text" id="addStudentId" class="form-control">
+                        </div>
+
+                        <div class="form-group" id="addEmployeeIdGroup">
+                            <label for="addEmployeeId">工号</label>
+                            <input type="text" id="addEmployeeId" class="form-control">
+                        </div>
+
+                        <div class="form-group" id="addClassIdGroup">
+                            <label for="addClassId">班级</label>
+                            <input type="text" id="addClassId" class="form-control">
+                        </div>
                     </div>
 
-                    <div class="form-group" id="addClassIdGroup">
-                        <label for="addClassId">班级</label>
-                        <input type="text" id="addClassId" class="form-control">
-                    </div>
+                    <div class="form-row">
+                        <div class="form-group" id="addGradeGroup">
+                            <label for="addGrade">年级</label>
+                            <input type="text" id="addGrade" class="form-control">
+                        </div>
 
-                    <div class="form-group" id="addGradeGroup">
-                        <label for="addGrade">年级</label>
-                        <input type="text" id="addGrade" class="form-control">
-                    </div>
-
-                    <div class="form-group" id="addIsClassTeacherGroup">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="addIsClassTeacher">
-                            <span class="checkmark"></span>
-                            是否班主任
-                        </label>
+                        <div class="form-group" id="addIsClassTeacherGroup">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="addIsClassTeacher">
+                                <span class="checkmark"></span>
+                                是否班主任
+                            </label>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -2483,6 +2507,8 @@
                         <input type="tel" id="editPhone" class="form-control">
                     </div>
 
+                    <hr class="form-divider">
+
                     <div class="form-group">
                         <label>用户类型 *</label>
                         <div class="user-type-checkboxes" id="editUserTypes">
@@ -2513,32 +2539,38 @@
                         </div>
                     </div>
 
-                    <div class="form-group" id="editStudentIdGroup">
-                        <label for="editStudentId">学号</label>
-                        <input type="text" id="editStudentId" class="form-control">
+                    <hr class="form-divider">
+
+                    <div class="form-row">
+                        <div class="form-group" id="editStudentIdGroup">
+                            <label for="editStudentId">学号</label>
+                            <input type="text" id="editStudentId" class="form-control">
+                        </div>
+
+                        <div class="form-group" id="editEmployeeIdGroup">
+                            <label for="editEmployeeId">工号</label>
+                            <input type="text" id="editEmployeeId" class="form-control">
+                        </div>
+
+                        <div class="form-group" id="editClassIdGroup">
+                            <label for="editClassId">班级</label>
+                            <input type="text" id="editClassId" class="form-control">
+                        </div>
                     </div>
 
-                    <div class="form-group" id="editEmployeeIdGroup">
-                        <label for="editEmployeeId">工号</label>
-                        <input type="text" id="editEmployeeId" class="form-control">
-                    </div>
+                    <div class="form-row">
+                        <div class="form-group" id="editGradeGroup">
+                            <label for="editGrade">年级</label>
+                            <input type="text" id="editGrade" class="form-control">
+                        </div>
 
-                    <div class="form-group" id="editClassIdGroup">
-                        <label for="editClassId">班级</label>
-                        <input type="text" id="editClassId" class="form-control">
-                    </div>
-
-                    <div class="form-group" id="editGradeGroup">
-                        <label for="editGrade">年级</label>
-                        <input type="text" id="editGrade" class="form-control">
-                    </div>
-
-                    <div class="form-group" id="editIsClassTeacherGroup">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="editIsClassTeacher">
-                            <span class="checkmark"></span>
-                            是否班主任
-                        </label>
+                        <div class="form-group" id="editIsClassTeacherGroup">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="editIsClassTeacher">
+                                <span class="checkmark"></span>
+                                是否班主任
+                            </label>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -2553,6 +2585,18 @@
                         <div class="password-strength-indicator" id="editPasswordStrength">
                             <div class="strength-bar"></div>
                             <span class="strength-text">密码强度：未输入</span>
+                        </div>
+                    </div>
+
+                    <hr class="form-divider">
+
+                    <div class="form-row">
+                        <div class="form-group" id="visitableGroup">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="editIsVisitable">
+                                可拜访权限
+                            </label>
+                            <small class="form-hint">开启后，该用户可作为被拜访对象</small>
                         </div>
                     </div>
 

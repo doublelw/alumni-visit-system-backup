@@ -279,6 +279,14 @@ class AlumniCard {
         if (modal) {
             modal.remove();
         }
+
+        // 同时隐藏原始模态框（如果存在）
+        const originalModal = document.getElementById('alumniCardModal');
+        if (originalModal) {
+            originalModal.style.display = 'none';
+        }
+
+        // 恢复body滚动
         document.body.style.overflow = '';
     }
 

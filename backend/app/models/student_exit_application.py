@@ -124,6 +124,14 @@ class StudentExitApplication(db.Model):
     def generate_qr_code(self):
         """生成出校二维码"""
         if self.application_status == 'approved':
+            # 检查是否是当天有效的申请
+            from datetime import date
+            today = date.today()
+
+            if self.exit_date != today:
+                # 不是当天的申请，不能生成二维码
+                return False
+
             import random
             import string
 
@@ -145,10 +153,11 @@ class StudentExitApplication(db.Model):
             }
             self.qr_code = json.dumps(qr_data, ensure_ascii=False)
             # 设置二维码过期时间为当天晚上11点59分
-            if self.exit_date:
-                from datetime import time as dt_time
-                self.qr_code_expires_at = datetime.combine(self.exit_date, dt_time(23, 59))
+            from datetime import time as dt_time
+            self.qr_code_expires_at = datetime.combine(self.exit_date, dt_time(23, 59))
             db.session.commit()
+            return True
+        return False
 
     def is_qr_code_valid(self):
         """检查二维码是否有效"""
@@ -165,7 +174,12 @@ class StudentExitApplication(db.Model):
         elif user_type == 'teacher':
             # 检查是否是班主任
             teacher = User.query.get(user_id)
-            return teacher and teacher.is_class_teacher and self.teacher_approval_status == 'pending'
+            if not teacher or not teacher.is_class_teacher:
+                return False
+            # 不能审批自己提交的申请
+            if self.applicant_id == user_id:
+                return False
+            return self.teacher_approval_status == 'pending'
         return False
 
     @property

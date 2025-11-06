@@ -21,6 +21,7 @@ except ImportError:
 from app import db
 from app.models.user import User
 from app.models.face_data import FaceData
+from app.models.face_history import FaceHistory
 
 faces_bp = Blueprint('faces', __name__)
 
@@ -217,6 +218,37 @@ def register_face():
                     'threshold': SIMILARITY_THRESHOLD
                 }), 400
 
+            # 验证通过，保存人脸历史记录
+            try:
+                # 获取设备和位置信息
+                device_info = request.headers.get('User-Agent', '')
+                ip_address = request.remote_addr
+
+                # 保存当前人脸到历史记录
+                current_face_record = FaceHistory.create_new_face_record(
+                    user_id=current_user_id,
+                    face_encoding=face_encoding,
+                    face_image_path=face_image_path,
+                    operation_type='update',
+                    device_info=device_info,
+                    ip_address=ip_address,
+                    user_agent=request.headers.get('User-Agent')
+                )
+
+                # 设置验证信息
+                current_face_record.is_verified = True
+                current_face_record.verification_method = 'comparison'
+                current_face_record.verification_score = similarity_score
+                current_face_record.verification_time = datetime.utcnow()
+                current_face_record.verification_note = f'人脸更新验证通过，相似度{similarity_score:.1f}%'
+
+                db.session.commit()
+                current_app.logger.info(f"用户{current_user_id}人脸历史记录已保存，记录ID: {current_face_record.id}")
+
+            except Exception as e:
+                current_app.logger.error(f"保存人脸历史记录失败: {str(e)}")
+                # 不影响主要功能，继续执行
+
             # 验证通过，删除旧的人脸图片文件
             if existing_face.face_image_path and os.path.exists(existing_face.face_image_path):
                 try:
@@ -249,6 +281,36 @@ def register_face():
             db.session.add(face_data)
             db.session.commit()
 
+            # 保存人脸注册历史记录
+            try:
+                # 获取设备和位置信息
+                device_info = request.headers.get('User-Agent', '')
+                ip_address = request.remote_addr
+
+                # 保存注册记录到历史
+                face_history_record = FaceHistory.create_new_face_record(
+                    user_id=current_user_id,
+                    face_encoding=face_encoding,
+                    face_image_path=face_image_path,
+                    operation_type='register',
+                    device_info=device_info,
+                    ip_address=ip_address,
+                    user_agent=request.headers.get('User-Agent')
+                )
+
+                # 设置验证信息
+                face_history_record.is_verified = True
+                face_history_record.verification_method = 'auto'
+                face_history_record.verification_time = datetime.utcnow()
+                face_history_record.verification_note = '人脸注册成功'
+
+                db.session.commit()
+                current_app.logger.info(f"用户{current_user_id}首次人脸注册历史记录已保存，记录ID: {face_history_record.id}")
+
+            except Exception as e:
+                current_app.logger.error(f"保存人脸注册历史记录失败: {str(e)}")
+                # 不影响主要功能，继续执行
+
             return jsonify({
                 'message': '人脸注册成功',
                 'face_data': face_data.to_dict()
@@ -258,6 +320,149 @@ def register_face():
         db.session.rollback()
         current_app.logger.error(f"人脸注册失败: {str(e)}")
         return jsonify({'error': '人脸注册失败'}), 500
+
+@faces_bp.route('/history', methods=['GET'])
+@jwt_required()
+def get_face_history():
+    """获取人脸历史记录"""
+    try:
+        current_user_id = get_jwt_identity()
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        per_page = min(per_page, 50)  # 限制最大50条
+
+        # 检查权限 - 只有管理员或用户本人可以查看
+        current_user = User.query.get(current_user_id)
+        if not current_user:
+            return jsonify({'error': '用户不存在'}), 404
+
+        # 获取人脸历史记录
+        history_query = FaceHistory.query.filter_by(user_id=current_user_id)\
+                                       .order_by(FaceHistory.created_at.desc())
+
+        pagination = history_query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+
+        history_records = []
+        for record in pagination.items:
+            history_data = record.to_dict()
+            # 不返回敏感的人脸特征数据
+            history_data.pop('face_encoding', None)
+            history_records.append(history_data)
+
+        return jsonify({
+            'success': True,
+            'history': history_records,
+            'pagination': {
+                'page': pagination.page,
+                'per_page': pagination.per_page,
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev
+            }
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"获取人脸历史记录失败: {str(e)}")
+        return jsonify({'error': '获取人脸历史记录失败'}), 500
+
+
+@faces_bp.route('/compare-with-history', methods=['POST'])
+@jwt_required()
+def compare_with_history():
+    """与历史人脸记录进行对比"""
+    try:
+        current_user_id = get_jwt_identity()
+
+        # 检查是否有文件上传
+        if 'image' not in request.files:
+            return jsonify({'error': '请上传人脸图片'}), 400
+
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'error': '请选择文件'}), 400
+
+        if not allowed_file(file.filename):
+            return jsonify({'error': '不支持的文件格式'}), 400
+
+        # 保存临时文件
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        os.makedirs(upload_folder, exist_ok=True)
+
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(upload_folder, filename)
+        file.save(filepath)
+
+        # 提取人脸特征
+        new_face_encoding, face_image_path, error_msg = detect_and_extract_face(filepath)
+
+        # 删除临时文件
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+        if error_msg:
+            return jsonify({'error': error_msg}), 400
+
+        if not new_face_encoding:
+            return jsonify({'error': '人脸特征提取失败'}), 400
+
+        # 与历史人脸记录进行对比
+        comparison_results = FaceHistory.compare_with_previous_faces(
+            current_user_id,
+            new_face_encoding,
+            threshold=0.6
+        )
+
+        # 记录对比操作
+        try:
+            face_record = FaceHistory.create_new_face_record(
+                user_id=current_user_id,
+                face_encoding=new_face_encoding,
+                face_image_path=face_image_path,
+                operation_type='update',
+                device_info=request.headers.get('User-Agent', ''),
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent')
+            )
+
+            face_record.is_verified = False  # 待人工验证
+            face_record.verification_method = 'comparison'
+            face_record.status = 'suspicious' if not any(r['is_match'] for r in comparison_results) else 'active'
+
+            # 计算最高相似度
+            max_similarity = max([r['similarity'] for r in comparison_results], default=0)
+            face_record.verification_score = max_similarity
+
+            verification_note = f'人脸对比完成，最高相似度: {max_similarity:.2f}'
+            if any(r['is_match'] for r in comparison_results):
+                verification_note += ' - 匹配成功'
+            else:
+                verification_note += ' - 无匹配记录，需要人工验证'
+
+            face_record.verification_note = verification_note
+            face_record.verification_time = datetime.utcnow()
+
+            db.session.commit()
+
+        except Exception as e:
+            current_app.logger.error(f"保存对比记录失败: {str(e)}")
+
+        return jsonify({
+            'success': True,
+            'comparison_results': comparison_results,
+            'max_similarity': max([r['similarity'] for r in comparison_results], default=0),
+            'has_match': any(r['is_match'] for r in comparison_results),
+            'message': '对比完成' if any(r['is_match'] for r in comparison_results) else '未找到匹配的历史记录，请联系管理员验证'
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"人脸对比失败: {str(e)}")
+        return jsonify({'error': '人脸对比失败'}), 500
+
 
 @faces_bp.route('/status', methods=['GET'])
 @jwt_required()

@@ -89,3 +89,64 @@ def favicon():
     except Exception as e:
         print(f"Favicon error: {e}")
         return '', 404
+
+# 添加对 /lsalumni/ 前缀的支持
+@web_bp.route('/lsalumni/')
+def lsalumni_index():
+    """主页 - 移动端界面 (带/lsalumni/前缀)"""
+    return render_template('index.html')
+
+@web_bp.route('/lsalumni/admin')
+def lsalumni_admin():
+    """管理后台 (带/lsalumni/前缀)"""
+    return render_template('admin.html')
+
+@web_bp.route('/lsalumni/security-portal')
+def lsalumni_security_portal():
+    """保安专用端 (带/lsalumni/前缀)"""
+    return render_template('security-portal.html')
+
+@web_bp.route('/lsalumni/register')
+def lsalumni_register():
+    """校友注册页面 (带/lsalumni/前缀)"""
+    return render_template('register.html')
+
+@web_bp.route('/lsalumni/login')
+def lsalumni_login():
+    """登录页面 (带/lsalumni/前缀)"""
+    return render_template('index.html')
+
+@web_bp.route('/lsalumni/admin-login')
+def lsalumni_admin_login():
+    """管理后台登录页面 (带/lsalumni/前缀)"""
+    return render_template('admin-login.html')
+
+@web_bp.route('/lsalumni/ssl-setup')
+def lsalumni_ssl_setup():
+    """SSL证书设置指南页面 (带/lsalumni/前缀)"""
+    return render_template('ssl-setup.html')
+
+@web_bp.route('/lsalumni/ssl-error')
+def lsalumni_ssl_error():
+    """SSL错误页面 (带/lsalumni/前缀)"""
+    return render_template('ssl-error.html')
+
+# 添加对 /static/ 静态文件的支持
+@web_bp.route('/static/<path:filename>')
+def static_files(filename):
+    """静态文件服务"""
+    try:
+        return current_app.send_static_file(filename)
+    except Exception as e:
+        current_app.logger.error(f"Static file error: {e}")
+        return '', 404
+
+# 添加对 /lsalumni/static/ 静态文件的支持
+@web_bp.route('/lsalumni/static/<path:filename>')
+def lsalumni_static_files(filename):
+    """静态文件服务 (带/lsalumni/前缀)"""
+    try:
+        return current_app.send_static_file(filename)
+    except Exception as e:
+        current_app.logger.error(f"Static file error: {e}")
+        return '', 404

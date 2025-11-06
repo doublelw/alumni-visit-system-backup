@@ -232,7 +232,7 @@ class StudentExitApplication {
         const statusMap = {
             'pending': '待审批',
             'parent_approved': '家长已通过',
-            'teacher_approved': '班主任已通过',
+            'teacher_approved': '等待家长知晓',
             'approved': '已批准',
             'rejected': '已拒绝',
             'completed': '已完成',

@@ -573,6 +573,15 @@ def get_statistics():
         # 基础统计
         total_visits = VisitRecord.query.count()
         total_applications = VisitApplication.query.count()
+        total_users = User.query.count()
+        total_alumni = User.query.filter_by(user_type='alumni').count()
+
+        # 导入学生出校申请模型
+        try:
+            from app.models.student_exit_application import StudentExitApplication
+            total_student_exit_applications = StudentExitApplication.query.count()
+        except ImportError:
+            total_student_exit_applications = 0
 
         if statistic_type == 'overview':
             # 概览统计
@@ -598,17 +607,20 @@ def get_statistics():
                 func.date(VisitRecord.entry_time) >= year_start
             ).count()
 
-            # 按状态统计申请
+            # 按状态统计申请 - 访问申请
             application_stats = db.session.query(
                 VisitApplication.application_status,
                 func.count(VisitApplication.id).label('count')
             ).group_by(VisitApplication.application_status).all()
 
+            # 转换为字典格式
+            application_stats = [{'status': stat.application_status, 'count': stat.count} for stat in application_stats]
+
             # 按学部统计校友
             division_stats = db.session.query(
                 AlumniProfile.division,
                 func.count(AlumniProfile.id).label('count')
-            ).join(User).filter(
+            ).join(User, AlumniProfile.user_id == User.id).filter(
                 User.user_type == 'alumni',
                 AlumniProfile.approval_status == 'approved'
             ).group_by(AlumniProfile.division).order_by(
@@ -619,7 +631,7 @@ def get_statistics():
             grade_stats = db.session.query(
                 AlumniProfile.graduation_year,
                 func.count(AlumniProfile.id).label('count')
-            ).join(User).filter(
+            ).join(User, AlumniProfile.user_id == User.id).filter(
                 User.user_type == 'alumni',
                 AlumniProfile.approval_status == 'approved'
             ).group_by(AlumniProfile.graduation_year).order_by(
@@ -637,7 +649,9 @@ def get_statistics():
                 'application_stats': [{'status': stat.application_status, 'count': stat.count} for stat in application_stats],
                 'division_stats': [{'division': stat.division, 'count': stat.count} for stat in division_stats],
                 'grade_stats': [{'year': stat.graduation_year, 'count': stat.count} for stat in grade_stats],
-                'total_applications': total_applications
+                'total_applications': total_applications,
+                'total_users': total_users,
+                'total_alumni': total_alumni
             }), 200
 
         elif statistic_type == 'visits':
@@ -706,7 +720,7 @@ def get_statistics():
             class_stats = db.session.query(
                 AlumniProfile.class_name,
                 func.count(AlumniProfile.id).label('count')
-            ).join(User).filter(
+            ).join(User, AlumniProfile.user_id == User.id).filter(
                 User.user_type == 'alumni',
                 AlumniProfile.approval_status == 'approved'
             ).group_by(AlumniProfile.class_name).order_by(
@@ -718,7 +732,7 @@ def get_statistics():
                 AlumniProfile.graduation_year,
                 AlumniProfile.class_name,
                 func.count(AlumniProfile.id).label('count')
-            ).join(User).filter(
+            ).join(User, AlumniProfile.user_id == User.id).filter(
                 User.user_type == 'alumni',
                 AlumniProfile.approval_status == 'approved'
             ).group_by(
@@ -822,12 +836,13 @@ def update_user(user_id):
                     return jsonify({'error': '员工编号已被其他用户使用'}), 400
             user.employee_id = data['employee_id'] if data['employee_id'] and data['employee_id'].strip() else None
 
-        # 自动设置可拜访权限 - 只要是教师就自动设为可拜访
-        if 'teacher' in str(user.user_type):
-            user.is_visitable = True
-        elif 'is_visitable' in data:
-            # 非教师用户可以手动设置可拜访权限
+        # 设置可拜访权限
+        if 'is_visitable' in data:
+            # 允许所有用户手动设置可拜访权限
             user.is_visitable = data['is_visitable']
+        elif 'teacher' in str(user.user_type):
+            # 如果没有手动设置，教师默认为可拜访
+            user.is_visitable = True
 
         user.updated_at = datetime.utcnow()
         db.session.commit()
@@ -892,53 +907,36 @@ def get_student_exit_statistics():
         else:
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
 
-        # 基础统计数据
-        total_applications = StudentExitApplication.query.filter(
-            func.date(StudentExitApplication.created_at) >= start_date,
-            func.date(StudentExitApplication.created_at) <= end_date
+        # 基础统计数据（暂时移除日期过滤进行测试）
+        total_applications = StudentExitApplication.query.count()
+
+        approved_applications = StudentExitApplication.query.filter_by(
+            application_status='approved'
         ).count()
 
-        approved_applications = StudentExitApplication.query.filter(
-            func.date(StudentExitApplication.created_at) >= start_date,
-            func.date(StudentExitApplication.created_at) <= end_date,
-            StudentExitApplication.application_status == 'approved'
-        ).count()
-
-        rejected_applications = StudentExitApplication.query.filter(
-            func.date(StudentExitApplication.created_at) >= start_date,
-            func.date(StudentExitApplication.created_at) <= end_date,
-            StudentExitApplication.application_status == 'rejected'
+        rejected_applications = StudentExitApplication.query.filter_by(
+            application_status='rejected'
         ).count()
 
         pending_applications = StudentExitApplication.query.filter(
-            func.date(StudentExitApplication.created_at) >= start_date,
-            func.date(StudentExitApplication.created_at) <= end_date,
-            StudentExitApplication.application_status == 'pending'
+            StudentExitApplication.application_status.in_(['pending', 'teacher_approved', 'parent_approved'])
         ).count()
 
-        # 审批效率统计
-        parent_approved = StudentExitApplication.query.filter(
-            func.date(StudentExitApplication.created_at) >= start_date,
-            func.date(StudentExitApplication.created_at) <= end_date,
-            StudentExitApplication.parent_approval_status == 'approved'
+        # 审批效率统计（暂时移除日期过滤进行测试）
+        parent_approved = StudentExitApplication.query.filter_by(
+            parent_approval_status='approved'
         ).count()
 
-        parent_rejected = StudentExitApplication.query.filter(
-            func.date(StudentExitApplication.created_at) >= start_date,
-            func.date(StudentExitApplication.created_at) <= end_date,
-            StudentExitApplication.parent_approval_status == 'rejected'
+        parent_rejected = StudentExitApplication.query.filter_by(
+            parent_approval_status='rejected'
         ).count()
 
-        teacher_approved = StudentExitApplication.query.filter(
-            func.date(StudentExitApplication.created_at) >= start_date,
-            func.date(StudentExitApplication.created_at) <= end_date,
-            StudentExitApplication.teacher_approval_status == 'approved'
+        teacher_approved = StudentExitApplication.query.filter_by(
+            teacher_approval_status='approved'
         ).count()
 
-        teacher_rejected = StudentExitApplication.query.filter(
-            func.date(StudentExitApplication.created_at) >= start_date,
-            func.date(StudentExitApplication.created_at) <= end_date,
-            StudentExitApplication.teacher_approval_status == 'rejected'
+        teacher_rejected = StudentExitApplication.query.filter_by(
+            teacher_approval_status='rejected'
         ).count()
 
         # 出校原因统计
@@ -1303,15 +1301,18 @@ def download_user_template():
 
         # 创建模板数据
         template_data = {
-            '用户名': ['user001', 'user002', 'user003'],
-            '真实姓名': ['张三', '李四', '王五'],
-            '用户类型': ['教师', '学生', '校友'],
-            '邮箱': ['zhangsan@school.edu.cn', 'lisi@school.edu.cn', 'wangwu@school.edu.cn'],
+            '用户名*': ['zhangsan', 'lisi', 'wangwu'],
+            '密码*': ['password123', 'password123', 'password123'],
+            '真实姓名*': ['张三', '李四', '王五'],
+            '邮箱*': ['zhangsan@example.com', 'lisi@example.com', 'wangwu@example.com'],
             '手机号': ['13800138000', '13800138001', '13800138002'],
-            '学号': ['', '2024001', ''],
+            '用户类型*': ['teacher', 'student', 'alumni'],
+            '学号': ['', 'S2023001', 'S2020001'],
             '工号': ['T001', '', ''],
-            '班级': ['', '高三1班', ''],
-            '年级': ['', '高三', '']
+            '班级': ['高三1班', '高三1班', ''],
+            '年级': ['高三', '高三', ''],
+            '是否班主任': ['是', '', ''],
+            '可拜访权限': ['是', '', '是']
         }
 
         df = pd.DataFrame(template_data)
@@ -1753,3 +1754,123 @@ def update_user_relationships(user_id):
         db.session.rollback()
         current_app.logger.error(f"更新用户关系失败: {str(e)}")
         return jsonify({'error': '更新用户关系失败', 'details': str(e)}), 500
+
+@admin_bp.route('/export/card-data', methods=['GET'])
+def export_card_data():
+    """导出制卡中心数据"""
+    try:
+        from flask import send_file
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill
+        import io
+        import os
+
+        # 查询所有活跃用户（排除管理员）
+        users = User.query.filter(
+            User.user_type.in_(['alumni', 'student', 'teacher']),
+            User.status == 'active'
+        ).all()
+
+        # 创建Excel工作簿
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "制卡数据导入"
+
+        # 设置列标题（根据模板的11列）
+        headers = [
+            '学生姓名', '客户名称', '一卡通号', '身份证号', '民族',
+            '文件名称', '卡类型（0-29）', '客户编号', '证件类型',
+            '性别（1为男，0为女）', '手机号'
+        ]
+
+        # 设置标题样式
+        header_font = Font(name='宋体', size=12, bold=True)
+        header_fill = PatternFill(start_color='CCCCCC', end_color='CCCCCC', fill_type='solid')
+        header_alignment = Alignment(horizontal='center', vertical='center')
+
+        # 写入标题行
+        for col_idx, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_idx, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+
+        # 设置数据样式
+        data_font = Font(name='宋体', size=11)
+        data_alignment = Alignment(horizontal='left', vertical='center')
+
+        # 写入用户数据
+        for row_idx, user in enumerate(users, 2):
+            # 根据用户类型设置客户名称
+            if user.user_type == 'alumni':
+                customer_name = f"校友-{user.real_name}"
+                card_type = "1"  # 校友卡类型
+                customer_no = user.student_id or f"A{user.id:06d}"
+            elif user.user_type == 'student':
+                customer_name = f"学生-{user.real_name}"
+                card_type = "2"  # 学生卡类型
+                customer_no = user.student_id or f"S{user.id:06d}"
+            elif user.user_type == 'teacher':
+                customer_name = f"教师-{user.real_name}"
+                card_type = "3"  # 教师卡类型
+                customer_no = user.employee_id or f"T{user.id:06d}"
+            else:
+                customer_name = user.real_name
+                card_type = "0"
+                customer_no = f"U{user.id:06d}"
+
+            # 性别转换（1为男，0为女）
+            gender_code = "1" if user.gender == '男' else "0"
+
+            # 证件类型（1为身份证，2为护照等）
+            id_type = "1" if user.id_card and len(user.id_card) == 18 else "2"
+
+            # 文件名称（学号/工号_姓名）
+            file_name = f"{customer_no}_{user.real_name}"
+
+            # 写入数据行
+            data_row = [
+                user.real_name,                    # 学生姓名
+                customer_name,                     # 客户名称
+                customer_no,                       # 一卡通号
+                user.id_card or "",                # 身份证号
+                "汉族",                            # 民族（默认汉族）
+                file_name,                         # 文件名称
+                card_type,                         # 卡类型
+                customer_no,                       # 客户编号
+                id_type,                           # 证件类型
+                gender_code,                       # 性别
+                user.phone or ""                   # 手机号
+            ]
+
+            for col_idx, value in enumerate(data_row, 1):
+                cell = ws.cell(row=row_idx, column=col_idx, value=value)
+                cell.font = data_font
+                cell.alignment = data_alignment
+
+        # 调整列宽
+        column_widths = [12, 20, 15, 20, 8, 20, 15, 15, 10, 12, 15]
+        for col_idx, width in enumerate(column_widths, 1):
+            ws.column_dimensions[chr(64 + col_idx)].width = width
+
+        # 保存到内存中的文件
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        # 生成文件名
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"制卡中心数据导出_{timestamp}.xlsx"
+
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+    except Exception as e:
+        current_app.logger.error(f"导出制卡数据失败: {str(e)}")
+        return jsonify({'error': '导出制卡数据失败', 'details': str(e)}), 500
+
