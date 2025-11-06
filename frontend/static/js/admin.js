@@ -517,6 +517,163 @@ const DashboardPage = {
         // 只更新仪表板的待处理事项，不覆盖审核管理页面的统计
         document.getElementById('dashboardPendingCount').textContent =
             (stats.pending_alumni || 0) + (stats.pending_visits || 0) + (stats.pending_vehicles || 0);
+
+        // 添加统计卡片点击事件
+        this.addStatCardClickListeners(stats);
+    },
+
+    // 添加统计卡片点击事件监听器
+    addStatCardClickListeners(stats) {
+        // 总用户数卡片 - 点击跳转到用户列表
+        const totalUsersCard = document.getElementById('totalUsers').parentElement.parentElement;
+        totalUsersCard.style.cursor = 'pointer';
+        totalUsersCard.onclick = () => {
+            AdminPageManager.switchPage(ADMIN_CONFIG.PAGES.USERS);
+        };
+
+        // 注册校友卡片 - 点击跳转到校友列表并筛选
+        const totalAlumniCard = document.getElementById('totalAlumni').parentElement.parentElement;
+        totalAlumniCard.style.cursor = 'pointer';
+        totalAlumniCard.onclick = () => {
+            AdminPageManager.switchPage(ADMIN_CONFIG.PAGES.USERS);
+            // 延迟执行筛选，确保页面已切换
+            setTimeout(() => {
+                // 设置用户类型筛选为校友
+                const userTypeFilter = document.getElementById('userTypeFilter');
+                if (userTypeFilter) {
+                    userTypeFilter.value = 'alumni';
+                    // 触发筛选
+                    const filterEvent = new Event('change');
+                    userTypeFilter.dispatchEvent(filterEvent);
+                }
+                // 设置排序为最新注册
+                const sortBy = document.getElementById('sortBy');
+                if (sortBy) {
+                    sortBy.value = 'created_at';
+                    const sortEvent = new Event('change');
+                    sortBy.dispatchEvent(sortEvent);
+                }
+            }, 100);
+        };
+
+        // 今日访问卡片 - 点击跳转到访问记录页面
+        const todayVisitsCard = document.getElementById('todayVisits').parentElement.parentElement;
+        todayVisitsCard.style.cursor = 'pointer';
+        todayVisitsCard.onclick = () => {
+            AdminPageManager.switchPage(ADMIN_CONFIG.PAGES.VISIT_RECORDS);
+        };
+
+        // 待处理事项卡片 - 点击弹出待处理事项列表
+        const pendingCountCard = document.getElementById('dashboardPendingCount').parentElement.parentElement;
+        pendingCountCard.style.cursor = 'pointer';
+        pendingCountCard.onclick = () => {
+            this.showPendingItemsList(stats);
+        };
+    },
+
+    // 显示待处理事项列表
+    showPendingItemsList(stats) {
+        const pendingItems = [];
+
+        // 收集待处理事项
+        if (stats.pending_alumni > 0) {
+            pendingItems.push({
+                type: 'alumni',
+                count: stats.pending_alumni,
+                text: `待审核校友 (${stats.pending_alumni})`,
+                page: ADMIN_CONFIG.PAGES.ALUMNI_APPROVE
+            });
+        }
+
+        if (stats.pending_visits > 0) {
+            pendingItems.push({
+                type: 'visit',
+                count: stats.pending_visits,
+                text: `待处理访问申请 (${stats.pending_visits})`,
+                page: ADMIN_CONFIG.PAGES.VISIT_APPLICATIONS
+            });
+        }
+
+        if (stats.pending_vehicles > 0) {
+            pendingItems.push({
+                type: 'vehicle',
+                count: stats.pending_vehicles,
+                text: `待审核车辆 (${stats.pending_vehicles})`,
+                page: ADMIN_CONFIG.PAGES.VEHICLES
+            });
+        }
+
+        if (pendingItems.length === 0) {
+            AdminUtils.showToast('暂无待处理事项', 'info');
+            return;
+        }
+
+        // 创建弹出层
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
+
+        // 创建弹出内容
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        `;
+
+        content.innerHTML = `
+            <h3 style="margin-bottom: 20px; color: #1976d2;">待处理事项</h3>
+            <div style="margin-bottom: 25px;">
+                ${pendingItems.map(item => `
+                    <div style="
+                        padding: 12px 16px;
+                        margin: 8px 0;
+                        background: #f5f5f5;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        border-left: 4px solid #1976d2;
+                    " onclick="AdminPageManager.switchPage('${item.page}'); document.body.remove(document.querySelector('[data-pending-modal]'));">
+                        <div style="font-weight: 500; color: #333;">${item.text}</div>
+                        <div style="font-size: 12px; color: #666; margin-top: 4px;">点击跳转处理</div>
+                    </div>
+                `).join('')}
+            </div>
+            <button style="
+                background: #1976d2;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+            " onclick="document.body.remove(document.querySelector('[data-pending-modal]'));">关闭</button>
+        `;
+
+        modal.setAttribute('data-pending-modal', 'true');
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+
+        // 点击背景关闭
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        };
     },
 
     // 初始化图表
