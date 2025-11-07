@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卡片样式测试</title>
+    <link rel="stylesheet" href="frontend/static/css/mobile.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .test-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">审核管理卡片样式测试</h1>
+
+        <div class="review-list">
+            <div class="application-cards">
+                <!-- 新的卡片样式 -->
+                <div class="application-item review-application-card" data-id="1" data-type="visit">
+                    <div class="card-header">
+                        <div class="applicant-section">
+                            <div class="applicant-avatar">
+                                <i class="ri-user-3-line"></i>
+                            </div>
+                            <div class="applicant-info">
+                                <h3 class="applicant-name">学生小李</h3>
+                                <p class="application-date">2025-11-05</p>
+                            </div>
+                        </div>
+                        <div class="status-section">
+                            <span class="application-status status-pending">待审核</span>
+                        </div>
+                    </div>
+
+                    <div class="card-content">
+                        <div class="application-title">
+                            <i class="ri-file-list-3-line"></i>
+                            <span>访客申请</span>
+                        </div>
+
+                        <div class="application-details">
+                            <div><strong>拜访对象:</strong> 王老师</div>
+                            <div><strong>访问时间:</strong> 14:00 - 16:00</div>
+                            <div><strong>访问事由:</strong> 学习交流</div>
+                        </div>
+
+                        <div class="review-note">
+                            <i class="ri-message-3-line"></i>
+                            <div class="note-content">
+                                <strong>审核意见:</strong> 请确保访问期间遵守校园规定
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <div class="action-group">
+                            <div class="review-actions">
+                                <button class="btn btn-success btn-sm approve-btn">
+                                    <i class="ri-check-line"></i>
+                                    <span>通过</span>
+                                </button>
+                                <button class="btn btn-danger btn-sm reject-btn">
+                                    <i class="ri-close-line"></i>
+                                    <span>拒绝</span>
+                                </button>
+                            </div>
+                            <button class="btn btn-primary btn-sm details-btn full-width">
+                                <i class="ri-eye-line"></i>
+                                <span>查看详情</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学生出校申请卡片 -->
+                <div class="application-item review-application-card" data-id="2" data-type="student_exit">
+                    <div class="card-header">
+                        <div class="applicant-section">
+                            <div class="applicant-avatar">
+                                <i class="ri-user-3-line"></i>
+                            </div>
+                            <div class="applicant-info">
+                                <h3 class="applicant-name">张小明</h3>
+                                <p class="application-date">2025-11-05</p>
+                            </div>
+                        </div>
+                        <div class="status-section">
+                            <span class="application-status status-approved">已通过</span>
+                        </div>
+                    </div>
+
+                    <div class="card-content">
+                        <div class="application-title">
+                            <i class="ri-file-list-3-line"></i>
+                            <span>临时出校申请</span>
+                        </div>
+
+                        <div class="application-details">
+                            <div><strong>离校类型:</strong> 临时出校</div>
+                            <div><strong>离校时间:</strong> 2025/11/05 13:30</div>
+                            <div><strong>返校时间:</strong> 2025/11/05 17:00</div>
+                            <div><strong>离校事由:</strong> 看病</div>
+                            <div><strong>联系电话:</strong> 13800138000</div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <div class="action-group">
+                            <div class="review-actions">
+                                <button class="btn btn-warning btn-sm revoke-btn">
+                                    <i class="ri-refresh-line"></i>
+                                    <span>撤销</span>
+                                </button>
+                            </div>
+                            <button class="btn btn-primary btn-sm details-btn full-width">
+                                <i class="ri-eye-line"></i>
+                                <span>查看详情</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加 Remix Icon -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</body>
+</html>

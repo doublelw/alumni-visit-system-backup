@@ -413,7 +413,10 @@ const AdminPageManager = {
                 DashboardPage.load();
                 break;
             case ADMIN_CONFIG.PAGES.USERS:
-                UsersPage.load();
+                // 添加延迟以确保CSS过渡完成后再加载页面内容
+                setTimeout(() => {
+                    UsersPage.load();
+                }, 350); // 略长于CSS过渡时间(300ms)
                 break;
             case ADMIN_CONFIG.PAGES.ORGANIZATION:
                 OrganizationPage.load();
