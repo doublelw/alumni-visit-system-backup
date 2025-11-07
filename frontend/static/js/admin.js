@@ -2988,6 +2988,11 @@ const AlumniApprovePage = {
     renderAlumniTable(alumni) {
         const tbody = document.getElementById('alumniTableBody');
 
+        if (!tbody) {
+            console.warn('alumniTableBody element not found');
+            return;
+        }
+
         if (alumni.length === 0) {
             tbody.innerHTML = '<tr><td colspan="10" class="text-center text-secondary">暂无数据</td></tr>';
             return;
@@ -3139,6 +3144,10 @@ const AlumniApprovePage = {
 
     renderPagination(pagination) {
         const container = document.getElementById('alumniPagination');
+        if (!container) {
+            console.warn('alumniPagination element not found');
+            return;
+        }
         let html = '';
 
         // 上一页
