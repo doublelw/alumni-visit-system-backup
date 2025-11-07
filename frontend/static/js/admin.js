@@ -109,8 +109,18 @@ const AdminUtils = {
     // 显示Toast提示
     showToast(message, type = 'info') {
         const toast = document.getElementById('adminToast');
+        if (!toast) {
+            console.warn('Toast element not found:', message);
+            return;
+        }
+
         const toastMessage = toast.querySelector('.toast-message');
         const toastIcon = toast.querySelector('.toast-icon');
+
+        if (!toastMessage || !toastIcon) {
+            console.warn('Toast elements not found:', message);
+            return;
+        }
 
         toastMessage.textContent = message;
         toast.className = `toast ${type} show`;
@@ -2947,23 +2957,32 @@ const AlumniApprovePage = {
         // document.getElementById('pendingCount').textContent = stats.pending || 0;
         // document.getElementById('approvedCount').textContent = stats.approved || 0;
         // document.getElementById('rejectedCount').textContent = stats.rejected || 0;
-        document.getElementById('totalCount').textContent = stats.total || 0;
+
+        // 安全更新总数统计
+        const totalCountEl = document.getElementById('totalCount');
+        if (totalCountEl) {
+            totalCountEl.textContent = stats.total || 0;
+        }
     },
 
     updateFilterOptions(filters) {
         // 更新学部选项
         const divisionSelect = document.getElementById('alumniDivisionFilter');
-        const currentValue = divisionSelect.value;
-        divisionSelect.innerHTML = '<option value="">全部学部</option>' +
-            filters.divisions.map(div => `<option value="${div}">${div}</option>`).join('');
-        divisionSelect.value = currentValue;
+        if (divisionSelect && filters.divisions) {
+            const currentValue = divisionSelect.value;
+            divisionSelect.innerHTML = '<option value="">全部学部</option>' +
+                filters.divisions.map(div => `<option value="${div}">${div}</option>`).join('');
+            divisionSelect.value = currentValue;
+        }
 
         // 更新年级选项
         const yearSelect = document.getElementById('alumniYearFilter');
-        const currentYear = yearSelect.value;
-        yearSelect.innerHTML = '<option value="">全部年级</option>' +
-            filters.graduation_years.map(year => `<option value="${year}">${year}届</option>`).join('');
-        yearSelect.value = currentYear;
+        if (yearSelect && filters.graduation_years) {
+            const currentYear = yearSelect.value;
+            yearSelect.innerHTML = '<option value="">全部年级</option>' +
+                filters.graduation_years.map(year => `<option value="${year}">${year}届</option>`).join('');
+            yearSelect.value = currentYear;
+        }
     },
 
     renderAlumniTable(alumni) {
