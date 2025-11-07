@@ -591,7 +591,7 @@ const DashboardPage = {
                 type: 'alumni',
                 count: stats.pending_alumni,
                 text: `待审核校友 (${stats.pending_alumni})`,
-                page: ADMIN_CONFIG.PAGES.ALUMNI_APPROVE
+                page: ADMIN_CONFIG.PAGES.USERS
             });
         }
 
@@ -657,7 +657,20 @@ const DashboardPage = {
                         cursor: pointer;
                         transition: all 0.3s ease;
                         border-left: 4px solid #1976d2;
-                    " onclick="AdminPageManager.switchPage('${item.page}'); document.body.remove(document.querySelector('[data-pending-modal]'));">
+                    " onclick="
+                        ${item.type === 'alumni' ? `
+                            AdminPageManager.switchPage('${item.page}');
+                            setTimeout(() => {
+                                const userTypeFilter = document.getElementById('userTypeFilter');
+                                if (userTypeFilter) {
+                                    userTypeFilter.value = 'alumni';
+                                    const filterEvent = new Event('change');
+                                    userTypeFilter.dispatchEvent(filterEvent);
+                                }
+                            }, 100);
+                        ` : `AdminPageManager.switchPage('${item.page}');`}
+                        document.body.remove(document.querySelector('[data-pending-modal]'))
+                    ">
                         <div style="font-weight: 500; color: #333;">${item.text}</div>
                         <div style="font-size: 12px; color: #666; margin-top: 4px;">点击跳转处理</div>
                     </div>
