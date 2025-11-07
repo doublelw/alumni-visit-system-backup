@@ -1514,6 +1514,11 @@ const UsersPage = {
     // 渲染分页
     renderPagination(pagination) {
         const container = document.getElementById('usersPagination');
+        if (!container) {
+            console.warn('usersPagination element not found');
+            return;
+        }
+
         let html = '';
 
         // 上一页
