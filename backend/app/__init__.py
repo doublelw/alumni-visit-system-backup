@@ -66,6 +66,8 @@ def create_app(config_name=None):
     from app.routes.roles import roles_bp
     from app.routes.alumni import alumni_bp
     from app.routes.student_exit import student_exit_bp
+    from app.routes.survey import survey_bp
+    from app.routes.event import event_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(users_bp, url_prefix='/api/users')
@@ -82,6 +84,8 @@ def create_app(config_name=None):
     app.register_blueprint(roles_bp, url_prefix='/api/roles')
     app.register_blueprint(alumni_bp, url_prefix='/api/alumni')
     app.register_blueprint(student_exit_bp)
+    app.register_blueprint(survey_bp, url_prefix='/api/survey')
+    app.register_blueprint(event_bp, url_prefix='/api/event')
     app.register_blueprint(health_bp)
     app.register_blueprint(web_bp)
 

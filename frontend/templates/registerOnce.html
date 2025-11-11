@@ -40,8 +40,8 @@
         <div class="welcome-step active" id="welcomeStep">
             <div class="welcome-content">
                 <div class="school-logo">
-                    <i class="ri-graduation-cap-fill"></i>
-                    <div class="logo-text">实验中学</div>
+                    <img src="/static/school-badge.png" alt="School Logo" style="width: 80px; height: 80px; margin-right: 15px; border-radius: 50%; object-fit: cover;">
+                    <div class="logo-text">辽宁省实验中学</div>
                 </div>
 
                 <h1 class="welcome-title">欢迎回到实验大家庭</h1>
@@ -74,10 +74,7 @@
                     开始注册
                 </button>
 
-                <div class="welcome-footer">
-                    <p>已有账号？<a href="/login" class="link-primary">立即登录</a></p>
-                </div>
-            </div>
+              </div>
         </div>
 
         <!-- 第二步：基本信息 -->
@@ -374,13 +371,9 @@
                 </div>
 
                 <div class="complete-actions">
-                    <button class="btn btn-primary btn-lg" onclick="goToLogin()">
-                        <i class="ri-login-box-line"></i>
-                        去登录
-                    </button>
-                    <button class="btn btn-outline" onclick="goToHome()">
-                        <i class="ri-home-line"></i>
-                        返回首页
+                    <button class="btn btn-primary btn-lg" onclick="goToEvent()">
+                        <i class="ri-calendar-event-line"></i>
+                        报名返校日活动
                     </button>
                 </div>
             </div>
@@ -432,6 +425,6 @@
     </div>
 
     <!-- 引入脚本 -->
-    <script src="/static/js/register.js"></script>
+    <script src="/static/js/registerOnce.js?v=20251110_2"></script>
 </body>
 </html>

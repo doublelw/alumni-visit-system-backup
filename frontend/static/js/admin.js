@@ -20,7 +20,9 @@ const ADMIN_CONFIG = {
         VEHICLES: 'vehicles',
         STATISTICS: 'statistics',
         BATCH_APPROVE: 'batch-approve',
-        CALENDAR: 'calendar'
+        CALENDAR: 'calendar',
+        SURVEY: 'survey',
+        EVENT_STATISTICS: 'event-statistics'
     }
 };
 
@@ -401,7 +403,8 @@ const AdminPageManager = {
             vehicles: '车辆管理',
             statistics: '数据统计',
             'batch-approve': '批量授权',
-            calendar: '校历管理'
+            calendar: '校历管理',
+            survey: '问卷管理'
         };
         currentPageEl.textContent = pageNames[pageName] || pageName;
     },
@@ -441,6 +444,13 @@ const AdminPageManager = {
                 break;
             case ADMIN_CONFIG.PAGES.CALENDAR:
                 CalendarPage.load();
+                break;
+            case ADMIN_CONFIG.PAGES.SURVEY:
+                SurveyPage.load();
+                break;
+            case ADMIN_CONFIG.PAGES.EVENT_STATISTICS:
+                console.log('=== 初始化返校日报名统计页面 ===');
+                EventStatisticsPage.init();
                 break;
         }
     }
@@ -2366,6 +2376,9 @@ const UsersPage = {
             document.getElementById('editGrade').value = user.grade || '';
             document.getElementById('editIsClassTeacher').checked = user.is_class_teacher || false;
 
+            // 清空密码字段
+            document.getElementById('editPassword').value = '';
+
             // 设置拜访权限
             const editIsVisitable = document.getElementById('editIsVisitable');
             if (editIsVisitable) {
@@ -2492,6 +2505,9 @@ const UsersPage = {
             console.log('📍 选中的用户类型复选框:', selectedTypes);
             console.log('📍 最终用户类型值:', userTypeValue);
 
+            // 获取密码字段（如果填写了的话）
+            const password = document.getElementById('editPassword')?.value?.trim();
+
             const formData = {
                 username: document.getElementById('editUsername')?.value?.trim(),
                 real_name: document.getElementById('editRealName')?.value?.trim(),
@@ -2503,8 +2519,14 @@ const UsersPage = {
                 employee_id: document.getElementById('editEmployeeId')?.value?.trim(),
                 class_id: document.getElementById('editClassId')?.value?.trim(),
                 grade: document.getElementById('editGrade')?.value?.trim(),
-                is_class_teacher: document.getElementById('editIsClassTeacher')?.checked
+                is_class_teacher: document.getElementById('editIsClassTeacher')?.checked,
+                is_visitable: document.getElementById('editIsVisitable')?.checked
             };
+
+            // 只有当密码不为空时才添加到formData中
+            if (password) {
+                formData.password = password;
+            }
 
             console.log('📍 编辑的用户数据:', formData);
 
@@ -4570,7 +4592,7 @@ const VisitRecordsPage = {
 
             // 使用fetch请求获取文件
             const token = localStorage.getItem('admin_token');
-            const response = await fetch(`/visits/records/export?${params}`, {
+            const response = await fetch(`/api/visits/records/export?${params}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -4848,11 +4870,21 @@ const CalendarPage = {
         });
 
         // 新建事件按钮
+        document.getElementById('createEventBtn')?.addEventListener('click', () => {
+            this.showEventModal();
+        });
+        document.getElementById('addEventBtn')?.addEventListener('click', () => {
+            this.showEventModal();
+        });
         document.getElementById('newEventBtn')?.addEventListener('click', () => {
             this.showEventModal();
         });
 
         // 刷新按钮
+        document.getElementById('refreshCalendarList')?.addEventListener('click', () => {
+            this.loadEvents();
+            this.loadStatistics();
+        });
         document.getElementById('refreshCalendarBtn')?.addEventListener('click', () => {
             this.loadEvents();
             this.loadStatistics();
@@ -6750,6 +6782,979 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 250));
 });
+
+// 返校日报名统计页面
+const EventStatisticsPage = {
+    currentPage: 1,
+    filters: {
+        will_dine: '',
+        search: ''
+    },
+    statistics: null,
+
+    init() {
+        this.load();
+    },
+
+    async load() {
+        await this.loadStatistics();
+        await this.loadRegistrations();
+        this.bindEvents();
+    },
+
+    bindEvents() {
+        // 刷新按钮
+        const refreshBtn = document.getElementById('refreshEventStats');
+        if (refreshBtn) {
+            refreshBtn.onclick = () => this.refreshData();
+        }
+
+        // 导出按钮
+        const exportBtn = document.getElementById('exportEventStats');
+        if (exportBtn) {
+            exportBtn.onclick = () => this.exportData();
+        }
+
+        // 筛选条件
+        const diningFilter = document.getElementById('diningFilter');
+        if (diningFilter) {
+            diningFilter.addEventListener('change', (e) => {
+                this.filters.will_dine = e.target.value;
+                this.currentPage = 1;
+                this.loadRegistrations();
+            });
+        }
+
+        // 清除筛选按钮
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        if (clearFiltersBtn) {
+            clearFiltersBtn.onclick = () => this.clearFilters();
+        }
+    },
+
+    async loadStatistics() {
+        try {
+            const data = await AdminUtils.request('/event/statistics');
+            this.statistics = data.statistics;
+
+            this.renderStatistics();
+        } catch (error) {
+            console.error('加载统计数据失败:', error);
+            AdminUtils.showToast('加载统计数据失败', 'error');
+        }
+    },
+
+    async loadRegistrations() {
+        try {
+            const params = new URLSearchParams({
+                page: this.currentPage,
+                per_page: 20,
+                ...this.filters
+            });
+
+            // 如果有搜索关键词，添加到参数中
+            if (this.filters.search) {
+                params.set('search', this.filters.search);
+            }
+
+            const data = await AdminUtils.request(`/event/registrations?${params}`);
+
+            this.renderRegistrationsTable(data.registrations);
+            this.renderPagination(data.pagination);
+        } catch (error) {
+            console.error('加载报名列表失败:', error);
+            AdminUtils.showToast('加载报名列表失败', 'error');
+        }
+    },
+
+    renderStatistics() {
+        if (!this.statistics) return;
+
+        // 更新统计卡片
+        const totalElement = document.getElementById('totalRegistrations');
+        const diningElement = document.getElementById('diningRegistrations');
+        const nonDiningElement = document.getElementById('nonDiningRegistrations');
+
+        if (totalElement) totalElement.textContent = this.statistics.total_registrations;
+        if (diningElement) diningElement.textContent = this.statistics.dining_registrations;
+        if (nonDiningElement) nonDiningElement.textContent = this.statistics.non_dining_registrations;
+
+        // 渲染菜品统计图表
+        this.renderDishChart();
+    },
+
+    renderDishChart() {
+        if (!this.statistics.dish_statistics || this.statistics.dish_statistics.length === 0) {
+            const chartContainer = document.getElementById('dishChartContainer');
+            if (chartContainer) {
+                chartContainer.innerHTML = '<p class="text-muted">暂无菜品统计数据</p>';
+            }
+            return;
+        }
+
+        const chartContainer = document.getElementById('dishChartContainer');
+        if (!chartContainer) return;
+
+        let chartHTML = '<div class="dish-statistics">';
+
+        this.statistics.dish_statistics.forEach((item, index) => {
+            const percentage = this.statistics.dining_registrations > 0 ?
+                ((item.count / this.statistics.dining_registrations) * 100).toFixed(1) : 0;
+
+            chartHTML += `
+                <div class="dish-item">
+                    <div class="dish-name">${item.dish}</div>
+                    <div class="dish-bar-container">
+                        <div class="dish-bar" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="dish-count">${item.count} (${percentage}%)</div>
+                </div>
+            `;
+        });
+
+        chartHTML += '</div>';
+        chartContainer.innerHTML = chartHTML;
+    },
+
+    renderRegistrationsTable(registrations) {
+        const tbody = document.getElementById('registrationTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        if (registrations.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem;">暂无报名数据</td></tr>';
+            return;
+        }
+
+        registrations.forEach(reg => {
+            const row = document.createElement('tr');
+            const regTime = reg.registration_time ? new Date(reg.registration_time).toLocaleString() : '-';
+
+            row.innerHTML = `
+                <td>${reg.username}</td>
+                <td>${reg.real_name}</td>
+                <td>${reg.contact_phone || '-'}</td>
+                <td>
+                    <span class="badge ${reg.will_dine ? 'badge-success' : 'badge-secondary'}">
+                        ${reg.will_dine ? '就餐' : '不就餐'}
+                    </span>
+                </td>
+                <td>
+                    ${reg.will_dine && reg.favorite_dishes ?
+                        JSON.parse(reg.favorite_dishes).join(', ') : '-'}
+                </td>
+                <td>${regTime}</td>
+                <td>${reg.notes || '-'}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline" onclick="EventStatisticsPage.viewDetails(${reg.id})" title="查看详情">
+                            <i class="ri-eye-line"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="EventStatisticsPage.cancelRegistration(${reg.id})" title="取消报名">
+                            <i class="ri-close-line"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    },
+
+    renderPagination(pagination) {
+        const container = document.getElementById('registrationPagination');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (pagination.pages <= 1) return;
+
+        const createButton = (page, text, disabled = false) => {
+            const button = document.createElement('button');
+            button.className = 'pagination-btn';
+            if (disabled) button.disabled = true;
+            if (page === pagination.page) button.classList.add('active');
+            button.textContent = text;
+            button.onclick = () => {
+                this.currentPage = page;
+                this.loadRegistrations();
+            };
+            return button;
+        };
+
+        // 上一页
+        container.appendChild(createButton(pagination.page - 1, '上一页', !pagination.has_prev));
+
+        // 页码
+        for (let i = 1; i <= pagination.pages; i++) {
+            if (i === 1 || i === pagination.pages || (i >= pagination.page - 2 && i <= pagination.page + 2)) {
+                container.appendChild(createButton(i, i));
+            } else if (i === pagination.page - 3 || i === pagination.page + 3) {
+                const dots = document.createElement('span');
+                dots.textContent = '...';
+                dots.className = 'pagination-dots';
+                container.appendChild(dots);
+            }
+        }
+
+        // 下一页
+        container.appendChild(createButton(pagination.page + 1, '下一页', !pagination.has_next));
+    },
+
+    async refreshData() {
+        AdminUtils.showToast('正在刷新数据...', 'info');
+        await this.loadStatistics();
+        await this.loadRegistrations();
+        AdminUtils.showToast('数据刷新成功', 'success');
+    },
+
+    async exportData() {
+        try {
+            // 获取所有数据用于导出
+            const allParams = new URLSearchParams({
+                page: 1,
+                per_page: 1000, // 导出所有数据
+                ...this.filters
+            });
+
+            const data = await AdminUtils.request(`/event/registrations?${allParams}`);
+
+            // 创建CSV内容
+            let csvContent = '\ufeff'; // BOM for UTF-8
+            csvContent += '姓名,用户名,联系电话,就餐选择,菜品选择,备注,报名时间\n';
+
+            data.registrations.forEach(reg => {
+                const dishes = reg.will_dine && reg.favorite_dishes ?
+                    JSON.parse(reg.favorite_dishes).join(';') : '';
+                const notes = reg.notes || '';
+                const regTime = reg.registration_time ?
+                    new Date(reg.registration_time).toLocaleString() : '';
+
+                csvContent += `"${reg.real_name}","${reg.username}","${reg.contact_phone || ''}",`;
+                csvContent += `"${reg.will_dine ? '就餐' : '不就餐'}","${dishes}","${notes}","${regTime}"\n`;
+            });
+
+            // 创建下载链接
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `返校日报名统计_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            AdminUtils.showToast('数据导出成功', 'success');
+        } catch (error) {
+            console.error('导出数据失败:', error);
+            AdminUtils.showToast('导出数据失败', 'error');
+        }
+    },
+
+    clearFilters() {
+        this.filters = {
+            will_dine: '',
+            search: ''
+        };
+
+        // 重置筛选器UI
+        const diningFilter = document.getElementById('diningFilter');
+
+        if (diningFilter) diningFilter.value = '';
+
+        this.currentPage = 1;
+        this.loadRegistrations();
+        AdminUtils.showToast('筛选条件已清除', 'info');
+    },
+
+    viewDetails(registrationId) {
+        // 显示报名详情
+        AdminUtils.showToast('查看详情功能开发中...', 'info');
+    },
+
+    async cancelRegistration(registrationId) {
+        if (!confirm('确定要取消这个报名吗？此操作不可恢复。')) {
+            return;
+        }
+
+        try {
+            await AdminUtils.request(`/event/cancel/${registrationId}`, {
+                method: 'POST'
+            });
+
+            AdminUtils.showToast('报名已取消', 'success');
+            await this.loadStatistics();
+            await this.loadRegistrations();
+        } catch (error) {
+            console.error('取消报名失败:', error);
+            AdminUtils.showToast('取消报名失败', 'error');
+        }
+    }
+};
+
+// 问卷管理页面
+const SurveyPage = {
+    currentPage: 1,
+    editingSurveyId: null,
+    editingQuestionId: null,
+    filters: {
+        search: '',
+        status: '',
+        event_id: ''
+    },
+
+    async load() {
+        this.bindEvents();
+        await this.loadSurveys();
+        await this.loadStatistics();
+        await this.loadEvents();
+    },
+
+    bindEvents() {
+        // 创建问卷按钮
+        document.getElementById('createSurveyBtn')?.addEventListener('click', () => {
+            this.showSurveyModal();
+        });
+        document.getElementById('addSurveyBtn')?.addEventListener('click', () => {
+            this.showSurveyModal();
+        });
+
+        // 刷新按钮
+        document.getElementById('refreshSurveyList')?.addEventListener('click', () => {
+            this.loadSurveys();
+            this.loadStatistics();
+        });
+
+        // 导出按钮
+        document.getElementById('exportSurveysBtn')?.addEventListener('click', () => {
+            this.exportSurveys();
+        });
+
+        // 批量导入问题按钮
+        document.getElementById('importQuestionsBtn')?.addEventListener('click', () => {
+            this.showImportModal();
+        });
+
+        // 搜索和筛选
+        document.getElementById('surveySearch')?.addEventListener('input', AdminUtils.debounce((e) => {
+            this.filters.search = e.target.value;
+            this.currentPage = 1;
+            this.loadSurveys();
+        }, 300));
+
+        document.getElementById('surveyStatusFilter')?.addEventListener('change', (e) => {
+            this.filters.status = e.target.value;
+            this.currentPage = 1;
+            this.loadSurveys();
+        });
+
+        document.getElementById('surveyEventFilter')?.addEventListener('change', (e) => {
+            this.filters.event_id = e.target.value;
+            this.currentPage = 1;
+            this.loadSurveys();
+        });
+    },
+
+    async loadSurveys() {
+        try {
+            const params = new URLSearchParams({
+                page: this.currentPage,
+                per_page: 20,
+                ...this.filters
+            });
+
+            const data = await AdminUtils.request(`/survey/surveys?${params}`);
+
+            this.renderSurveysTable(data.surveys);
+            this.renderPagination(data.pagination);
+            document.getElementById('surveyTotalCount').textContent = `共 ${data.pagination.total} 条记录`;
+        } catch (error) {
+            console.error('加载问卷列表失败:', error);
+            AdminUtils.showToast('加载问卷列表失败', 'error');
+        }
+    },
+
+    async loadStatistics() {
+        try {
+            const data = await AdminUtils.request('/survey/surveys?per_page=1000');
+            const surveys = data.surveys;
+
+            const totalSurveys = surveys.length;
+            const publishedSurveys = surveys.filter(s => s.status === 'published').length;
+            const totalResponses = surveys.reduce((sum, s) => sum + s.responses_count, 0);
+            const avgCompletionRate = totalSurveys > 0 ?
+                Math.round(surveys.reduce((sum, s) => sum + (s.completion_rate || 0), 0) / totalSurveys) : 0;
+
+            document.getElementById('totalSurveys').textContent = totalSurveys;
+            document.getElementById('publishedSurveys').textContent = publishedSurveys;
+            document.getElementById('totalResponses').textContent = totalResponses;
+            document.getElementById('avgCompletionRate').textContent = avgCompletionRate + '%';
+        } catch (error) {
+            console.error('加载统计信息失败:', error);
+        }
+    },
+
+    async loadEvents() {
+        try {
+            const data = await AdminUtils.request('/calendar/events?per_page=1000');
+            const select = document.getElementById('surveyEventFilter');
+            const modalSelect = document.getElementById('surveyModalEvent');
+
+            if (select) {
+                select.innerHTML = '<option value="">全部事件</option>';
+                data.events.forEach(event => {
+                    select.innerHTML += `<option value="${event.id}">${event.title}</option>`;
+                });
+            }
+
+            if (modalSelect) {
+                modalSelect.innerHTML = '<option value="">请选择事件（可选）</option>';
+                data.events.forEach(event => {
+                    modalSelect.innerHTML += `<option value="${event.id}">${event.title}</option>`;
+                });
+            }
+        } catch (error) {
+            console.error('加载事件列表失败:', error);
+        }
+    },
+
+    renderSurveysTable(surveys) {
+        const tbody = document.getElementById('surveysTableBody');
+        tbody.innerHTML = '';
+
+        if (surveys.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem;">暂无问卷数据</td></tr>';
+            return;
+        }
+
+        surveys.forEach(survey => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="survey-title">
+                        <strong>${survey.title}</strong>
+                        ${survey.description ? `<br><small class="text-muted">${survey.description.substring(0, 50)}...</small>` : ''}
+                    </div>
+                </td>
+                <td>${survey.event_title || '-'}</td>
+                <td>
+                    <span class="status-badge status-${survey.status}">
+                        ${this.getStatusText(survey.status)}
+                    </span>
+                </td>
+                <td>${survey.questions_count || 0}</td>
+                <td>${survey.responses_count || 0}</td>
+                <td>${survey.completion_rate || 0}%</td>
+                <td>${new Date(survey.created_at).toLocaleDateString()}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline" onclick="SurveyPage.viewSurvey(${survey.id})" title="查看">
+                            <i class="ri-eye-line"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="SurveyPage.editSurvey(${survey.id})" title="编辑">
+                            <i class="ri-edit-line"></i>
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="SurveyPage.viewStatistics(${survey.id})" title="统计">
+                            <i class="ri-bar-chart-line"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="SurveyPage.deleteSurvey(${survey.id})" title="删除">
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    },
+
+    renderPagination(pagination) {
+        const container = document.getElementById('surveyPagination');
+        container.innerHTML = '';
+
+        if (pagination.pages <= 1) return;
+
+        const createButton = (page, text, disabled = false) => {
+            const button = document.createElement('button');
+            button.className = 'pagination-btn';
+            if (disabled) button.disabled = true;
+            if (page === pagination.page) button.classList.add('active');
+            button.textContent = text;
+            button.onclick = () => {
+                this.currentPage = page;
+                this.loadSurveys();
+            };
+            return button;
+        };
+
+        // 上一页
+        container.appendChild(createButton(pagination.page - 1, '上一页', !pagination.has_prev));
+
+        // 页码
+        for (let i = 1; i <= pagination.pages; i++) {
+            if (i === 1 || i === pagination.pages || (i >= pagination.page - 2 && i <= pagination.page + 2)) {
+                container.appendChild(createButton(i, i));
+            } else if (i === pagination.page - 3 || i === pagination.page + 3) {
+                const dots = document.createElement('span');
+                dots.textContent = '...';
+                dots.className = 'pagination-dots';
+                container.appendChild(dots);
+            }
+        }
+
+        // 下一页
+        container.appendChild(createButton(pagination.page + 1, '下一页', !pagination.has_next));
+    },
+
+    getStatusText(status) {
+        const statusMap = {
+            'draft': '草稿',
+            'published': '已发布',
+            'closed': '已关闭',
+            'archived': '已归档'
+        };
+        return statusMap[status] || status;
+    },
+
+    showSurveyModal(surveyId = null) {
+        this.editingSurveyId = surveyId;
+        const modal = document.getElementById('surveyModal');
+        const form = document.getElementById('surveyForm');
+
+        if (surveyId) {
+            // 编辑模式 - 加载问卷数据
+            this.loadSurveyToForm(surveyId);
+        } else {
+            // 新建模式 - 重置表单
+            form.reset();
+            document.getElementById('surveyModalTitle').textContent = '创建问卷';
+            document.getElementById('surveyModalQuestions').innerHTML = '';
+        }
+
+        modal.classList.add('active');
+    },
+
+    async loadSurveyToForm(surveyId) {
+        try {
+            const data = await AdminUtils.request(`/survey/surveys/${surveyId}`);
+            const survey = data.survey;
+
+            document.getElementById('surveyModalTitle').textContent = '编辑问卷';
+            document.getElementById('surveyModalTitle').value = survey.title;
+            document.getElementById('surveyModalDescription').value = survey.description || '';
+            document.getElementById('surveyModalEvent').value = survey.event_id || '';
+            document.getElementById('surveyModalStatus').value = survey.status;
+            document.getElementById('surveyModalType').value = survey.type || 'custom';
+            document.getElementById('surveyModalAnonymous').checked = survey.is_anonymous;
+            document.getElementById('surveyModalPublic').checked = survey.is_public;
+            document.getElementById('surveyModalRequireLogin').checked = survey.require_login;
+
+            if (survey.start_time) {
+                document.getElementById('surveyModalStartTime').value = new Date(survey.start_time).toISOString().slice(0, 16);
+            }
+            if (survey.end_time) {
+                document.getElementById('surveyModalEndTime').value = new Date(survey.end_time).toISOString().slice(0, 16);
+            }
+
+            this.renderQuestions(survey.questions || []);
+        } catch (error) {
+            console.error('加载问卷数据失败:', error);
+            AdminUtils.showToast('加载问卷数据失败', 'error');
+        }
+    },
+
+    renderQuestions(questions) {
+        const container = document.getElementById('surveyModalQuestions');
+        container.innerHTML = '';
+
+        questions.forEach((question, index) => {
+            this.addQuestionToList(question, index);
+        });
+    },
+
+    addQuestionToList(question, index) {
+        const container = document.getElementById('surveyModalQuestions');
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'survey-question-item';
+        questionDiv.dataset.questionId = question.id || 'new_' + Date.now();
+
+        questionDiv.innerHTML = `
+            <div class="question-header">
+                <span class="question-number">问题 ${index + 1}</span>
+                <div class="question-actions">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="SurveyPage.editQuestion('${questionDiv.dataset.questionId}')">
+                        <i class="ri-edit-line"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="SurveyPage.removeQuestion('${questionDiv.dataset.questionId}')">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="question-content">
+                <strong>类型：</strong>${this.getQuestionTypeText(question.question_type)}<br>
+                <strong>内容：</strong>${question.question_text}<br>
+                ${question.is_required ? '<span class="required-badge">必答</span>' : '<span class="optional-badge">选答</span>'}
+                ${question.options ? `<br><strong>选项：</strong>${question.options.join(', ')}` : ''}
+            </div>
+        `;
+
+        container.appendChild(questionDiv);
+    },
+
+    getQuestionTypeText(type) {
+        const typeMap = {
+            'single_choice': '单选题',
+            'multiple_choice': '多选题',
+            'text': '单行文本',
+            'textarea': '多行文本',
+            'rating': '评分题',
+            'number': '数字题'
+        };
+        return typeMap[type] || type;
+    },
+
+    closeSurveyModal() {
+        document.getElementById('surveyModal').classList.remove('active');
+        this.editingSurveyId = null;
+    },
+
+    async saveSurvey() {
+        try {
+            const formData = {
+                title: document.getElementById('surveyModalTitle').value,
+                description: document.getElementById('surveyModalDescription').value,
+                event_id: document.getElementById('surveyModalEvent').value || null,
+                status: document.getElementById('surveyModalStatus').value,
+                is_anonymous: document.getElementById('surveyModalAnonymous').checked,
+                is_public: document.getElementById('surveyModalPublic').checked,
+                require_login: document.getElementById('surveyModalRequireLogin').checked,
+                start_time: document.getElementById('surveyModalStartTime').value || null,
+                end_time: document.getElementById('surveyModalEndTime').value || null,
+                questions: this.collectQuestions()
+            };
+
+            if (!formData.title.trim()) {
+                AdminUtils.showToast('请输入问卷标题', 'error');
+                return;
+            }
+
+            let response;
+            if (this.editingSurveyId) {
+                response = await AdminUtils.request(`/survey/surveys/${this.editingSurveyId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(formData)
+                });
+            } else {
+                response = await AdminUtils.request('/survey/surveys', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+            }
+
+            AdminUtils.showToast(this.editingSurveyId ? '问卷更新成功' : '问卷创建成功', 'success');
+            this.closeSurveyModal();
+            this.loadSurveys();
+            this.loadStatistics();
+        } catch (error) {
+            console.error('保存问卷失败:', error);
+            AdminUtils.showToast('保存问卷失败', 'error');
+        }
+    },
+
+    collectQuestions() {
+        const questions = [];
+        const questionItems = document.querySelectorAll('.survey-question-item');
+
+        questionItems.forEach((item, index) => {
+            // 这里需要根据实际的编辑界面来收集问题数据
+            // 暂时返回空数组，需要在完善问题编辑功能后实现
+        });
+
+        return questions;
+    },
+
+    async deleteSurvey(surveyId) {
+        if (!confirm('确定要删除这个问卷吗？此操作不可恢复。')) {
+            return;
+        }
+
+        try {
+            await AdminUtils.request(`/survey/surveys/${surveyId}`, {
+                method: 'DELETE'
+            });
+
+            AdminUtils.showToast('问卷删除成功', 'success');
+            this.loadSurveys();
+            this.loadStatistics();
+        } catch (error) {
+            console.error('删除问卷失败:', error);
+            AdminUtils.showToast('删除问卷失败', 'error');
+        }
+    },
+
+    async viewStatistics(surveyId) {
+        try {
+            const data = await AdminUtils.request(`/survey/surveys/${surveyId}/statistics`);
+            this.showStatisticsModal(data);
+        } catch (error) {
+            console.error('加载统计数据失败:', error);
+            AdminUtils.showToast('加载统计数据失败', 'error');
+        }
+    },
+
+    showStatisticsModal(data) {
+        const modal = document.getElementById('surveyStatsModal');
+        const content = document.getElementById('surveyStatsContent');
+
+        document.getElementById('statsSurveyTitle').textContent = data.survey.title;
+        document.getElementById('statsTotalResponses').textContent = data.total_responses;
+        document.getElementById('statsCompletionRate').textContent = data.completion_rate.toFixed(1) + '%';
+
+        // 渲染统计图表
+        content.innerHTML = '';
+        data.statistics.forEach(stat => {
+            const statDiv = document.createElement('div');
+            statDiv.className = 'question-statistics';
+
+            if (stat.question_type === 'single_choice' || stat.question_type === 'multiple_choice') {
+                statDiv.innerHTML = this.renderChoiceStatistics(stat);
+            } else if (stat.question_type === 'rating' || stat.question_type === 'number') {
+                statDiv.innerHTML = this.renderNumberStatistics(stat);
+            } else {
+                statDiv.innerHTML = this.renderTextStatistics(stat);
+            }
+
+            content.appendChild(statDiv);
+        });
+
+        modal.classList.add('active');
+    },
+
+    renderChoiceStatistics(stat) {
+        let html = `
+            <div class="stat-question">
+                <h4>${stat.question_text}</h4>
+                <div class="chart-container">
+                    <canvas id="chart_${stat.id}" width="400" height="200"></canvas>
+                </div>
+                <div class="options-summary">
+        `;
+
+        Object.entries(stat.option_counts).forEach(([option, count]) => {
+            const percentage = ((count / stat.answer_count) * 100).toFixed(1);
+            html += `
+                <div class="option-stat">
+                    <span class="option-label">${option}</span>
+                    <div class="option-bar">
+                        <div class="option-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <span class="option-count">${count} (${percentage}%)</span>
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+
+        return html;
+    },
+
+    renderNumberStatistics(stat) {
+        return `
+            <div class="stat-question">
+                <h4>${stat.question_text}</h4>
+                <div class="number-stats">
+                    <div class="stat-item">
+                        <label>平均分：</label>
+                        <span class="stat-value">${stat.average?.toFixed(2) || '-'}</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>最高分：</label>
+                        <span class="stat-value">${stat.max || '-'}</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>最低分：</label>
+                        <span class="stat-value">${stat.min || '-'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderTextStatistics(stat) {
+        return `
+            <div class="stat-question">
+                <h4>${stat.question_text}</h4>
+                <div class="text-responses">
+                    <div class="responses-summary">
+                        <span>共 ${stat.answer_count} 个回答</span>
+                    </div>
+                    <div class="responses-list">
+                        ${stat.text_answers?.slice(0, 5).map(answer =>
+                            `<div class="response-item">"${answer}"</div>`
+                        ).join('') || ''}
+                        ${stat.text_answers?.length > 5 ? '<div class="more-responses">...</div>' : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    closeStatsModal() {
+        document.getElementById('surveyStatsModal').classList.remove('active');
+    },
+
+    async exportStats() {
+        // 实现统计报告导出功能
+        AdminUtils.showToast('导出功能开发中...', 'info');
+    },
+
+    addQuestion() {
+        this.editingQuestionId = null;
+        const modal = document.getElementById('questionModal');
+        document.getElementById('questionModalTitle').textContent = '添加问题';
+        document.getElementById('questionForm').reset();
+        document.getElementById('questionOptions').style.display = 'none';
+        document.getElementById('ratingOptions').style.display = 'none';
+        modal.classList.add('active');
+    },
+
+    onQuestionTypeChange() {
+        const type = document.getElementById('questionType').value;
+        const optionsDiv = document.getElementById('questionOptions');
+        const ratingDiv = document.getElementById('ratingOptions');
+
+        if (type === 'single_choice' || type === 'multiple_choice') {
+            optionsDiv.style.display = 'block';
+            ratingDiv.style.display = 'none';
+            this.initializeOptions();
+        } else if (type === 'rating') {
+            optionsDiv.style.display = 'none';
+            ratingDiv.style.display = 'block';
+        } else {
+            optionsDiv.style.display = 'none';
+            ratingDiv.style.display = 'none';
+        }
+    },
+
+    initializeOptions() {
+        const optionsList = document.getElementById('optionsList');
+        optionsList.innerHTML = '';
+
+        // 添加两个默认选项
+        this.addOptionInput('选项 1');
+        this.addOptionInput('选项 2');
+    },
+
+    addOptionInput(value = '') {
+        const optionsList = document.getElementById('optionsList');
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'option-input';
+        optionDiv.innerHTML = `
+            <input type="text" placeholder="选项内容" value="${value}" class="option-text">
+            <button type="button" class="btn btn-sm btn-danger" onclick="SurveyPage.removeOptionInput(this)">
+                <i class="ri-delete-bin-line"></i>
+            </button>
+        `;
+        optionsList.appendChild(optionDiv);
+    },
+
+    addQuestionOption() {
+        this.addOptionInput();
+    },
+
+    removeOptionInput(button) {
+        const optionsList = document.getElementById('optionsList');
+        if (optionsList.children.length > 2) {
+            button.parentElement.remove();
+        } else {
+            AdminUtils.showToast('至少需要保留两个选项', 'error');
+        }
+    },
+
+    saveQuestion() {
+        const questionData = this.collectQuestionData();
+        if (!questionData) return;
+
+        // 添加到问题列表
+        this.addQuestionToList(questionData, document.querySelectorAll('.survey-question-item').length);
+
+        this.closeQuestionModal();
+        AdminUtils.showToast('问题添加成功', 'success');
+    },
+
+    collectQuestionData() {
+        const questionText = document.getElementById('questionText').value.trim();
+        const questionType = document.getElementById('questionType').value;
+        const isRequired = document.getElementById('questionRequired').checked;
+
+        if (!questionText) {
+            AdminUtils.showToast('请输入问题内容', 'error');
+            return null;
+        }
+
+        if (!questionType) {
+            AdminUtils.showToast('请选择问题类型', 'error');
+            return null;
+        }
+
+        const questionData = {
+            question_text: questionText,
+            question_type: questionType,
+            is_required: isRequired,
+            order_index: 0
+        };
+
+        if (questionType === 'single_choice' || questionType === 'multiple_choice') {
+            const options = this.collectOptions();
+            if (options.length < 2) {
+                AdminUtils.showToast('选择题至少需要两个选项', 'error');
+                return null;
+            }
+            questionData.options = options;
+        }
+
+        return questionData;
+    },
+
+    collectOptions() {
+        const optionInputs = document.querySelectorAll('.option-text');
+        const options = [];
+
+        optionInputs.forEach(input => {
+            const value = input.value.trim();
+            if (value) {
+                options.push(value);
+            }
+        });
+
+        return options;
+    },
+
+    closeQuestionModal() {
+        document.getElementById('questionModal').classList.remove('active');
+        this.editingQuestionId = null;
+    },
+
+    showImportModal() {
+        const modal = document.getElementById('importQuestionsModal');
+        modal.classList.add('active');
+    },
+
+    closeImportModal() {
+        document.getElementById('importQuestionsModal').classList.remove('active');
+    },
+
+    async downloadQuestionTemplate() {
+        AdminUtils.showToast('模板下载功能开发中...', 'info');
+    },
+
+    async exportSurveys() {
+        AdminUtils.showToast('导出功能开发中...', 'info');
+    }
+};
 
 // 处理网络错误
 window.addEventListener('unhandledrejection', (event) => {

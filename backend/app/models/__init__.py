@@ -12,5 +12,7 @@ from .target_person import TargetPerson
 from .school_calendar import SchoolCalendar, EventBooking
 from .organization import Organization, UserRole, UserRoleAssignment
 from .student_exit_application import StudentExitApplication
+from .survey import Survey, SurveyQuestion, SurveyResponse
+from .event_registration import EventRegistration
 
-__all__ = ['User', 'AlumniProfile', 'VisitApplication', 'FaceData', 'FaceHistory', 'VisitRecord', 'TargetPerson', 'SchoolCalendar', 'EventBooking', 'Organization', 'UserRole', 'UserRoleAssignment', 'StudentExitApplication']
+__all__ = ['User', 'AlumniProfile', 'VisitApplication', 'FaceData', 'FaceHistory', 'VisitRecord', 'TargetPerson', 'SchoolCalendar', 'EventBooking', 'Organization', 'UserRole', 'UserRoleAssignment', 'StudentExitApplication', 'Survey', 'SurveyQuestion', 'SurveyResponse', 'EventRegistration']

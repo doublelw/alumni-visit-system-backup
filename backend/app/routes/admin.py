@@ -836,13 +836,19 @@ def update_user(user_id):
                     return jsonify({'error': '员工编号已被其他用户使用'}), 400
             user.employee_id = data['employee_id'] if data['employee_id'] and data['employee_id'].strip() else None
 
+        # 更新密码（如果提供）
+        if 'password' in data and data['password']:
+            from werkzeug.security import generate_password_hash
+            user.password_hash = generate_password_hash(data['password'])
+
         # 设置可拜访权限
         if 'is_visitable' in data:
             # 允许所有用户手动设置可拜访权限
             user.is_visitable = data['is_visitable']
-        elif 'teacher' in str(user.user_type):
+        else:
             # 如果没有手动设置，教师默认为可拜访
-            user.is_visitable = True
+            if 'teacher' in str(user.user_type):
+                user.is_visitable = True
 
         user.updated_at = datetime.utcnow()
         db.session.commit()

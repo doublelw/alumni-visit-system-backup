@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1976d2">
+    <title>返校日活动报名 - 辽宁省实验中学校友入校登记系统</title>
+
+    <!-- 使用系统字体 -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+    </style>
+
+    <!-- 引入图标 -->
+    <link href="/static/vendor/remixicon.css" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="/static/css/register.css">
+
+    <style>
+        .event-form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #1976d2;
+        }
+
+        .dish-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .browse-menu-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            transition: transform 0.2s;
+        }
+
+        .browse-menu-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            cursor: pointer;
+            font-size: 16px;
+            user-select: none;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 菜谱弹窗样式 */
+        .menu-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .menu-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .menu-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 8px;
+        }
+
+        .dish-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .dish-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dish-item:hover {
+            border-color: #1976d2;
+            background: #f5f9ff;
+        }
+
+        .dish-item.selected {
+            border-color: #1976d2;
+            background: #e3f2fd;
+        }
+
+        .dish-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .dish-item label {
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .selection-info {
+            background: #e8f5e8;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .confirm-btn {
+            background: #4caf50;
+            color: white;
+        }
+
+        .cancel-btn {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .modal-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景装饰 -->
+    <div class="background-decoration">
+        <div class="decoration-circle circle-1"></div>
+        <div class="decoration-circle circle-2"></div>
+        <div class="decoration-circle circle-3"></div>
+        <div class="school-badge"></div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="register-container">
+        <div class="event-form">
+            <!-- 页面头部 -->
+            <div class="form-section">
+                <div class="school-logo" style="text-align: center; margin-bottom: 20px;">
+                    <img src="/static/school-badge.png" alt="School Logo" style="width: 60px; height: 60px; margin-right: 10px; border-radius: 50%; object-fit: cover;">
+                    <div class="logo-text" style="display: inline-block; vertical-align: middle; font-size: 18px; font-weight: 700;">返校日活动报名</div>
+                </div>
+
+                <h2 style="text-align: center; color: #333; margin-bottom: 8px;">欢迎报名返校日活动</h2>
+                <p style="text-align: center; color: #666; margin-bottom: 24px;">亲爱的校友，期待与您重温校园美好时光</p>
+            </div>
+
+            <!-- 报名表单 -->
+            <form id="eventRegistrationForm">
+                <!-- 用户信息 -->
+                <div class="form-section">
+                    <h3 style="margin-bottom: 16px; color: #333;">个人信息</h3>
+
+                    <div class="form-group">
+                        <label class="form-label">用户名</label>
+                        <input type="text" id="username" name="username" class="form-control" readonly
+                               placeholder="系统自动填充您的用户名">
+                    </div>
+                </div>
+
+                <!-- 就餐选择 -->
+                <div class="form-section">
+                    <h3 style="margin-bottom: 16px; color: #333;">就餐安排</h3>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="willDine" name="willDine">
+                            <label for="willDine">我将在学校食堂就餐</label>
+                        </div>
+                    </div>
+
+                    <div id="dishSelection" style="display: none;">
+                        <div class="form-group">
+                            <button type="button" class="browse-menu-btn" onclick="showMenuModal()">
+                                <i class="ri-restaurant-line"></i>
+                                浏览菜谱选择菜品
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">最想吃的四个菜</label>
+                            <div class="dish-inputs">
+                                <input type="text" id="dish1" name="dish1" class="form-control" placeholder="菜品一（如：红烧肉）">
+                                <input type="text" id="dish2" name="dish2" class="form-control" placeholder="菜品二（如：糖醋里脊）">
+                                <input type="text" id="dish3" name="dish3" class="form-control" placeholder="菜品三（如：水煮鱼）">
+                                <input type="text" id="dish4" name="dish4" class="form-control" placeholder="菜品四（如：地三鲜）">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 联系信息 -->
+                <div class="form-section">
+                    <h3 style="margin-bottom: 16px; color: #333;">联系信息</h3>
+
+                    <div class="form-group">
+                        <label class="form-label">联系电话</label>
+                        <input type="tel" id="contactPhone" name="contactPhone" class="form-control"
+                               placeholder="请输入您的联系电话，方便我们联系您">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">备注信息</label>
+                        <textarea id="notes" name="notes" class="form-control" rows="3"
+                                  placeholder="如有特殊需求或说明，请在此填写"></textarea>
+                    </div>
+                </div>
+
+                <!-- 提交按钮 -->
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <i class="ri-check-line"></i>
+                    确认报名
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 菜谱选择弹窗 -->
+    <div class="menu-modal" id="menuModal">
+        <div class="menu-content">
+            <div class="menu-header">
+                <h3 class="menu-title">选择菜谱</h3>
+                <button type="button" class="close-btn" onclick="closeMenuModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+
+            <div class="selection-info" id="selectionInfo">
+                请选择4个您最想吃的菜品
+            </div>
+
+            <div class="dish-grid" id="dishGrid">
+                <!-- 菜品选项将通过JavaScript动态生成 -->
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="modal-btn cancel-btn" onclick="closeMenuModal()">
+                    取消
+                </button>
+                <button type="button" class="modal-btn confirm-btn" id="confirmSelectionBtn" disabled>
+                    确认选择 (<span id="selectedCount">0</span>/4)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <!-- 引入脚本 -->
+    <script src="/static/js/event-registration.js"></script>
+</body>
+</html>
