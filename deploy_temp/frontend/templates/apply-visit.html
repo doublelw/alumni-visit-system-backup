@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>申请入校 - 电子校友卡</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 15px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .btn {
+            width: 100%;
+            height: 50px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .error-message {
+            display: none;
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+            font-size: 14px;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            display: none;
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2e7d32;
+            text-align: center;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .status-card {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .status-card.show {
+            display: block;
+        }
+
+        .status-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .status-info {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>申请入校</h1>
+            <div class="subtitle">家长/访客入校申请</div>
+        </div>
+
+        <!-- 申请表单 -->
+        <div id="applicationForm">
+            <div id="errorMessage" class="error-message"></div>
+
+            <div class="form-group">
+                <label for="visitorName">姓名 *</label>
+                <input
+                    type="text"
+                    id="visitorName"
+                    placeholder="请输入您的真实姓名"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="phone">手机号 *</label>
+                <input
+                    type="tel"
+                    id="phone"
+                    placeholder="请输入手机号"
+                    maxlength="11"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="idCard">身份证号 *</label>
+                <input
+                    type="text"
+                    id="idCard"
+                    placeholder="请输入18位身份证号"
+                    maxlength="18"
+                >
+                <div class="hint">用于门卫核对，系统严格保密</div>
+            </div>
+
+            <div class="form-group">
+                <label for="visitReason">访问事由 *</label>
+                <select id="visitReason">
+                    <option value="">请选择访问事由</option>
+                    <option value="探望学生">探望学生</option>
+                    <option value="参加家长会">参加家长会</option>
+                    <option value="办理事务">办理事务</option>
+                    <option value="参加会议">参加会议</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="hostName">找谁（接待老师）*</label>
+                <input
+                    type="text"
+                    id="hostName"
+                    placeholder="请输入接待老师姓名"
+                >
+                <div class="hint">请提前联系老师</div>
+            </div>
+
+            <div class="form-group">
+                <label for="visitNote">备注说明</label>
+                <textarea
+                    id="visitNote"
+                    placeholder="请简要说明来访目的（可选）"
+                ></textarea>
+            </div>
+
+            <button class="btn btn-primary" onclick="submitApplication()">提交申请</button>
+            <button class="btn btn-secondary" onclick="checkStatus()">查询申请状态</button>
+        </div>
+
+        <!-- 成功提示 -->
+        <div id="successMessage" class="success-message">
+            <div style="font-size: 48px; margin-bottom: 10px;">✓</div>
+            <div style="font-size: 18px; font-weight: bold;">申请提交成功！</div>
+            <div style="font-size: 14px; margin-top: 10px;">老师审核通过后，您会收到通知</div>
+        </div>
+
+        <!-- 状态显示 -->
+        <div id="statusCard" class="status-card">
+            <div class="status-title" id="statusTitle">申请状态</div>
+            <div class="status-info" id="statusInfo">
+                状态信息...
+            </div>
+        </div>
+
+        <div class="back-link">
+            <a href="/">&larr; 返回首页</a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api/electronic-card';
+        let currentApplicationId = null;
+
+        // 提交申请
+        async function submitApplication() {
+            const visitorName = document.getElementById('visitorName').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const idCard = document.getElementById('idCard').value.trim();
+            const visitReason = document.getElementById('visitReason').value;
+            const hostName = document.getElementById('hostName').value.trim();
+            const visitNote = document.getElementById('visitNote').value.trim();
+
+            // 验证必填字段
+            if (!visitorName) {
+                showError('请输入姓名');
+                return;
+            }
+
+            if (!phone) {
+                showError('请输入手机号');
+                return;
+            }
+
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                showError('请输入正确的手机号');
+                return;
+            }
+
+            if (!idCard) {
+                showError('请输入身份证号');
+                return;
+            }
+
+            if (!/^\d{17}[\dXx]$/.test(idCard)) {
+                showError('请输入正确的18位身份证号');
+                return;
+            }
+
+            if (!visitReason) {
+                showError('请选择访问事由');
+                return;
+            }
+
+            if (!hostName) {
+                showError('请输入接待老师姓名');
+                return;
+            }
+
+            // 隐藏错误信息
+            document.getElementById('errorMessage').classList.remove('show');
+
+            try {
+                // 调用API提交申请
+                const response = await fetch(`${API_BASE_URL}/visitor/apply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        visitor_name: visitorName,
+                        phone: phone,
+                        id_card: idCard,
+                        visit_reason: visitReason === '其他' ? visitNote : visitReason,
+                        host_name: hostName
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentApplicationId = result.data.application_id;
+
+                    // 显示成功信息
+                    document.getElementById('applicationForm').style.display = 'none';
+                    document.getElementById('successMessage').classList.add('show');
+
+                    // 3秒后返回
+                    setTimeout(() => {
+                        document.getElementById('successMessage').classList.remove('show');
+                        document.getElementById('applicationForm').style.display = 'block';
+                        // 清空表单
+                        document.getElementById('visitorName').value = '';
+                        document.getElementById('phone').value = '';
+                        document.getElementById('idCard').value = '';
+                        document.getElementById('visitReason').value = '';
+                        document.getElementById('hostName').value = '';
+                        document.getElementById('visitNote').value = '';
+                    }, 3000);
+                } else {
+                    showError(result.error || '提交失败');
+                }
+
+            } catch (error) {
+                console.error('提交失败:', error);
+                showError('提交失败，请重试');
+            }
+        }
+
+        // 查询状态
+        async function checkStatus() {
+            const phone = document.getElementById('phone').value.trim();
+
+            if (!phone) {
+                showError('请先填写手机号');
+                return;
+            }
+
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                showError('请输入正确的手机号');
+                return;
+            }
+
+            // 这里应该通过手机号查询申请ID
+            // 简化处理：提示用户输入申请ID
+            const applicationId = prompt('请输入您的申请ID（如果不知道，请等待老师审核后再查询）：');
+
+            if (!applicationId) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/visitor/status/${applicationId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus(result.data);
+                } else {
+                    showError(result.error || '查询失败');
+                }
+
+            } catch (error) {
+                console.error('查询失败:', error);
+                showError('查询失败，请重试');
+            }
+        }
+
+        // 显示状态
+        function showStatus(data) {
+            const statusCard = document.getElementById('statusCard');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusInfo = document.getElementById('statusInfo');
+
+            document.getElementById('applicationForm').style.display = 'none';
+            statusCard.classList.add('show');
+
+            const statusLabels = {
+                'pending': '⏳ 等待审核中',
+                'approved': '✓ 审批通过',
+                'rejected': '✗ 审批未通过'
+            };
+
+            statusTitle.textContent = statusLabels[data.status] || '申请状态';
+
+            let html = '';
+            if (data.status === 'pending') {
+                html = `
+                    <p><strong>申请已提交</strong></p>
+                    <p>老师正在审核，请耐心等待...</p>
+                    <p>审核通过后，您将收到通知</p>
+                `;
+            } else if (data.status === 'approved') {
+                html = `
+                    <p><strong>恭喜！审批通过</strong></p>
+                    <p>您的入校码：<strong style="font-size: 24px; color: #4CAF50;">${data.access_code}</strong></p>
+                    <p>有效期至：${data.expires_at}</p>
+                    <p>请凭此码在当天入校</p>
+                `;
+            } else if (data.status === 'rejected') {
+                html = `
+                    <p><strong>很抱歉，审批未通过</strong></p>
+                    ${data.rejection_reason ? `<p>原因：${data.rejection_reason}</p>` : ''}
+                    <p>如有疑问，请联系老师</p>
+                `;
+            }
+
+            statusInfo.innerHTML = html;
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        // 输入限制
+        document.getElementById('phone').addEventListener('input', function(e) {
+            this.value = this.value.replace(/\D/g, '');
+        });
+
+        document.getElementById('idCard').addEventListener('input', function(e) {
+            this.value = this.value.toUpperCase().replace(/[^0-9X]/g, '');
+        });
+    </script>
+</body>
+</html>

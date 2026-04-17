@@ -1,0 +1,225 @@
+# 微信云托管部署 - 第六次修复（彻底解决循环导入）
+
+生成时间: 2026-04-07 23:01
+
+==========================================
+问题诊断
+==========================================
+
+**循环导入错误**
+
+错误日志：
+```
+ImportError: cannot import name 'db' from partially initialized module 'app'
+(most likely due to a circular import) (/app/app.py)
+```
+
+**导入循环链：**
+```
+app.py (根目录)
+  ↓ 调用 create_app()
+backend/app/__init__.py
+  ↓ 导入 from .routes.auth import auth_bp
+backend/app/routes/auth.py
+  ↓ from app import db (❌ 错误：指向根目录app.py)
+app.py (根目录) ← 循环！
+```
+
+**根本原因：**
+- 根目录有 app.py（入口文件）
+- Flask应用包在 backend/app/
+- 29个路由文件使用 `from app import db`
+- Python将 `app` 解析为根目录的 app.py 模块
+- 但 db 实际定义在 backend/app/__init__.py 中
+
+==========================================
+修复方案
+==========================================
+
+### 方案选择
+
+**方案A（已采用）：重命名根目录 app.py**
+- 改为 main.py
+- 修改 Dockerfile 启动命令
+- 优点：彻底解决命名冲突，只需修改2个文件
+- 缺点：无
+
+**方案B（未采用）：修改29个路由文件**
+- 将所有 `from app import db` 改为相对导入
+- 优点：保留 app.py 名称
+- 缺点：需要修改29个文件，工作量大
+
+### 具体修改
+
+#### 1. 重命名 app.py → main.py
+```bash
+mv app.py main.py
+```
+
+#### 2. 修改 Dockerfile 启动命令
+```diff
+- CMD ["sh", "-c", "gunicorn app:application --bind 0.0.0.0:${PORT:-5000} ..."]
++ CMD ["sh", "-c", "gunicorn main:app --bind 0.0.0.0:${PORT:-5000} ..."]
+```
+
+#### 3. 更新部署脚本
+- deployment_scripts/deploy_to_welife.py
+- 将 app.py 改为 main.py
+
+==========================================
+部署包信息
+==========================================
+
+文件名: welife_deploy_package_20260407_230149.zip
+大小: 4.4 MB
+位置: D:\Project\校友入校登记\
+
+完整修复记录:
+1. Dockerfile镜像源修复
+2. Flask-JWT-Extended版本修复
+3. Python导入路径修复（config、services、routes）
+4. PIL/Pillow依赖添加
+5. **循环导入问题修复（重命名app.py）**
+
+==========================================
+第七次部署操作步骤
+==========================================
+
+### 在微信云托管控制台
+
+#### 第1步：删除失败的部署
+- 找到 lnsyalumni-006 失败版本
+- 点击删除
+- 确认删除
+
+#### 第2步：上传新部署包
+- 点击"新建版本"或"重新部署"
+- 选择"本地上传代码包"
+- 选择文件: welife_deploy_package_20260407_230149.zip
+- 等待上传完成
+
+#### 第3步：保持环境变量不变
+
+#### 第4步：开始部署
+- 点击"开始部署"
+- 等待2-5分钟
+
+==========================================
+预期结果
+==========================================
+
+### 成功部署日志
+
+```
+Building Docker image...
+Installing system dependencies...
+  Successfully installed default-libmysqlclient-dev
+
+Installing Python dependencies...
+  Successfully installed Flask-2.3.0
+  Successfully installed Flask-JWT-Extended-4.5.1
+  Successfully installed Pillow-10.1.0  <- 第五次修复
+  Successfully installed gunicorn-21.2.0
+
+Starting application...
+  Starting gunicorn 21.2.0
+  Listening at: http://0.0.0.0:5000
+  Booting worker with pid: xxx
+
+Application started successfully!  <- 第六次修复：无循环导入
+Service is healthy
+部署状态: 运行中
+```
+
+### 验证部署成功
+
+#### 1. 健康检查
+```
+https://你的服务地址.welife.icu/api/health
+```
+
+应该返回：
+```json
+{
+  "status": "healthy",
+  "database": "connected"
+}
+```
+
+#### 2. 访问主页
+```
+https://你的服务地址.welife.icu/
+```
+
+应该能看到校友入校登记系统的首页。
+
+==========================================
+技术说明
+==========================================
+
+### Python模块导入机制
+
+**问题原理：**
+
+当Python执行 `from app import db` 时：
+1. 首先在 sys.path 中查找名为 `app` 的模块
+2. 如果根目录有 app.py，将其作为 `app` 模块
+3. 尝试从该模块中导入 `db` 属性
+4. 但 `db` 实际在 backend/app/__init__.py 中
+
+**解决方案原理：**
+
+将 app.py 重命名为 main.py：
+1. Python不再将 `app` 解析为根目录模块
+2. `from app import db` 现在正确指向 backend/app 包
+3. 循环导入被打破
+
+### 为什么这个方案更好？
+
+**对比其他方案：**
+
+| 方案 | 修改文件数 | 风险 | 可维护性 |
+|------|-----------|------|----------|
+| 重命名app.py | 2个 | 低 | 高 |
+| 修改29个路由文件 | 29个 | 中 | 中 |
+| 改用绝对导入 | 30+个 | 高 | 低 |
+
+**优势：**
+- 一次性解决命名冲突
+- 避免修改大量代码
+- 更符合Python命名规范
+- main.py 是常见的入口文件名
+
+==========================================
+部署清单
+==========================================
+
+- [x] Dockerfile镜像源已修复
+- [x] requirements.txt版本已修复
+- [x] Python导入路径已修复
+- [x] PIL/Pillow依赖已添加
+- [x] 循环导入已修复（app.py → main.py）
+- [x] 部署包已生成
+
+==========================================
+总结
+==========================================
+
+这是第七次部署尝试。
+
+所有已知的部署问题都已修复：
+1. 镜像源403错误 - 已修复
+2. Flask-JWT-Extended版本 - 已修复
+3. Python导入路径冲突 - 已修复
+4. PIL/Pillow缺失 - 已修复
+5. 循环导入问题 - 已修复
+
+**这次应该能彻底成功！**
+
+核心改进：
+- 彻底解决了 app.py 和 backend/app 包的命名冲突
+- 不再有循环导入问题
+- 所有路由文件的 `from app import db` 现在都能正确工作
+
+按照上面的步骤，在微信云托管控制台删除失败部署，
+然后上传新的部署包。

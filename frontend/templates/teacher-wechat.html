@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>辽宁省实验中学入校管理系统</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            padding: 15px;
+            font-size: 16px;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(212, 175, 55, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(212, 175, 55, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.98);
+            border: 2px solid #d4af37;
+            border-radius: 0;
+            padding: 40px 30px;
+            box-shadow:
+                0 0 0 1px rgba(212, 175, 55, 0.3),
+                0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            pointer-events: none;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo .icon {
+            font-size: 55px;
+            margin-bottom: 15px;
+            color: #d4af37;
+        }
+
+        .logo h1 {
+            font-size: 26px;
+            color: #0a0a0a;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 700;
+            font-family: 'Cinzel', serif;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: #0a0a0a;
+            margin-bottom: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        .form-group input {
+            width: 100%;
+            height: 52px;
+            padding: 0 16px;
+            border: 1px solid #ccc;
+            background: #fafafa;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: #d4af37;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            height: 58px;
+            border: 1px solid #d4af37;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            transition: all 0.3s;
+            border-radius: 4px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            color: #d4af37;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #0a0a0a;
+            border-color: #ccc;
+        }
+
+        .btn-secondary:hover {
+            background: #fafafa;
+            border-color: #d4af37;
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        .action-card {
+            background: rgba(255, 255, 255, 0.98);
+            border: 2px solid #d4af37;
+            border-radius: 0;
+            padding: 25px;
+            margin-bottom: 15px;
+            box-shadow:
+                0 0 0 1px rgba(212, 175, 55, 0.3),
+                0 15px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .action-card::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            pointer-events: none;
+        }
+
+        .action-card h2 {
+            font-size: 20px;
+            color: #0a0a0a;
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+            font-family: 'Cinzel', serif;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .input-group input {
+            flex: 1;
+            height: 58px;
+            padding: 0 18px;
+            border: 1px solid #ccc;
+            background: #fafafa;
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 4px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: #d4af37;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            outline: none;
+        }
+
+        /* 访客信息输入框样式 */
+        #visitorInfo {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            background: #fafafa;
+            font-size: 14px;
+            line-height: 1.8;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            box-sizing: border-box;
+            transition: all 0.3s;
+        }
+
+        #visitorInfo:focus {
+            border-color: #d4af37;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            outline: none;
+        }
+
+        .btn-check {
+            width: 100%;
+            height: 58px;
+            padding: 0 30px;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            color: #d4af37;
+            border: 1px solid #d4af37;
+            font-size: 17px;
+            font-weight: 700;
+            white-space: nowrap;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            transition: all 0.3s;
+            border-radius: 4px;
+        }
+
+        .btn-check:hover {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-check:active {
+            transform: translateY(0);
+        }
+
+        .result-card {
+            display: none;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .result-card.show {
+            display: block;
+        }
+
+        .result-item {
+            background: white;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            padding: 16px;
+            margin-bottom: 10px;
+        }
+
+        .result-item.error {
+            background: #fff5f5;
+            border: 2px solid #dc3545;
+            color: #dc3545;
+        }
+
+        .result-item.success {
+            background: #f0fff4;
+            border: 2px solid #28a745;
+        }
+
+        .result-item .label {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        .result-item .value {
+            font-size: 16px;
+            color: #0a0a0a;
+            font-weight: 600;
+        }
+
+        .result-item .value.highlight {
+            color: #d4af37;
+            font-size: 20px;
+            letter-spacing: 3px;
+            font-weight: 700;
+        }
+
+        .select-group {
+            margin-bottom: 15px;
+        }
+
+        .select-group label {
+            display: block;
+            font-size: 12px;
+            color: #0a0a0a;
+            margin-bottom: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        .select-group select {
+            width: 100%;
+            height: 52px;
+            padding: 0 16px;
+            border: 1px solid #ccc;
+            background: #fafafa;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .select-group select:focus {
+            border-color: #d4af37;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            outline: none;
+        }
+
+        .btn-approve {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            color: #d4af37;
+            border: 2px solid #d4af37;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .btn-approve:hover {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-approve:active {
+            transform: translateY(0);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border: 2px solid #16a34a;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-success:active {
+            transform: translateY(0);
+        }
+
+        .btn-reject {
+            background: white;
+            color: #8b0000;
+            border: 2px solid #8b0000;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .btn-reject:hover {
+            background: #fff5f5;
+            border-color: #c00;
+            box-shadow: 0 4px 15px rgba(139, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-reject:active {
+            transform: translateY(0);
+        }
+
+        .header-bar {
+            display: none;
+            background: rgba(255, 255, 255, 0.98);
+            border: 2px solid #d4af37;
+            color: #0a0a0a;
+            padding: 15px 20px;
+            border-radius: 0;
+            margin-bottom: 20px;
+            box-shadow:
+                0 0 0 1px rgba(212, 175, 55, 0.3),
+                0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-bar.show {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-bar .user-info {
+            font-size: 14px;
+            letter-spacing: 1px;
+            font-family: 'Cinzel', serif;
+            color: #0a0a0a;
+            font-weight: 600;
+        }
+
+        .header-bar .logout {
+            padding: 8px 20px;
+            background: #0a0a0a;
+            color: #d4af37;
+            border: 2px solid #0a0a0a;
+            border-radius: 0;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .header-bar .logout:hover {
+            background: #d4af37;
+            color: #0a0a0a;
+            border-color: #d4af37;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .error-message {
+            background: #fff5f5;
+            color: #8b0000;
+            border: 1px solid #fcc;
+            padding: 12px 16px;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .success-message {
+            background: #f5fff5;
+            color: #2d5a2d;
+            border: 1px solid #cfc;
+            padding: 12px 16px;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .note {
+            background: #fffcf0;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-left: 3px solid #d4af37;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #856404;
+            line-height: 1.6;
+        }
+
+        /* 功能按钮容器 */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        /* 功能按钮样式 */
+        .action-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+            border: 2px solid #d4af37;
+            padding: 15px 10px;
+            min-height: 70px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #0a0a0a;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        .action-btn span:first-child {
+            font-size: 24px;
+        }
+
+        .action-btn span:last-child {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(212, 175, 55, 0.2);
+        }
+
+        /* 激活状态 */
+        .action-btn.active {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .action-btn-visit.active {
+            background: linear-gradient(135deg, #d4af37 0%, #c9a32c 100%);
+            color: #ffffff;
+            border-color: #d4af37;
+        }
+
+        .action-btn-leave.active {
+            background: linear-gradient(135deg, #4a90d9 0%, #3a7bc8 100%);
+            color: #ffffff;
+            border-color: #4a90d9;
+        }
+
+        .action-btn-visitor.active {
+            background: linear-gradient(135deg, #52c41a 0%, #42b40a 100%);
+            color: #ffffff;
+            border-color: #52c41a;
+        }
+
+        /* 不同按钮的颜色主题 */
+        .action-btn-visit {
+            border-left: 3px solid #d4af37;
+        }
+
+        .action-btn-leave {
+            border-left: 3px solid #4a90d9;
+        }
+
+        .action-btn-visitor {
+            border-left: 3px solid #52c41a;
+        }
+
+        .action-btn-visit:hover {
+            background: linear-gradient(135deg, #d4af37 0%, #c9a32c 100%);
+            color: #ffffff;
+        }
+
+        .action-btn-leave:hover {
+            background: linear-gradient(135deg, #4a90d9 0%, #3a7bc8 100%);
+            border-color: #4a90d9;
+            color: #ffffff;
+        }
+
+        .action-btn-visitor:hover {
+            background: linear-gradient(135deg, #52c41a 0%, #42b40a 100%);
+            border-color: #52c41a;
+            color: #ffffff;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            .action-card {
+                margin-bottom: 20px;
+                padding: 20px 15px;
+            }
+
+            .action-card h2 {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+
+            .input-group input {
+                font-size: 18px;
+                height: 50px;
+                padding: 0 15px;
+            }
+
+            .btn-check {
+                width: 100%;
+                height: 58px;
+                font-size: 17px;
+                margin-top: 12px;
+            }
+
+            .result-card {
+                padding: 15px;
+                font-size: 14px;
+            }
+
+            .btn {
+                height: 52px;
+                font-size: 15px;
+            }
+
+            .note {
+                font-size: 13px;
+            }
+
+            /* 移动端功能按钮优化 */
+            .action-buttons {
+                gap: 8px;
+            }
+
+            .action-btn {
+                min-height: 75px;
+                padding: 12px 8px;
+            }
+
+            .action-btn span:first-child {
+                font-size: 20px;
+            }
+
+            .action-btn span:last-child {
+                font-size: 12px;
+            }
+        }
+
+        /* 超小屏幕适配 */
+        @media (max-width: 375px) {
+            .action-buttons {
+                gap: 6px;
+            }
+
+            .action-btn {
+                min-height: 70px;
+                padding: 10px 6px;
+            }
+
+            .action-btn span:first-child {
+                font-size: 18px;
+            }
+
+            .action-btn span:last-child {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 登录前 -->
+        <div id="loginSection" class="login-card">
+            <div class="logo">
+                <h1>辽宁省实验中学入校管理系统</h1>
+            </div>
+
+            <div class="note">
+                <strong>🔐 安全提示：</strong><br>
+                请使用学校预留的手机号和自设密码登录
+            </div>
+
+            <div class="form-group">
+                <label for="phone">手机号</label>
+                <input type="tel" id="phone" placeholder="请输入手机号" maxlength="11">
+            </div>
+
+            <div class="form-group">
+                <label for="password">2-4位密码</label>
+                <input type="text" id="password" placeholder="请输入密码" maxlength="4" style="letter-spacing: 3px;">
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <button class="btn btn-primary" onclick="login()">登录</button>
+        </div>
+
+        <!-- 登录后 -->
+        <div id="mainSection" class="main-content">
+            <!-- 头部信息栏 -->
+            <div class="header-bar">
+                <div class="user-info">
+                    <span id="teacherName">王老师</span>
+                </div>
+                <button class="logout" onclick="logout()">退出</button>
+            </div>
+
+            <!-- 功能选择卡片 -->
+            <div class="action-card">
+                <h2>选择功能</h2>
+                <div class="action-buttons">
+                    <button class="action-btn action-btn-visit" onclick="showVerifyMode()">
+                        <span>📋</span>
+                        <span>入校审批</span>
+                    </button>
+                    <button class="action-btn action-btn-leave" onclick="showCreateMode()">
+                        <span>📝</span>
+                        <span>学生请假</span>
+                    </button>
+                    <button class="action-btn action-btn-visitor" onclick="showVisitorVerifyMode()">
+                        <span>👥</span>
+                        <span>访客认证</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 审批6位码 -->
+            <div id="verifySection" class="action-card">
+                <h2>📋 审批6位码</h2>
+
+                <div class="input-group">
+                    <input type="text" id="codeInput" placeholder="输入6位码" maxlength="6" style="letter-spacing: 5px;">
+                </div>
+
+                <button class="btn-check" onclick="checkCode()">确认通过</button>
+
+                <div id="codeResult" class="result-card">
+                    <!-- 查询结果动态显示 -->
+                </div>
+
+                <div id="successMessage" class="success-message"></div>
+                <!-- 审批按钮已隐藏：验证通过后自动审批 -->
+                <div id="approveButtons" style="display: none; margin-top: 15px;">
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-approve" id="approveBtn" style="flex: 1;" onclick="approve()">✓ 通过 (回车)</button>
+                        <button class="btn btn-reject" style="flex: 1;" onclick="reject()">✗ 拒绝</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 代学生申请 -->
+            <div id="createSection" class="action-card" style="display: none;">
+                <h2>➕ 代学生申请</h2>
+
+                <div class="note">
+                    <strong>💡 说明：</strong><br>
+                    学生没带手机或联系不上家长时，老师可以帮学生申请入校，系统会生成6位码供学生使用。
+                </div>
+
+                <div class="form-group">
+                    <label for="studentNameInput">学生姓名</label>
+                    <input type="text" id="studentNameInput" placeholder="请输入学生姓名">
+                </div>
+
+                <div class="form-group">
+                    <label for="studentIdInput">学号（可选）</label>
+                    <input type="text" id="studentIdInput" placeholder="请输入学号，方便确认身份">
+                </div>
+
+                <div class="form-group">
+                    <label for="visitPurpose">访问目的</label>
+                    <select id="visitPurpose">
+                        <option value="return">返校取物</option>
+                        <option value="parent-visit">家长来校接学生</option>
+                        <option value="emergency">紧急事务</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="visitNote">备注说明</label>
+                    <input type="text" id="visitNote" placeholder="例如：放学后返校取练习册">
+                </div>
+
+                <button class="btn btn-primary" onclick="createStudentCode()">生成6位码</button>
+
+                <div id="createResult" class="result-card">
+                    <!-- 生成结果动态显示 -->
+                </div>
+            </div>
+
+            <!-- 访客验证 -->
+            <div id="visitorVerifySection" class="action-card" style="display: none;">
+                <h2>👥 访客验证</h2>
+
+                <div class="note">
+                    <strong>💡 说明：</strong><br>
+                    访客在访客登记页面填写信息后会获得一串信息，请访客将信息发送给您。您只需粘贴信息并点击添加即可为访客创建账号。
+                </div>
+
+                <div class="form-group">
+                    <label for="visitorInfo">访客信息（请粘贴访客发送的信息）</label>
+                    <textarea id="visitorInfo" rows="10" placeholder="【访客登记信息】
+姓名：张三
+手机：13800138000
+身份证：110101199001011234
+访问目的：商务会议
+访问说明：来访洽谈
+访客码：123456
+申请时间：2026-03-28 10:00:00
+
+请老师点击"访客验证"按钮，粘贴以上信息完成访客添加。"></textarea>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="addVisitor()">➕ 添加访客</button>
+                    <button class="btn btn-secondary" onclick="clearVisitorInfo()">🔄 清空</button>
+                </div>
+
+                <div id="visitorResult" class="result-card">
+                    <!-- 添加结果动态显示 -->
+                </div>
+            </div>
+
+            <!-- 快速统计 -->
+            <div class="action-card">
+                <h2>📊 今日统计</h2>
+                <div class="result-item">
+                    <div class="label">今日已审批</div>
+                    <div class="value" id="approvedCount">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="label">今日已生成码</div>
+                    <div class="value" id="createdCount">-</div>
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button class="btn btn-secondary" onclick="window.location.href='/teacher-statistics'" style="width: auto; padding: 10px 30px;">
+                        📈 查看详细统计
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api/wechat';
+        const HMAC_SECRET_KEY = 'ls-alumni-access-code-hmac-2026-secret-do-not-expose';
+        let currentCode = null;
+        let currentApplication = null;
+        let currentTeacherData = null;
+        let currentStudentId = null;  // 当前学生学号
+
+        // 检查登录状态
+        window.onload = function() {
+            checkLoginStatus();
+
+            // 添加回车键监听
+            document.getElementById('codeInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && this.value.length === 6) {
+                    e.preventDefault();
+                    checkCode();
+                }
+            });
+
+            // 审批按钮回车监听（动态处理）
+            document.getElementById('approveBtn').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    // 根据按钮文本判断当前状态
+                    if (this.textContent.includes('已完成，继续')) {
+                        clearAndContinue();
+                    } else {
+                        approve();
+                    }
+                }
+            });
+        };
+
+        /**
+         * 生成HMAC-SHA256哈希（用于生成学生出校码）
+         */
+        async function hmacSHA256(message) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(message);
+            const keyData = encoder.encode(HMAC_SECRET_KEY);
+
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw',
+                keyData,
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+
+            const signature = await crypto.subtle.sign(
+                'HMAC',
+                cryptoKey,
+                data
+            );
+
+            const hashArray = Array.from(new Uint8Array(signature));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        /**
+         * 生成学生出校码（基于学号）
+         */
+        async function generateStudentExitCode(studentId) {
+            // 获取今天0点的时间戳
+            const today = new Date();
+            const todayDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+            const dateTimestamp = Math.floor(todayDateTime.getTime() / 1000);
+
+            const message = `${studentId}STUDENT_EXIT${dateTimestamp}`;
+            const hmacHex = await hmacSHA256(message);
+
+            // 提取所有数字
+            let digits = '';
+            for (let char of hmacHex) {
+                if (char >= '0' && char <= '9') {
+                    digits += char;
+                }
+            }
+
+            // 如果不足6位，循环使用
+            while (digits.length < 6) {
+                digits += digits;
+            }
+
+            const code = digits.substring(0, 6);
+            return code;
+        }
+
+        /**
+         * 更新出校码显示
+         */
+        async function updateExitCodeDisplay(studentId) {
+            const exitCodeDiv = document.getElementById('exitCodeDisplay');
+            const exitCodeNumber = document.getElementById('exitCodeNumber');
+            const exitCodeStudentId = document.getElementById('exitCodeStudentId');
+
+            if (!studentId || studentId.length < 3) {
+                // 学号太短，隐藏出校码
+                if (exitCodeDiv) {
+                    exitCodeDiv.style.display = 'none';
+                }
+                return;
+            }
+
+            try {
+                const exitCode = await generateStudentExitCode(studentId);
+
+                if (exitCodeDiv) {
+                    exitCodeDiv.style.display = 'block';
+                }
+
+                if (exitCodeNumber) {
+                    exitCodeNumber.textContent = exitCode;
+                }
+
+                if (exitCodeStudentId) {
+                    exitCodeStudentId.textContent = `学号：${studentId}`;
+                }
+
+                currentStudentId = studentId;
+            } catch (error) {
+                console.error('生成出校码失败:', error);
+            }
+        }
+
+        function checkLoginStatus() {
+            const token = localStorage.getItem('teacher_token');
+            const teacherData = localStorage.getItem('teacher_data');
+
+            if (token && teacherData) {
+                currentTeacherData = JSON.parse(teacherData);
+                showMainContent();
+            }
+        }
+
+        // 切换到审批模式
+        function showVerifyMode() {
+            // 更新按钮激活状态
+            setActiveButton('visit');
+            // 显示对应区域
+            document.getElementById('verifySection').style.display = 'block';
+            document.getElementById('createSection').style.display = 'none';
+            document.getElementById('visitorVerifySection').style.display = 'none';
+            // 聚焦输入框
+            setTimeout(() => {
+                document.getElementById('codeInput').focus();
+            }, 100);
+        }
+
+        // 切换到创建模式
+        function showCreateMode() {
+            // 更新按钮激活状态
+            setActiveButton('leave');
+            // 显示对应区域
+            document.getElementById('verifySection').style.display = 'none';
+            document.getElementById('createSection').style.display = 'block';
+            document.getElementById('visitorVerifySection').style.display = 'none';
+            // 聚焦输入框
+            setTimeout(() => {
+                document.getElementById('studentNameInput').focus();
+            }, 100);
+        }
+
+        // 切换到访客验证模式
+        function showVisitorVerifyMode() {
+            // 更新按钮激活状态
+            setActiveButton('visitor');
+            // 显示对应区域
+            document.getElementById('verifySection').style.display = 'none';
+            document.getElementById('createSection').style.display = 'none';
+            document.getElementById('visitorVerifySection').style.display = 'block';
+            // 聚焦输入框
+            setTimeout(() => {
+                document.getElementById('visitorInfo').focus();
+            }, 100);
+        }
+
+        // 设置按钮激活状态
+        function setActiveButton(type) {
+            // 移除所有按钮的激活状态
+            const buttons = document.querySelectorAll('.action-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // 根据类型激活对应按钮
+            const buttonMap = {
+                'visit': '.action-btn-visit',
+                'leave': '.action-btn-leave',
+                'visitor': '.action-btn-visitor'
+            };
+
+            const targetButton = document.querySelector(buttonMap[type]);
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
+        }
+
+        // 添加访客
+        async function addVisitor() {
+            const visitorInfoText = document.getElementById('visitorInfo').value.trim();
+            const resultDiv = document.getElementById('visitorResult');
+            const addBtn = event.target; // 获取点击的按钮
+
+            resultDiv.classList.remove('show');
+            resultDiv.innerHTML = '';
+
+            if (!visitorInfoText) {
+                resultDiv.innerHTML = '<div class="result-item error">❌ 请先粘贴访客信息</div>';
+                resultDiv.classList.add('show');
+                return;
+            }
+
+            // 显示加载状态
+            const originalBtnText = addBtn.innerHTML;
+            addBtn.innerHTML = '⏳ 处理中...';
+            addBtn.disabled = true;
+
+            try {
+                // 解析访客信息
+                const info = parseVisitorInfo(visitorInfoText);
+                if (!info || !info.name || !info.phone) {
+                    resultDiv.innerHTML = '<div class="result-item error">❌ 访客信息格式不正确<br><small>必须包含姓名和手机号</small></div>';
+                    resultDiv.classList.add('show');
+                    addBtn.innerHTML = originalBtnText;
+                    addBtn.disabled = false;
+                    return;
+                }
+
+                const token = localStorage.getItem('teacher_token');
+                if (!token) {
+                    resultDiv.innerHTML = '<div class="result-item error">❌ 未登录，请先登录</div>';
+                    resultDiv.classList.add('show');
+                    addBtn.innerHTML = originalBtnText;
+                    addBtn.disabled = false;
+                    return;
+                }
+
+                console.log('[添加访客] 发送数据:', info);
+
+                const response = await fetch(`${API_BASE_URL}/teacher/add-visitor`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(info)
+                });
+
+                const result = await response.json();
+                console.log('[添加访客] 响应结果:', result);
+
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">
+                            <div class="label">访客姓名</div>
+                            <div class="value">${result.data.visitor.name}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="label">访客手机</div>
+                            <div class="value">${result.data.visitor.phone}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="label">访问码</div>
+                            <div class="value highlight" style="font-size: 24px;">${result.data.access_code}</div>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px; color: #28a745; font-weight: bold; font-size: 16px;">
+                            ✅ 访客添加成功！访客可以使用此码进校
+                        </div>
+                    `;
+                    resultDiv.classList.add('show');
+
+                    // 清空输入框
+                    document.getElementById('visitorInfo').value = '';
+
+                    // 刷新统计
+                    if (typeof loadStatistics === 'function') {
+                        loadStatistics();
+                    }
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ ${result.error || '添加失败，请重试'}</div>`;
+                    resultDiv.classList.add('show');
+                }
+            } catch (error) {
+                console.error('[添加访客] 错误:', error);
+                resultDiv.innerHTML = '<div class="result-item error">❌ 网络错误，请检查网络连接后重试</div>';
+                resultDiv.classList.add('show');
+            } finally {
+                // 恢复按钮状态
+                addBtn.innerHTML = originalBtnText;
+                addBtn.disabled = false;
+            }
+        }
+
+        // 解析访客信息
+        function parseVisitorInfo(text) {
+            console.log('[解析访客信息] 原始文本:', text);
+
+            const info = {
+                name: '',
+                phone: '',
+                id_card: '',
+                visit_purpose: '',
+                visit_reason: '',
+                access_password: '',
+                access_code: ''
+            };
+
+            // 过滤掉空行和提示行
+            const lines = text.split('\n');
+            for (let line of lines) {
+                line = line.trim();
+
+                // 跳过空行和提示行
+                if (!line ||
+                    line.startsWith('💡') ||
+                    line.startsWith('提示：') ||
+                    line.includes('请老师点击') ||
+                    line.includes('完成访客添加')) {
+                    continue;
+                }
+
+                if (line.startsWith('姓名：')) {
+                    info.name = line.substring(3).trim();
+                    console.log('[解析] 姓名:', info.name);
+                } else if (line.startsWith('手机：')) {
+                    info.phone = line.substring(3).trim();
+                    console.log('[解析] 手机:', info.phone);
+                } else if (line.startsWith('身份证：')) {
+                    const idCard = line.substring(4).trim();
+                    if (idCard !== '未填写') {
+                        info.id_card = idCard;
+                        console.log('[解析] 身份证:', info.id_card);
+                    }
+                } else if (line.startsWith('访问目的：')) {
+                    info.visit_purpose = line.substring(5).trim();
+                    console.log('[解析] 访问目的:', info.visit_purpose);
+                } else if (line.startsWith('访问说明：')) {
+                    const reason = line.substring(5).trim();
+                    if (reason !== '无') {
+                        info.visit_reason = reason;
+                        console.log('[解析] 访问说明:', info.visit_reason);
+                    }
+                } else if (line.startsWith('拜访对象：')) {
+                    // 拜访对象字段暂时不使用，但可以记录在日志中
+                    console.log('[解析] 拜访对象:', line.substring(5).trim());
+                } else if (line.startsWith('访问密码：')) {
+                    info.access_password = line.substring(5).trim();
+                    console.log('[解析] 访问密码:', info.access_password);
+                } else if (line.startsWith('访客码：') || line.startsWith('访问码：')) {
+                    info.access_code = line.substring(4).trim();
+                    console.log('[解析] 访客码:', info.access_code);
+                }
+            }
+
+            // 验证必填字段
+            if (!info.name || !info.phone) {
+                console.error('[解析访客信息] 缺少必填字段:', info);
+                return null;
+            }
+
+            console.log('[解析访客信息] 最终结果:', info);
+            return info;
+        }
+
+        function clearVisitorInfo() {
+            document.getElementById('visitorInfo').value = '';
+            document.getElementById('visitorResult').classList.remove('show');
+        }
+
+        // 老师代学生申请
+        async function createStudentCode() {
+            const studentName = document.getElementById('studentNameInput').value.trim();
+            const studentId = document.getElementById('studentIdInput').value.trim();
+            const purpose = document.getElementById('visitPurpose').value;
+            const note = document.getElementById('visitNote').value.trim();
+            const resultDiv = document.getElementById('createResult');
+
+            resultDiv.classList.remove('show');
+            resultDiv.innerHTML = '';
+
+            if (!studentName) {
+                resultDiv.innerHTML = '<div class="result-item"><div class="label">错误</div><div class="value">请输入学生姓名</div></div>';
+                resultDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('teacher_token');
+                const response = await fetch(`${API_BASE_URL}/teacher/create-student-code`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        student_name: studentName,
+                        student_id: studentId,
+                        visit_purpose: purpose,
+                        note: note
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const code = result.data.code;
+                    let html = '<div class="result-item"><div class="label">✅ 申请成功</div></div>';
+                    html += '<div class="result-item"><div class="label">6位码</div><div class="value highlight">' + code + '</div></div>';
+                    html += '<div class="result-item"><div class="label">学生</div><div class="value">' + studentName + '</div></div>';
+                    html += '<div class="result-item"><div class="label">有效期</div><div class="value">今天23:59前</div></div>';
+                    html += '<div class="result-item"><div class="label">使用说明</div><div class="value">学生可凭此码在门卫处登记入校</div></div>';
+
+                    resultDiv.innerHTML = html;
+                    resultDiv.classList.add('show');
+
+                    // 清空表单
+                    document.getElementById('studentNameInput').value = '';
+                    document.getElementById('studentIdInput').value = '';
+                    document.getElementById('visitNote').value = '';
+
+                    // 刷新统计
+                    loadStatistics();
+                } else {
+                    resultDiv.innerHTML = '<div class="result-item"><div class="label">错误</div><div class="value">' +
+                        (result.error || '生成失败') + '</div></div>';
+                    resultDiv.classList.add('show');
+                }
+
+            } catch (error) {
+                console.error('生成失败:', error);
+                resultDiv.innerHTML = '<div class="result-item"><div class="label">错误</div><div class="value">网络错误，请重试</div></div>';
+                resultDiv.classList.add('show');
+            }
+        }
+
+        // 登录
+        async function login() {
+            const phone = document.getElementById('phone').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorDiv = document.getElementById('errorMessage');
+
+            errorDiv.style.display = 'none';
+
+            if (!phone || phone.length !== 11) {
+                errorDiv.textContent = '请输入正确的11位手机号';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (!password || password.length < 2 || password.length > 4) {
+                errorDiv.textContent = '请输入2-4位数字密码';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/teacher/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, password })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 保存token和用户信息
+                    localStorage.setItem('teacher_token', result.data.token);
+                    localStorage.setItem('teacher_data', JSON.stringify(result.data.teacher));
+                    currentTeacherData = result.data.teacher;
+
+                    showMainContent();
+                } else {
+                    errorDiv.textContent = result.error || '登录失败';
+                    errorDiv.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('登录失败:', error);
+                errorDiv.textContent = '网络错误，请重试';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // 查询6位码
+        async function checkCode() {
+            const code = document.getElementById('codeInput').value.trim();
+            const resultDiv = document.getElementById('codeResult');
+            const successDiv = document.getElementById('successMessage');
+            const approveButtons = document.getElementById('approveButtons');
+
+            resultDiv.classList.remove('show');
+            resultDiv.innerHTML = '';
+            successDiv.style.display = 'none';
+            approveButtons.style.display = 'none';
+
+            if (!code || code.length !== 6) {
+                resultDiv.innerHTML = '<div class="result-item"><div class="label">提示</div><div class="value">请输入6位审批码</div></div>';
+                resultDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('teacher_token');
+                const response = await fetch(`${API_BASE_URL}/teacher/check-code`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ code })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.data.found) {
+                    currentCode = code;
+                    currentApplication = result.data.application;
+                    currentApplication.type = result.data.type; // 保存类型
+
+                    // 显示申请信息
+                    let typeText = '';
+                    if (result.data.type === 'parent-visit') {
+                        typeText = '家长进校';
+                    } else if (result.data.type === 'alumni-visit') {
+                        typeText = '校友进校';
+                    } else if (result.data.type === 'student-leave') {
+                        typeText = '学生出校';
+                    }
+
+                    let html = '<div class="result-item"><div class="label">申请类型</div><div class="value">' +
+                        typeText + '</div></div>';
+
+                    if (result.data.type === 'parent-visit') {
+                        html += '<div class="result-item"><div class="label">申请人</div><div class="value">' +
+                            result.data.application.parent_name + '</div></div>';
+                        html += '<div class="result-item"><div class="label">手机号</div><div class="value">' +
+                            result.data.application.phone + '</div></div>';
+                        if (result.data.application.student_name) {
+                            html += '<div class="result-item"><div class="label">关联学生</div><div class="value">' +
+                                result.data.application.student_name + '</div></div>';
+                        }
+                        if (result.data.application.class_name) {
+                            html += '<div class="result-item"><div class="label">班级</div><div class="value">' +
+                                result.data.application.class_name + '</div></div>';
+                        }
+                    } else if (result.data.type === 'alumni-visit') {
+                        html += '<div class="result-item"><div class="label">校友姓名</div><div class="value">' +
+                            result.data.application.alumni_name + '</div></div>';
+                        html += '<div class="result-item"><div class="label">手机号</div><div class="value">' +
+                            result.data.application.phone + '</div></div>';
+                        if (result.data.application.graduation_year) {
+                            html += '<div class="result-item"><div class="label">毕业年份</div><div class="value">' +
+                                result.data.application.graduation_year + '</div></div>';
+                        }
+                    } else if (result.data.type === 'student-leave') {
+                        html += '<div class="result-item"><div class="label">学生姓名</div><div class="value">' +
+                            result.data.application.student_name + '</div></div>';
+                        html += '<div class="result-item"><div class="label">班级</div><div class="value">' +
+                            result.data.application.class_name + '</div></div>';
+                        if (result.data.application.parent_name) {
+                            html += '<div class="result-item"><div class="label">家长</div><div class="value">' +
+                                result.data.application.parent_name + '</div></div>';
+                        }
+
+                        // 添加可编辑的学号输入框
+                        html += '<div class="result-item"><div class="label">学号（可编辑）</div>';
+                        html += '<div class="value">';
+                        html += '<input type="text" id="studentIdInput" placeholder="输入学号生成出校码" ';
+                        html += 'style="width: 100%; height: 44px; padding: 0 12px; border: 1px solid #d4af37; ';
+                        html += 'border-radius: 4px; font-size: 16px; font-weight: 600; text-align: center; ';
+                        html += 'letter-spacing: 2px;">';
+                        html += '</div></div>';
+
+                        // 添加出校码显示区域（默认隐藏，输入学号后显示）
+                        html += '<div id="exitCodeDisplay" style="display: none; margin-top: 20px; ';
+                        html += 'background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); ';
+                        html += 'border: 2px solid #d4af37; padding: 25px; text-align: center; position: relative;">';
+                        html += '<div style="position: absolute; top: 6px; left: 6px; right: 6px; bottom: 6px; ';
+                        html += 'border: 1px solid rgba(212, 175, 55, 0.2); pointer-events: none;"></div>';
+                        html += '<div class="code-label">🚪 学生出门验证码</div>';
+                        html += '<div class="code-number" id="exitCodeNumber" style="font-size: 42px; ';
+                        html += 'color: #d4af37; letter-spacing: 6px; font-weight: bold; line-height: 1.2; ';
+                        html += 'font-family: \'Cinzel\', serif; margin: 15px 0;"></div>';
+                        html += '<div id="exitCodeStudentId" style="font-size: 14px; color: rgba(255,255,255,0.9); ';
+                        html += 'margin-bottom: 5px;"></div>';
+                        html += '<div class="code-status">有效期：今天</div>';
+                        html += '</div>';
+                    }
+
+                    html += '<div class="result-item"><div class="label">申请时间</div><div class="value">' +
+                        result.data.application.created_at + '</div></div>';
+
+                    resultDiv.innerHTML = html;
+                    resultDiv.classList.add('show');
+
+                    // 如果是学生请假，设置学号输入事件监听
+                    if (result.data.type === 'student-leave') {
+                        const studentIdInput = document.getElementById('studentIdInput');
+
+                        // 自动填充学生学号（从后台获取，如果有的话）
+                        if (result.data.application.student_id) {
+                            studentIdInput.value = result.data.application.student_id;
+                            // 触发生成出校码
+                            updateExitCodeDisplay(result.data.application.student_id);
+                        }
+
+                        // 添加输入事件监听
+                        studentIdInput.addEventListener('input', function(e) {
+                            const studentId = e.target.value.trim();
+                            updateExitCodeDisplay(studentId);
+                        });
+
+                        // 自动聚焦学号输入框
+                        studentIdInput.focus();
+                    }
+
+                    // 自动审批（不需要用户点击按钮）
+                    console.log('验证通过，自动审批中...');
+                    approve();
+
+                } else if (result.success && !result.data.found) {
+                    resultDiv.innerHTML = '<div class="result-item"><div class="label">提示</div><div class="value">未找到该审批码，请检查</div></div>';
+                    resultDiv.classList.add('show');
+                } else {
+                    resultDiv.innerHTML = '<div class="result-item"><div class="label">错误</div><div class="value">' +
+                        (result.error || '查询失败') + '</div></div>';
+                    resultDiv.classList.add('show');
+                }
+
+            } catch (error) {
+                console.error('查询失败:', error);
+                resultDiv.innerHTML = '<div class="result-item"><div class="label">错误</div><div class="value">网络错误，请重试</div></div>';
+                resultDiv.classList.add('show');
+            }
+        }
+
+        // 审批通过
+        async function approve() {
+            if (!currentApplication) return;
+
+            // 使用今天的本地日期作为审批日期（避免UTC时区问题）
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const approvalDate = `${year}-${month}-${day}`;
+
+            try {
+                const token = localStorage.getItem('teacher_token');
+                const response = await fetch(`${API_BASE_URL}/teacher/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        code: currentCode,
+                        action: 'approve',
+                        type: currentApplication.type || 'parent-visit',
+                        phone: currentApplication.phone || '',
+                        approval_date: approvalDate
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 审批成功，保留信息显示，更新按钮为"已完成，继续"
+                    const approveButtons = document.getElementById('approveButtons');
+                    const approveBtn = document.getElementById('approveBtn');
+
+                    // 隐藏拒绝按钮，修改通过按钮
+                    approveBtn.textContent = '✓ 已完成，继续处理 (回车)';
+                    approveBtn.onclick = clearAndContinue;
+                    approveBtn.className = 'btn btn-success'; // 改变样式为成功状态
+
+                    // 显示成功提示
+                    const successDiv = document.getElementById('successMessage');
+
+                    // 学生请假：显示出门验证码
+                    if (currentApplication.type === 'student-leave' && result.data.exit_code) {
+                        const exitCode = result.data.exit_code;
+                        const validDate = result.data.exit_code_valid_date || '今天';
+                        const applicantName = result.data.applicant_name || '';
+                        const studentName = result.data.student_name || '';
+                        const studentId = result.data.student_id || '';
+
+                        let message = '✅ 审批成功！<br>';
+                        message += '<strong>🚪 学生出门验证码：</strong><br>';
+                        message += '<span style="font-size: 28px; color: #d4af37; letter-spacing: 4px; font-weight: bold; display: block; margin: 10px 0;">' + exitCode + '</span>';
+
+                        if (studentName) {
+                            message += '<strong>学生：</strong>' + studentName + '<br>';
+                        }
+                        if (studentId) {
+                            message += '<strong>学号：</strong>' + studentId + '<br>';
+                        }
+
+                        message += '有效期：' + validDate + '<br>';
+                        message += '<small style="color: #666;">请将此码告知学生，学生可凭此码在门卫处出校验证</small>';
+
+                        successDiv.innerHTML = message;
+
+                        // 在结果卡片中也添加出门码显示
+                        const resultDiv = document.getElementById('codeResult');
+                        if (resultDiv.innerHTML.includes('学生姓名')) {
+                            // 找到学生姓名后面的位置，插入出门码
+                            const exitCodeHtml = '<div class="result-item"><div class="label">🚪 出门验证码</div><div class="value highlight" style="font-size: 24px; letter-spacing: 3px;">' + exitCode + '</div></div>';
+                            resultDiv.innerHTML = resultDiv.innerHTML.replace(
+                                '<div class="result-item"><div class="label">申请时间</div>',
+                                exitCodeHtml + '<div class="result-item"><div class="label">申请时间</div>'
+                            );
+                        }
+                    } else {
+                        // 其他类型：普通成功消息
+                        successDiv.textContent = '✅ 审批成功！信息已保存';
+                    }
+
+                    successDiv.style.display = 'block';
+
+                    // 立即清空输入框，让老师可以直接输入下一个码
+                    document.getElementById('codeInput').value = '';
+                    document.getElementById('codeInput').focus();
+
+                    // 刷新统计
+                    loadStatistics();
+                } else {
+                    // 审批失败，显示错误但保留信息
+                    alert('审批失败: ' + (result.error || '未知错误'));
+                }
+
+            } catch (error) {
+                console.error('审批失败:', error);
+                alert('网络错误，请重试');
+            }
+        }
+
+        // 清理界面并继续处理下一个
+        function clearAndContinue() {
+            // 清理界面，准备输入下一个码
+            document.getElementById('codeResult').classList.remove('show');
+            document.getElementById('approveButtons').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('codeInput').value = '';
+            currentCode = '';
+            currentApplication = null;
+
+            // 恢复按钮原始状态（为下次使用做准备）
+            const approveBtn = document.getElementById('approveBtn');
+            approveBtn.textContent = '✓ 通过 (回车)';
+            approveBtn.onclick = approve;
+            approveBtn.className = 'btn btn-approve';
+
+            // 聚焦输入框
+            document.getElementById('codeInput').focus();
+        }
+
+        // 审批拒绝
+        async function reject() {
+            if (!currentApplication) return;
+
+            const reason = prompt('请输入拒绝理由：');
+            if (!reason) return;
+
+            try {
+                const token = localStorage.getItem('teacher_token');
+                const response = await fetch(`${API_BASE_URL}/teacher/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        code: currentCode,
+                        action: 'reject',
+                        reason: reason
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('codeResult').classList.remove('show');
+                    document.getElementById('approveButtons').style.display = 'none';
+                    document.getElementById('codeInput').value = '';
+
+                    const successDiv = document.getElementById('successMessage');
+                    successDiv.textContent = '✅ 已拒绝';
+                    successDiv.style.display = 'block';
+
+                    // 刷新统计
+                    loadStatistics();
+                } else {
+                    alert(result.error || '操作失败');
+                }
+
+            } catch (error) {
+                console.error('操作失败:', error);
+                alert('网络错误，请重试');
+            }
+        }
+
+        // 加载统计数据
+        async function loadStatistics() {
+            try {
+                const token = localStorage.getItem('teacher_token');
+                const response = await fetch(`${API_BASE_URL}/teacher/statistics`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 更新统计（元素存在时才更新）
+                    const pendingElement = document.getElementById('pendingCount');
+                    const approvedElement = document.getElementById('approvedCount');
+                    const createdElement = document.getElementById('createdCount');
+
+                    if (pendingElement) {
+                        pendingElement.textContent = result.data.pending || 0;
+                    }
+                    if (approvedElement) {
+                        approvedElement.textContent = result.data.approved_today || 0;
+                    }
+                    if (createdElement) {
+                        createdElement.textContent = result.data.created_today || 0;
+                    }
+                }
+
+            } catch (error) {
+                console.error('加载统计失败:', error);
+            }
+        }
+
+        // 日期选择变化（如果元素存在）
+        const approveDateElement = document.getElementById('approveDate');
+        if (approveDateElement) {
+            approveDateElement.addEventListener('change', function() {
+                const customGroup = document.getElementById('customDateGroup');
+                if (this.value === 'custom') {
+                    customGroup.style.display = 'block';
+                } else {
+                    customGroup.style.display = 'none';
+                }
+            });
+        }
+
+        // 显示主内容
+        function showMainContent() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainSection').style.display = 'block';
+            document.querySelector('.header-bar').classList.add('show');
+
+            if (currentTeacherData) {
+                document.getElementById('teacherName').textContent = currentTeacherData.name;
+            }
+
+            // 默认激活入校审批按钮
+            setActiveButton('visit');
+
+            loadStatistics();
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('teacher_token');
+            localStorage.removeItem('teacher_data');
+            currentTeacherData = null;
+
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('mainSection').style.display = 'none';
+            document.getElementById('phone').value = '';
+            document.getElementById('password').value = '';
+        }
+    </script>
+</body>
+</html>

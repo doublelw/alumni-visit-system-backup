@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>电子校友卡</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* 电子校友卡 */
+        .card {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            color: white;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin-right: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .card-info h1 {
+            font-size: 22px;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card-info p {
+            font-size: 14px;
+            opacity: 0.9;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card-code {
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .code-label {
+            font-size: 12px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .code-display {
+            font-size: 48px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+
+        .code-time {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            height: 50px;
+            padding: 0 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            text-align: center;
+            letter-spacing: 3px;
+        }
+
+        .form-group input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            height: 55px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-refresh {
+            background: #f0f0f0;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .logout-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <button class="logout-btn" onclick="logout()" style="display: none;" id="logoutBtn">退出</button>
+
+    <div class="container">
+        <!-- 电子校友卡 -->
+        <div class="card" id="cardSection" style="display: none;">
+            <div class="card-header">
+                <div class="card-avatar" id="cardAvatar">👤</div>
+                <div class="card-info">
+                    <h1 id="cardName">张三</h1>
+                    <p id="cardType">高三(1)班</p>
+                </div>
+            </div>
+            <div class="card-code">
+                <div class="code-label">验证码（2分钟有效）</div>
+                <div class="code-display" id="codeDisplay">000000</div>
+                <div class="code-time" id="codeTime">过期时间: --</div>
+            </div>
+        </div>
+
+        <!-- 操作卡片 -->
+        <div class="action-card">
+            <div id="loginSection">
+                <div class="form-group">
+                    <label for="phone">手机号</label>
+                    <input type="tel" id="phone" placeholder="请输入手机号" maxlength="11">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="text" id="password" placeholder="请输入密码" maxlength="4" style="letter-spacing: 3px;">
+                </div>
+
+                <div id="message" class="message"></div>
+
+                <button class="btn btn-primary" onclick="generateCode()">生成验证码</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在生成验证码...</p>
+            </div>
+
+            <div id="regenerateSection" style="display: none;">
+                <button class="btn btn-refresh" onclick="generateCode()">🔄 刷新验证码</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api/electronic-card';
+        let currentUser = null;
+
+        // 检查登录状态
+        window.onload = function() {
+            checkLoginStatus();
+        };
+
+        function checkLoginStatus() {
+            const userData = localStorage.getItem('user_data');
+            if (userData) {
+                currentUser = JSON.parse(userData);
+                showCard();
+                generateCode(); // 自动生成验证码
+            }
+        }
+
+        // 生成验证码
+        async function generateCode() {
+            const phone = document.getElementById('phone').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const messageDiv = document.getElementById('message');
+            const loadingDiv = document.getElementById('loading');
+
+            // 隐藏消息
+            messageDiv.classList.remove('show');
+            messageDiv.classList.remove('error');
+
+            // 如果已登录，使用缓存的手机号
+            const userPhone = currentUser ? currentUser.phone : phone;
+            const userPassword = currentUser ? currentUser.pin_code : password;
+
+            // 验证输入
+            if (!userPhone || userPhone.length !== 11) {
+                showMessage('请输入正确的11位手机号', true);
+                return;
+            }
+
+            if (!userPassword || userPassword.length < 2 || userPassword.length > 4) {
+                showMessage('请输入2-4位密码', true);
+                return;
+            }
+
+            // 显示加载
+            loadingDiv.classList.add('show');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/application/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: userPhone,
+                        pin_code: userPassword
+                    })
+                });
+
+                const result = await response.json();
+
+                loadingDiv.classList.remove('show');
+
+                if (result.success || result.code) {
+                    // 保存用户信息
+                    if (!currentUser) {
+                        currentUser = {
+                            phone: userPhone,
+                            pin_code: userPassword,
+                            name: result.name || '校友',
+                            class_name: result.class_name || '',
+                            type: result.user_type || 'alumni'
+                        };
+                        localStorage.setItem('user_data', JSON.stringify(currentUser));
+                    }
+
+                    // 更新校友卡
+                    updateCard(result);
+
+                    // 显示校友卡和刷新按钮
+                    showCard();
+                    showMessage('验证码生成成功！');
+                } else {
+                    showMessage(result.error || '生成失败，请检查手机号和密码', true);
+                }
+
+            } catch (error) {
+                loadingDiv.classList.remove('show');
+                console.error('生成失败:', error);
+                showMessage('网络错误，请重试', true);
+            }
+        }
+
+        // 更新校友卡显示
+        function updateCard(data) {
+            // 更新头像
+            const avatarDiv = document.getElementById('cardAvatar');
+            if (data.user_type === 'parent') {
+                avatarDiv.textContent = '👨‍👩‍👧‍👦'; // 家长
+            } else if (data.user_type === 'alumni') {
+                avatarDiv.textContent = '🎓'; // 校友
+            } else if (data.user_type === 'student') {
+                avatarDiv.textContent = '👨‍🎓'; // 学生
+            } else {
+                avatarDiv.textContent = '👤'; // 默认
+            }
+
+            // 更新姓名
+            document.getElementById('cardName').textContent = data.name || currentUser?.name || '校友';
+
+            // 更新类型
+            document.getElementById('cardType').textContent = data.class_name || currentUser?.class_name || '校友';
+
+            // 更新验证码
+            document.getElementById('codeDisplay').textContent = data.code || '000000';
+
+            // 更新过期时间
+            if (data.expires_at) {
+                document.getElementById('codeTime').textContent = '过期时间: ' + data.expires_at;
+            }
+        }
+
+        // 显示校友卡
+        function showCard() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('cardSection').style.display = 'block';
+            document.getElementById('regenerateSection').style.display = 'block';
+            document.getElementById('logoutBtn').style.display = 'block';
+        }
+
+        // 显示登录界面
+        function showLogin() {
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('cardSection').style.display = 'none';
+            document.getElementById('regenerateSection').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+        }
+
+        // 显示消息
+        function showMessage(text, isError = false) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.classList.remove('error');
+            if (isError) {
+                messageDiv.classList.add('error');
+            }
+            messageDiv.classList.add('show');
+
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+            }, 3000);
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('user_data');
+            currentUser = null;
+            showLogin();
+            document.getElementById('phone').value = '';
+            document.getElementById('password').value = '';
+        }
+    </script>
+</body>
+</html>

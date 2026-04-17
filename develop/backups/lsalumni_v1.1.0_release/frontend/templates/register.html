@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1976d2">
+    <title>欢迎回家 - 辽宁省实验中学校友入校登记系统</title>
+
+    <!-- 使用系统字体 -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+    </style>
+
+    <!-- 引入图标 -->
+    <link href="/static/vendor/remixicon.css" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="/static/css/register.css">
+</head>
+<body>
+    <!-- 背景装饰 -->
+    <div class="background-decoration">
+        <div class="decoration-circle circle-1"></div>
+        <div class="decoration-circle circle-2"></div>
+        <div class="decoration-circle circle-3"></div>
+        <div class="school-badge"></div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="register-container">
+        <!-- 第一步：欢迎页面 -->
+        <div class="welcome-step active" id="welcomeStep">
+            <div class="welcome-content">
+                <div class="school-logo">
+                    <i class="ri-graduation-cap-fill"></i>
+                    <div class="logo-text">实验中学</div>
+                </div>
+
+                <h1 class="welcome-title">欢迎回到实验大家庭</h1>
+                <p class="welcome-subtitle">亲爱的校友，无论您身在何方，实验中学永远是您的家</p>
+
+                <div class="welcome-features">
+                    <div class="feature-item">
+                        <i class="ri-home-heart-line"></i>
+                        <span>重温青春记忆</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="ri-group-line"></i>
+                        <span>连接校友情谊</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="ri-building-line"></i>
+                        <span>便捷入校访问</span>
+                    </div>
+                </div>
+
+                <div class="welcome-message">
+                    <div class="message-card">
+                        <i class="ri-message-3-line"></i>
+                        <p>加入我们的校友入校登记系统，让回家的路更加温暖便捷</p>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-lg start-btn" onclick="showBasicInfo()">
+                    <i class="ri-arrow-right-line"></i>
+                    开始注册
+                </button>
+
+                <div class="welcome-footer">
+                    <p>已有账号？<a href="/login" class="link-primary">立即登录</a></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第二步：基本信息 -->
+        <div class="form-step" id="basicInfoStep">
+            <div class="step-header">
+                <h2>填写基本信息</h2>
+                <p>让我们更好地认识您</p>
+            </div>
+
+            <div class="form-content">
+                <form id="basicInfoForm">
+                    <div class="form-section">
+                        <h3>账号信息</h3>
+                        <div class="form-group">
+                            <label for="username">用户名</label>
+                            <div class="input-wrapper">
+                                <i class="ri-user-line input-icon"></i>
+                                <input type="text" id="username" name="username" required
+                                       placeholder="请输入用户名（4-20个字符）"
+                                       minlength="4" maxlength="20">
+                            </div>
+                            <small class="form-help">用户名将作为登录账号</small>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="password">密码</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-lock-line input-icon"></i>
+                                    <input type="password" id="password" name="password" required
+                                           placeholder="请输入密码（8-20个字符）"
+                                           minlength="8" maxlength="20" autocomplete="new-password">
+                                    <button type="button" class="password-toggle" data-target="password">
+                                        <i class="ri-eye-off-line"></i>
+                                    </button>
+                                </div>
+                                <small class="form-help">密码长度至少8位，建议包含字母、数字和符号</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmPassword">确认密码</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-lock-2-line input-icon"></i>
+                                    <input type="password" id="confirmPassword" name="confirmPassword" required
+                                           placeholder="请再次输入密码" autocomplete="new-password">
+                                    <button type="button" class="password-toggle" data-target="confirmPassword">
+                                        <i class="ri-eye-off-line"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>个人信息</h3>
+                        <div class="form-group">
+                            <label for="realName">真实姓名</label>
+                            <div class="input-wrapper">
+                                <i class="ri-user-smile-line input-icon"></i>
+                                <input type="text" id="realName" name="realName" required
+                                       placeholder="请输入真实姓名">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="email">邮箱地址</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-mail-line input-icon"></i>
+                                    <input type="email" id="email" name="email" required
+                                           placeholder="请输入邮箱地址">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">手机号码</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-phone-line input-icon"></i>
+                                    <input type="tel" id="phone" name="phone" required
+                                           placeholder="请输入手机号码"
+                                           pattern="[0-9]{11}" maxlength="11">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="idCard">身份证号码</label>
+                            <div class="input-wrapper">
+                                <i class="ri-id-card-line input-icon"></i>
+                                <input type="text" id="idCard" name="idCard" required
+                                       placeholder="请输入18位身份证号码"
+                                       pattern="[0-9Xx]{18}" maxlength="18">
+                            </div>
+                            <small class="form-help">身份证号码将用于身份验证，请确保准确</small>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" onclick="showWelcome()">
+                            <i class="ri-arrow-left-line"></i>
+                            返回
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="showAlumniInfo()">
+                            下一步
+                            <i class="ri-arrow-right-line"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 第三步：校友信息 -->
+        <div class="form-step" id="alumniInfoStep">
+            <div class="step-header">
+                <h2>实验中学记忆</h2>
+                <p>分享您在实验中学的美好时光</p>
+            </div>
+
+            <div class="form-content">
+                <form id="alumniInfoForm">
+                    <div class="form-section">
+                        <h3>在校信息</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="graduationYear">毕业年份</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-calendar-line input-icon"></i>
+                                    <input type="number" id="graduationYear" name="graduationYear"
+                                           required min="1950" max="2030"
+                                           placeholder="如：2020">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="classNumber">班级编号</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-team-line input-icon"></i>
+                                    <input type="text" id="classNumber" name="classNumber" required
+                                           placeholder="如：高三（1）班">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="division">所属学部</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-building-line input-icon"></i>
+                                    <input type="text" id="division" name="division" required
+                                           placeholder="如：高中部">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="major">专业/班级类型</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-book-line input-icon"></i>
+                                    <input type="text" id="major" name="major" required
+                                           placeholder="如：理科班、文科班">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="classTeacher">班主任</label>
+                            <div class="input-wrapper">
+                                <i class="ri-user-star-line input-icon"></i>
+                                <input type="text" id="classTeacher" name="classTeacher" required
+                                       placeholder="请输入班主任姓名">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>现在的生活</h3>
+                        <div class="form-group">
+                            <label for="currentCity">现在居住城市</label>
+                            <div class="input-wrapper">
+                                <i class="ri-map-pin-line input-icon"></i>
+                                <input type="text" id="currentCity" name="currentCity" required
+                                       placeholder="如：北京市">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="workUnit">工作单位</label>
+                            <div class="input-wrapper">
+                                <i class="ri-building-2-line input-icon"></i>
+                                <input type="text" id="workUnit" name="workUnit" required
+                                       placeholder="请输入工作单位全称">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="position">职务</label>
+                            <div class="input-wrapper">
+                                <i class="ri-briefcase-line input-icon"></i>
+                                <input type="text" id="position" name="position" required
+                                       placeholder="请输入您的职务">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>紧急联系（选填）</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="emergencyContact">紧急联系人</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-user-heart-line input-icon"></i>
+                                    <input type="text" id="emergencyContact" name="emergencyContact"
+                                           placeholder="紧急联系人姓名（选填）">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="emergencyPhone">紧急联系人电话</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-phone-line input-icon"></i>
+                                    <input type="tel" id="emergencyPhone" name="emergencyPhone"
+                                           placeholder="紧急联系人电话（选填）"
+                                           pattern="[0-9]{11}" maxlength="11">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>服务条款</h3>
+                        <div class="form-group">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                                <label for="agreeTerms" class="checkbox-label">
+                                    <span class="checkmark"></span>
+                                    我已阅读并同意<a href="javascript:void(0)" onclick="openModal('termsModal')">《用户服务条款》</a>和<a href="javascript:void(0)" onclick="openModal('termsModal')">《隐私政策》</a>
+                                </label>
+                            </div>
+                            <small class="form-help">请仔细阅读服务条款和隐私政策，理解并同意后勾选</small>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" onclick="showBasicInfo()">
+                            <i class="ri-arrow-left-line"></i>
+                            上一步
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="showCompleteStep()">
+                            下一步
+                            <i class="ri-arrow-right-line"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 第四步：完成页面 -->
+        <div class="form-step" id="completeStep">
+            <div class="complete-content">
+                <div class="success-icon">
+                    <i class="ri-home-heart-fill"></i>
+                </div>
+
+                <h1 class="complete-title">欢迎回家！</h1>
+                <p class="complete-subtitle">您已成功加入实验中学校友大家庭</p>
+
+                <div class="complete-message">
+                    <div class="message-card">
+                        <i class="ri-information-line"></i>
+                        <p>您的注册信息已提交，我们将在1-2个工作日内完成审核。</p>
+                        <p>审核通过后，您就可以便捷地申请入校访问了。</p>
+                    </div>
+                </div>
+
+                <div class="next-steps">
+                    <h3>接下来您可以：</h3>
+                    <div class="step-list">
+                        <div class="step-item">
+                            <i class="ri-smartphone-line"></i>
+                            <div>
+                                <h4>等待审核</h4>
+                                <p>我们会尽快审核您的注册信息</p>
+                            </div>
+                        </div>
+                        <div class="step-item">
+                            <i class="ri-camera-2-line"></i>
+                            <div>
+                                <h4>注册人脸信息</h4>
+                                <p>审核通过后可进行人脸识别注册</p>
+                            </div>
+                        </div>
+                        <div class="step-item">
+                            <i class="ri-calendar-check-line"></i>
+                            <div>
+                                <h4>申请入校访问</h4>
+                                <p>随时随地申请回母校看看</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="complete-actions">
+                    <button class="btn btn-primary btn-lg" onclick="goToLogin()">
+                        <i class="ri-login-box-line"></i>
+                        去登录
+                    </button>
+                    <button class="btn btn-outline" onclick="goToHome()">
+                        <i class="ri-home-line"></i>
+                        返回首页
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部 -->
+        <footer class="register-footer">
+            <p class="copyright">© 2024 辽宁省实验中学校友入校登记系统</p>
+            <p class="contact">如有问题，请联系：alumni@lnsyz.edu.cn</p>
+        </footer>
+    </div>
+
+    <!-- 服务条款模态框 -->
+    <div class="modal" id="termsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>用户服务条款</h2>
+                <button class="modal-close" onclick="closeModal('termsModal')">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="terms-content">
+                    <h3>1. 服务条款的接受</h3>
+                    <p>欢迎使用实验中学校友入校登记系统。通过使用本系统，您同意遵守以下条款和条件。</p>
+
+                    <h3>2. 用户信息</h3>
+                    <p>您需要提供真实、准确、完整的个人信息。任何虚假信息都可能导致账号被暂停或终止。</p>
+
+                    <h3>3. 隐私保护</h3>
+                    <p>我们承诺保护您的个人信息安全，不会在未经您同意的情况下向第三方披露您的个人信息。</p>
+
+                    <h3>4. 使用规范</h3>
+                    <p>您同意合法使用本系统，不从事任何违法或不当行为。</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal('termsModal')">我已了解</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <!-- 引入脚本 -->
+    <script src="/static/js/register.js"></script>
+</body>
+</html>

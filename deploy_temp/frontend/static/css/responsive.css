@@ -1,0 +1,593 @@
+/*
+ * 移动端响应式优化 CSS
+ * 优化各种屏幕尺寸的自适应性
+ * 版本: v2.0
+ * 日期: 2026-03-26
+ */
+
+/* ==================== 响应式断点系统 ==================== */
+
+/*
+断点定义:
+- Extra Small (XS): < 375px (iPhone SE, 小屏手机)
+- Small (SM): 375px - 414px (iPhone 12/13/14, 标准手机)
+- Medium (MD): 414px - 768px (大屏手机, 小平板)
+- Large (LG): 768px - 1024px (平板, iPad)
+- Extra Large (XL): > 1024px (桌面, 大屏幕)
+*/
+
+/* ==================== 基础优化 ==================== */
+
+/* 确保正确视口设置 */
+@viewport {
+    width: device-width;
+    initial-scale: 1.0;
+    maximum-scale: 5.0;
+    user-scalable: yes;
+}
+
+/* 触摸优化 */
+* {
+    /* 移除点击高亮 */
+    -webkit-tap-highlight-color: transparent;
+
+    /* 优化触摸滚动 */
+    touch-action: manipulation;
+
+    /* 文字选择优化 */
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* 允许输入框文字选择 */
+input, textarea, [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* 安全区域适配（iPhone X系列）*/
+body {
+    padding:
+        env(safe-area-inset-top)
+        env(safe-area-inset-right)
+        env(safe-area-inset-bottom)
+        env(safe-area-inset-left);
+}
+
+/* ==================== Extra Small 屏幕 (< 375px) ==================== */
+@media screen and (max-width: 374px) {
+    :root {
+        --font-size-xs: 11px;
+        --font-size-sm: 12px;
+        --font-size-md: 13px;
+        --font-size-lg: 15px;
+        --font-size-xl: 17px;
+        --spacing-xs: 3px;
+        --spacing-sm: 6px;
+        --spacing-md: 12px;
+        --spacing-lg: 18px;
+        --spacing-xl: 24px;
+    }
+
+    /* 页面头部 */
+    .page-header {
+        padding: 12px 10px;
+    }
+
+    .page-header h1 {
+        font-size: 17px;
+    }
+
+    /* 按钮优化 */
+    .btn {
+        min-height: 40px;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    /* 表单输入 */
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 13px;
+        padding: 10px 12px;
+    }
+
+    /* 卡片优化 */
+    .card {
+        border-radius: 12px;
+        margin: 8px;
+    }
+
+    /* 列表项 */
+    .list-item {
+        padding: 12px;
+        min-height: 60px;
+    }
+
+    /* 底部导航 */
+    .bottom-nav {
+        height: 56px;
+    }
+
+    .bottom-nav .nav-item {
+        padding: 6px;
+    }
+
+    .bottom-nav .nav-icon {
+        font-size: 20px;
+    }
+
+    .bottom-nav .nav-label {
+        font-size: 10px;
+    }
+
+    /* 对话框 */
+    .modal {
+        width: 95%;
+        max-width: 95%;
+    }
+
+    /* Toast通知 */
+    .toast {
+        font-size: 12px;
+        padding: 10px 14px;
+    }
+}
+
+/* ==================== Small 屏幕 (375px - 414px) ==================== */
+@media screen and (min-width: 375px) and (max-width: 413px) {
+    :root {
+        --font-size-xs: 12px;
+        --font-size-sm: 13px;
+        --font-size-md: 14px;
+        --font-size-lg: 16px;
+        --font-size-xl: 18px;
+    }
+
+    /* 页面头部 */
+    .page-header {
+        padding: 16px 14px;
+    }
+
+    /* 按钮标准尺寸 */
+    .btn {
+        min-height: 44px;
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
+    /* 表单输入 */
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 14px;
+        padding: 12px 14px;
+    }
+
+    /* 列表项 */
+    .list-item {
+        padding: 14px 16px;
+        min-height: 64px;
+    }
+}
+
+/* ==================== Medium 屏幕 (414px - 768px) ==================== */
+@media screen and (min-width: 414px) and (max-width: 767px) {
+    :root {
+        --font-size-md: 15px;
+        --font-size-lg: 17px;
+        --font-size-xl: 19px;
+    }
+
+    /* 页面头部 */
+    .page-header {
+        padding: 18px 16px;
+    }
+
+    .page-header h1 {
+        font-size: 20px;
+    }
+
+    /* 两列布局（大屏手机）*/
+    .grid-2-cols {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    /* 卡片优化 */
+    .card {
+        margin: 10px;
+        padding: 16px;
+    }
+
+    /* 表单优化 */
+    .form-row {
+        display: flex;
+        gap: 12px;
+    }
+
+    .form-row .form-group {
+        flex: 1;
+    }
+}
+
+/* ==================== Large 屏幕 (768px - 1024px) - 平板 ==================== */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+    /* 使用平板布局 */
+    .app-container {
+        max-width: 768px;
+        margin: 0 auto;
+    }
+
+    /* 页面头部 */
+    .page-header {
+        padding: 20px 24px;
+    }
+
+    .page-header h1 {
+        font-size: 22px;
+    }
+
+    /* 三列布局 */
+    .grid-3-cols {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    /* 卡片网格 */
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        padding: 16px;
+    }
+
+    /* 表单优化 */
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 24px;
+    }
+
+    /* 对话框 */
+    .modal {
+        max-width: 500px;
+    }
+
+    /* 底部导航可以改为侧边栏（可选）*/
+    .bottom-nav {
+        max-width: 768px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+
+/* ==================== Extra Large 屏幕 (> 1024px) - 桌面 ==================== */
+@media screen and (min-width: 1024px) {
+    /* 桌面布局 */
+    .app-container {
+        max-width: 1024px;
+        margin: 0 auto;
+        box-shadow: 0 0 40px rgba(0,0,0,0.1);
+    }
+
+    /* 可以显示侧边栏导航 */
+    .sidebar {
+        display: block;
+        width: 250px;
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        /* 移除 background: white 以保持 admin.css 中的深色背景 */
+        box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+
+    /* 主内容区域 */
+    .main-content {
+        margin-left: 250px;
+    }
+
+    /* 隐藏底部导航 */
+    .bottom-nav {
+        display: none;
+    }
+}
+
+/* ==================== 横屏模式优化 ==================== */
+@media screen and (orientation: landscape) {
+    /* 横屏时减少垂直间距 */
+    .page-header {
+        padding: 10px 16px;
+    }
+
+    .page-header h1 {
+        font-size: 18px;
+    }
+
+    /* 表单行横排 */
+    .form-group {
+        margin-bottom: 10px;
+    }
+
+    /* 对话框居中 */
+    .modal {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+
+/* 小屏横屏优化 */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+    /* 底部导航变紧凑 */
+    .bottom-nav {
+        height: 48px;
+    }
+
+    .bottom-nav .nav-item {
+        padding: 4px;
+    }
+
+    /* 页面内容减少底部padding */
+    .page-container {
+        padding-bottom: 48px;
+    }
+
+    /* 模态框全屏 */
+    .modal {
+        width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+        margin: 0;
+    }
+}
+
+/* ==================== 高DPI屏幕优化 ==================== */
+@media (-webkit-min-device-pixel-ratio: 2),
+       (min-resolution: 192dpi) {
+    /* 边框使用更细的线 */
+    .btn,
+    .input,
+    .card {
+        border-width: 0.5px;
+    }
+
+    /* 优化图标显示 */
+    .icon {
+        image-rendering: -webkit-optimize-contrast;
+    }
+}
+
+/* ==================== 深色模式支持 ==================== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-primary: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --background-primary: #1e1e1e;
+        --background-secondary: #121212;
+        --surface: #2c2c2c;
+        --border: #3a3a3a;
+    }
+
+    body {
+        background-color: var(--background-secondary);
+        color: var(--text-primary);
+    }
+}
+
+/* ==================== 减少动画模式 ==================== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==================== 字体缩放系统 ==================== */
+/* 用户设置大字体 */
+@media (min-resolution: 120dpi) and (min-width: 768px) {
+    :root {
+        --font-size-md: 18px;
+        --font-size-lg: 20px;
+    }
+}
+
+/* ==================== 网络状态优化 ==================== */
+/* 慢速网络优化 */
+@media (max-width: 768px) and (prefers-reduced-data: reduce) {
+    /* 禁用背景图片和渐变 */
+    .page-header {
+        background: var(--primary-color);
+    }
+
+    body {
+        background: var(--background-secondary);
+    }
+
+    /* 使用系统字体 */
+    * {
+        font-family: system-ui, -apple-system, sans-serif !important;
+    }
+}
+
+/* ==================== 打印样式 ==================== */
+@media print {
+    .bottom-nav,
+    .header-actions,
+    .btn {
+        display: none !important;
+    }
+
+    .page-container {
+        padding-bottom: 0;
+    }
+
+    body {
+        background: white;
+        color: black;
+    }
+}
+
+/* ==================== 实用工具类 ==================== */
+
+/* 响应式隐藏 */
+.hide-xs { @media (max-width: 374px) { display: none !important; } }
+.hide-sm { @media (max-width: 413px) { display: none !important; } }
+.hide-md { @media (max-width: 767px) { display: none !important; } }
+
+.show-xs { @media (min-width: 375px) { display: none !important; } }
+.show-sm { @media (min-width: 414px) { display: none !important; } }
+.show-md { @media (min-width: 768px) { display: none !important; } }
+
+/* 响应式文本对齐 */
+.text-left-xs { @media (max-width: 374px) { text-align: left; } }
+.text-center-xs { @media (max-width: 374px) { text-align: center; } }
+
+/* 响应式间距 */
+.p-0-xs { @media (max-width: 374px) { padding: 0 !important; } }
+.m-0-xs { @media (max-width: 374px) { margin: 0 !important; } }
+
+/* 响应式字体 */
+.text-sm-xs { @media (max-width: 374px) { font-size: 0.85em; } }
+.text-lg-md { @media (min-width: 768px) { font-size: 1.15em; } }
+
+/* ==================== 性能优化 ==================== */
+
+/* GPU加速 */
+.transform-gpu {
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* 滚动优化 */
+.smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+/* 防止过度滚动 */
+.overscroll-fix {
+    overscroll-behavior: none;
+    overscroll-behavior-x: none;
+}
+
+/* ==================== 可访问性增强 ==================== */
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+    :root {
+        --border: #000000;
+        --text-primary: #000000;
+        --primary-color: #0000ff;
+    }
+
+    .btn {
+        border: 2px solid currentColor;
+    }
+}
+
+/* 焦点可见性 */
+:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* ==================== 触摸目标最小尺寸 ==================== */
+/* WCAG 2.1 AAA: 至少44x44px */
+.btn,
+.nav-item,
+.card,
+.list-item {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* 表单控件 */
+input[type="checkbox"],
+input[type="radio"] {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* ==================== 横向滚动优化 ==================== */
+.horizontal-scroll {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.horizontal-scroll > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+}
+
+/* ==================== 平滑过渡 ==================== */
+@media (prefers-reduced-motion: no-preference) {
+    .btn,
+    .card,
+    .nav-item,
+    input,
+    textarea,
+    select {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+}
+
+/* ==================== 键盘导航支持 ==================== */
+@media (hover: hover) {
+    /* 鼠标设备显示悬停效果 */
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .card:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+}
+
+@media (hover: none) {
+    /* 触摸设备优化 */
+    .btn:active {
+        transform: scale(0.98);
+        opacity: 0.8;
+    }
+}
+
+/* ==================== 自定义选择器 ==================== */
+::selection {
+    background: var(--primary-color);
+    color: white;
+}
+
+::-moz-selection {
+    background: var(--primary-color);
+    color: white;
+}
+
+
+
+/* 确保大屏幕下主内容区域不被侧边栏遮挡 */
+@media screen and (min-width: 1024px) {
+    body.has-sidebar .main-content {
+        margin-left: var(--sidebar-width);
+    }
+
+    body.has-sidebar.sidebar-collapsed .main-content {
+        margin-left: var(--sidebar-collapsed-width);
+    }
+}

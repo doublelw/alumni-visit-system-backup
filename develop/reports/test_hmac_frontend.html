@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMAC动态码测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>HMAC动态码测试</h1>
+
+    <div class="test-section">
+        <h2>前端HMAC生成测试</h2>
+        <p>手机号: <input type="text" id="phone" value="13900002002" maxlength="11"></p>
+        <p>密码: <input type="text" id="password" value="88" maxlength="4"></p>
+        <button onclick="testGenerate()">生成HMAC码</button>
+        <div id="frontendResult" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        // HMAC密钥（必须与后端一致）
+        const HMAC_SECRET_KEY = 'ls-alumni-access-code-hmac-2026-secret-do-not-expose';
+
+        /**
+         * 生成HMAC-SHA256哈希
+         */
+        async function hmacSHA256(message) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(message);
+            const keyData = encoder.encode(HMAC_SECRET_KEY);
+
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw',
+                keyData,
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+
+            const signature = await crypto.subtle.sign(
+                'HMAC',
+                cryptoKey,
+                data
+            );
+
+            const hashArray = Array.from(new Uint8Array(signature));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        /**
+         * 生成HMAC动态码（6位数字）
+         */
+        async function generateHMACCode(phone, password, timestamp = null) {
+            if (timestamp === null) {
+                timestamp = Math.floor(Date.now() / 1000);
+            }
+
+            const message = `${phone}${password}${timestamp}`;
+            console.log('DEBUG: message =', message);
+
+            const hmacHex = await hmacSHA256(message);
+            console.log('DEBUG: hmacHex =', hmacHex);
+
+            // 提取所有数字
+            let digits = '';
+            for (let char of hmacHex) {
+                if (char >= '0' && char <= '9') {
+                    digits += char;
+                }
+            }
+
+            // 如果不足6位，循环使用
+            while (digits.length < 6) {
+                digits += digits;
+            }
+
+            return digits.substring(0, 6);
+        }
+
+        async function testGenerate() {
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('frontendResult');
+
+            if (!phone || !password) {
+                alert('请输入手机号和密码');
+                return;
+            }
+
+            try {
+                const code = await generateHMACCode(phone, password);
+                const timestamp = Math.floor(Date.now() / 1000);
+
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <strong>生成的6位码:</strong> ${code}<br>
+                    <strong>使用时间戳:</strong> ${timestamp}<br>
+                    <strong>时间:</strong> ${new Date(timestamp * 1000).toLocaleString()}<br>
+                    <strong>输入参数:</strong> phone=${phone}, password=${password}
+                `;
+            } catch (error) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<strong>错误:</strong> ${error.message}<br><br>请检查：<br>1. 是否使用HTTPS或localhost<br>2. 浏览器是否支持Web Crypto API`;
+            }
+        }
+    </script>
+</body>
+</html>

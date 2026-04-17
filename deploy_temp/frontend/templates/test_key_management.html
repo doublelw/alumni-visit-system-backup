@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密钥管理测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .status-card-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-badge.ok {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-badge.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .status-label {
+            color: #666;
+        }
+        .status-value {
+            font-weight: bold;
+            color: #333;
+        }
+        #output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔐 密钥管理测试页面</h1>
+
+        <div style="margin-bottom: 20px;">
+            <button class="btn" onclick="testAPI()">测试 API 连接</button>
+            <button class="btn" onclick="loadAndDisplay()">加载并显示数据</button>
+        </div>
+
+        <div id="output">等待测试...</div>
+
+        <div id="statusCards" style="display: none;">
+            <!-- 电子卡密钥 -->
+            <div class="status-card">
+                <div class="status-card-header">
+                    <h3>💳 电子校友卡HMAC密钥</h3>
+                    <span class="status-badge" id="electronicCardBadge">检查中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">最后更换时间</span>
+                    <span class="status-value" id="electronicCardLastChanged">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">已使用天数</span>
+                    <span class="status-value" id="electronicCardDays">-- 天</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">建议更换周期</span>
+                    <span class="status-value">每30天</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">更换状态</span>
+                    <span class="status-value" id="electronicCardStatus">--</span>
+                </div>
+            </div>
+
+            <!-- 微信密码 -->
+            <div class="status-card">
+                <div class="status-card-header">
+                    <h3>📱 微信登录密码</h3>
+                    <span class="status-badge ok">✓ 正常</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">教师密码（2-4位）</span>
+                    <span class="status-value" id="teacherPassword">****</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">家长密码（2-4位）</span>
+                    <span class="status-value" id="parentPassword">****</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">最后更新时间</span>
+                    <span class="status-value" id="wechatLastUpdated">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api/admin/keys';
+        const output = document.getElementById('output');
+        const statusCards = document.getElementById('statusCards');
+
+        function log(message) {
+            output.textContent += message + '\n';
+            console.log(message);
+        }
+
+        async function testAPI() {
+            output.textContent = '=== 测试 API 连接 ===\n\n';
+            statusCards.style.display = 'none';
+
+            try {
+                log('1. 测试 /status 端点...');
+                const response = await fetch(`${API_BASE_URL}/status`);
+                log(`   状态码: ${response.status}`);
+
+                const result = await response.json();
+                log(`   响应数据: ${JSON.stringify(result, null, 2)}`);
+
+                if (result.success) {
+                    log('\n✅ API 测试成功！');
+                    return result.data;
+                } else {
+                    log('\n❌ API 返回错误: ' + result.error);
+                    return null;
+                }
+            } catch (error) {
+                log('\n❌ 请求失败: ' + error.message);
+                console.error(error);
+                return null;
+            }
+        }
+
+        function updateStatusCards(data) {
+            log('\n=== 更新状态卡片 ===\n');
+
+            try {
+                // 电子卡密钥
+                const electronicCard = data.electronic_card_key;
+                log(`电子卡密钥:`);
+                log(`  - 最后更换: ${electronicCard.last_changed}`);
+                log(`  - 已使用天数: ${electronicCard.days_since_change}`);
+                log(`  - 需要更换: ${electronicCard.needs_rotation}`);
+
+                document.getElementById('electronicCardLastChanged').textContent = electronicCard.last_changed;
+                document.getElementById('electronicCardDays').textContent = electronicCard.days_since_change + ' 天';
+
+                const electronicCardBadge = document.getElementById('electronicCardBadge');
+                const electronicCardStatus = document.getElementById('electronicCardStatus');
+
+                if (electronicCard.needs_rotation) {
+                    electronicCardBadge.textContent = '⚠️ 建议更换';
+                    electronicCardBadge.className = 'status-badge warning';
+                    electronicCardStatus.textContent = '已超过建议更换周期';
+                    electronicCardStatus.style.color = '#856404';
+                    log('  状态: ⚠️ 建议更换');
+                } else {
+                    electronicCardBadge.textContent = '✓ 状态良好';
+                    electronicCardBadge.className = 'status-badge ok';
+                    const daysLeft = 30 - electronicCard.days_since_change;
+                    electronicCardStatus.textContent = `还有 ${daysLeft} 天需要更换`;
+                    electronicCardStatus.style.color = '#155724';
+                    log(`  状态: ✓ 状态良好 (${daysLeft}天后需要更换)`);
+                }
+
+                // 微信密码
+                const wechat = data.wechat_passwords;
+                log(`\n微信密码:`);
+                log(`  - 教师密码: ${wechat.teacher_password}`);
+                log(`  - 家长密码: ${wechat.parent_password}`);
+                log(`  - 最后更新: ${wechat.last_changed}`);
+
+                document.getElementById('teacherPassword').textContent = wechat.teacher_password;
+                document.getElementById('parentPassword').textContent = wechat.parent_password;
+                document.getElementById('wechatLastUpdated').textContent = wechat.last_changed;
+
+                statusCards.style.display = 'block';
+                log('\n✅ 状态卡片更新成功！');
+            } catch (error) {
+                log('\n❌ 更新状态卡片失败: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        async function loadAndDisplay() {
+            output.textContent = '=== 加载并显示密钥状态 ===\n\n';
+
+            const data = await testAPI();
+            if (data) {
+                updateStatusCards(data);
+            }
+        }
+
+        // 页面加载时自动测试
+        window.onload = function() {
+            log('页面已加载，等待用户操作...\n');
+        };
+    </script>
+</body>
+</html>

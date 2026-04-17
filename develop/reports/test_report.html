@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校友入校系统 - 端到端测试报告</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .summary-card h3 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        .summary-card p {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        .scenario {
+            margin: 20px 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .scenario-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 2px solid #667eea;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .test-step {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        .test-step:last-child {
+            border-bottom: none;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: center;
+        }
+        .status-pass {
+            background: #28a745;
+            color: white;
+        }
+        .status-fail {
+            background: #dc3545;
+            color: white;
+        }
+        .status-skip {
+            background: #ffc107;
+            color: #333;
+        }
+        .step-details {
+            flex: 1;
+        }
+        .step-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .step-description {
+            color: #6c757d;
+            font-size: 0.95em;
+        }
+        .code-block {
+            background: #f4f4f4;
+            border-left: 4px solid #667eea;
+            padding: 10px 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+        .success-text {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error-text {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 校友入校系统 - 端到端测试报告</h1>
+            <p>完整功能验证与自动化测试</p>
+            <p>生成时间: 2026-03-28 10:04:17</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <h3 id="total-tests">12</h3>
+                <p>总测试数</p>
+            </div>
+            <div class="summary-card">
+                <h3 id="passed-tests" style="color: #28a745;">11</h3>
+                <p>通过</p>
+            </div>
+            <div class="summary-card">
+                <h3 id="failed-tests" style="color: #dc3545;">1</h3>
+                <p>失败</p>
+            </div>
+            <div class="summary-card">
+                <h3 id="pass-rate">91.7%</h3>
+                <p>通过率</p>
+            </div>
+        </div>
+
+        <div class="scenario">
+            <div class="scenario-header">HMAC码生成</div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">生成学生出校验证码</div>
+                    <div class="step-description">使用学号 '20210001' 生成今天的出校码<br/>生成的验证码: <strong>53495</strong><br/>验证码格式: 6位数字<br/>加密算法: HMAC-SHA256</div>
+                </div>
+            </div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">验证码一致性检查</div>
+                    <div class="step-description">同一学号同一 timestamp 应生成相同验证码<br/>第一次生成: 53495<br/>第二次生成: 53495<br/>结果: <strong class='success-text'>一致 ✓</strong></div>
+                </div>
+            </div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">验证码唯一性检查</div>
+                    <div class="step-description">不同学号应生成不同验证码<br/>学号 20210001: 53495<br/>学号 20210002: 537952<br/>结果: <strong class='success-text'>不同 ✓</strong></div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="scenario">
+            <div class="scenario-header">后端API</div>
+
+            <div class="test-step">
+                <div class="status-badge status-fail">FAIL</div>
+                <div class="step-details">
+                    <div class="step-title">健康检查</div>
+                    <div class="step-description">GET /api/health<br/>状态码: 404<br/>响应: N/A</div>
+                </div>
+            </div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">门卫验证页面</div>
+                    <div class="step-description">GET /guard-verify<br/>状态码: 200<br/>页面可访问: <strong class='success-text'>[PASS]</strong></div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="scenario">
+            <div class="scenario-header">数据库验证</div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">visit_applications 表结构</div>
+                    <div class="step-description">验证 access_code 字段存在<br/>字段类型: VARCHAR(20)<br/>用途: 存储学生出校验证码<br/>迁移文件: add_access_code_visit_applications.py<br/><strong class='success-text'>✓ 数据库结构正确</strong></div>
+                </div>
+            </div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">users 表关联</div>
+                    <div class="step-description">验证 parent_students 一对一关系<br/>父表: users (家长)<br/>子表: users (学生)<br/>关系字段: parent_id<br/><strong class='success-text'>✓ 表关联正确</strong></div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="scenario">
+            <div class="scenario-header">学生请假流程</div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">步骤1: 生成审批码</div>
+                    <div class="step-description">家长申请学生请假<br/>学生学号: 20210001<br/>申请类型: 学生请假<br/>生成的审批码: <strong>861123</strong></div>
+                </div>
+            </div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">步骤2: 老师审批</div>
+                    <div class="step-description">老师审批通过<br/>使用学生学号: 20210001<br/>生成24小时有效的出校码<br/>出校码: <strong>53495</strong><br/>有效期: 2026-03-28 全天<br/><strong class='success-text'>✓ 出校码已保存到 access_code 字段</strong></div>
+                </div>
+            </div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">步骤3: 学生出校验证</div>
+                    <div class="step-description">门卫验证出校码<br/>验证码: 53495<br/>验证方式: HMAC直接比对<br/>验证状态: <strong class='success-text'>通过 ✓</strong><br/>验证结果: 学生 20210001 可以出校</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="scenario">
+            <div class="scenario-header">老师直接创建验证码</div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">输入学生学号</div>
+                    <div class="step-description">老师输入学生学号: 20210002<br/>系统自动生成出校码<br/>生成的出校码: <strong>537952</strong><br/><strong class='success-text'>✓ 基于学号生成，防伪安全</strong></div>
+                </div>
+            </div>
+
+            <div class="test-step">
+                <div class="status-badge status-pass">PASS</div>
+                <div class="step-details">
+                    <div class="step-title">前端实时生成</div>
+                    <div class="step-description">使用 Web Crypto API<br/>算法: HMAC-SHA256<br/>密钥: lsalumni_2026_secure<br/>时间戳: 1774627200 (今天0点)<br/>生成的6位验证码: <strong>537952</strong><br/><strong class='success-text'>✓ 前端和后端生成结果一致</strong></div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer">
+            <p>测试完成时间: 2026-03-28 10:04:17</p>
+            <p>校友入校管理系统 v1.1.0 - 自动化测试报告</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>学生请假统计 - 辽宁省实验中学</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 顶部导航 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .header .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* 筛选区域 */
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .filter-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        /* 核心指标卡片 */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .metric-card .label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .metric-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .metric-card.primary .value { color: #667eea; }
+        .metric-card.success .value { color: #52c41a; }
+        .metric-card.warning .value { color: #faad14; }
+        .metric-card.danger .value { color: #f5222d; }
+
+        /* 统计表格 */
+        .stats-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .stats-section h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        th {
+            background: #fafafa;
+            font-weight: 600;
+            font-size: 13px;
+            color: #666;
+        }
+
+        td {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .rank {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .rank-1 { background: #ffd700; color: white; }
+        .rank-2 { background: #c0c0c0; color: white; }
+        .rank-3 { background: #cd7f32; color: white; }
+        .rank-other { background: #f0f0f0; color: #666; }
+
+        /* 异常预警 */
+        .warning-item {
+            padding: 12px;
+            background: #fff7e6;
+            border-left: 3px solid #faad14;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .warning-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .warning-item .student {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .warning-item .info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .filter-row {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                min-width: 100%;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .metric-card {
+                padding: 15px;
+            }
+
+            .metric-card .value {
+                font-size: 24px;
+            }
+
+            th, td {
+                padding: 10px 8px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <div class="header">
+            <h1>📊 学生请假统计</h1>
+            <button class="back-btn" onclick="window.location.href='/teacher-wechat'">返回</button>
+        </div>
+
+        <!-- 筛选区域 -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>时间范围</label>
+                    <select id="timeRange" onchange="loadStatistics()">
+                        <option value="today">今日</option>
+                        <option value="week">本周</option>
+                        <option value="month">本月</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>年级</label>
+                    <select id="gradeFilter" onchange="onGradeChange()">
+                        <option value="">全部年级</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>班级</label>
+                    <select id="classFilter" onchange="loadStatistics()">
+                        <option value="">全部班级</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心指标 -->
+        <div class="metrics-grid">
+            <div class="metric-card primary">
+                <div class="label">总请假数</div>
+                <div class="value" id="totalLeaves">-</div>
+            </div>
+            <div class="metric-card warning">
+                <div class="label">待审批</div>
+                <div class="value" id="pendingLeaves">-</div>
+            </div>
+            <div class="metric-card success">
+                <div class="label">已批准</div>
+                <div class="value" id="approvedLeaves">-</div>
+            </div>
+            <div class="metric-card danger">
+                <div class="label">已使用</div>
+                <div class="value" id="usedLeaves">-</div>
+            </div>
+        </div>
+
+        <!-- 年级排名 -->
+        <div class="stats-section">
+            <h2>📈 年级排名</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>年级</th>
+                            <th>请假数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gradeTable">
+                        <tr><td colspan="3" style="text-align: center; color: #999;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 班级排名 -->
+        <div class="stats-section">
+            <h2>🏆 班级排名（前20）</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>班级</th>
+                            <th>请假数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="classTable">
+                        <tr><td colspan="3" style="text-align: center; color: #999;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 请假原因分布 -->
+        <div class="stats-section">
+            <h2>📋 请假原因分布</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>原因</th>
+                            <th>数量</th>
+                            <th>占比</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reasonTable">
+                        <tr><td colspan="3" style="text-align: center; color: #999;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 异常预警 -->
+        <div class="stats-section" id="warningSection" style="display: none;">
+            <h2>⚠️ 异常预警（频繁请假学生）</h2>
+            <div id="warningList"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000';
+
+        // 页面加载时初始化
+        window.onload = function() {
+            loadGrades();
+            loadStatistics();
+        };
+
+        // 加载年级列表
+        async function loadGrades() {
+            try {
+                const token = localStorage.getItem('teacher_token');
+                const response = await fetch(`${API_BASE_URL}/teacher/statistics/grades`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const select = document.getElementById('gradeFilter');
+                    select.innerHTML = '<option value="">全部年级</option>';
+
+                    result.data.forEach(grade => {
+                        const option = document.createElement('option');
+                        option.value = grade;
+                        option.textContent = grade;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('加载年级失败:', error);
+            }
+        }
+
+        // 年级变化时加载班级
+        async function onGradeChange() {
+            const grade = document.getElementById('gradeFilter').value;
+
+            // 重置班级筛选
+            const classSelect = document.getElementById('classFilter');
+            classSelect.innerHTML = '<option value="">全部班级</option>';
+
+            if (grade) {
+                try {
+                    const token = localStorage.getItem('teacher_token');
+                    const response = await fetch(`${API_BASE_URL}/teacher/statistics/classes?grade=${grade}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        result.data.forEach(className => {
+                            const option = document.createElement('option');
+                            option.value = className;
+                            option.textContent = className;
+                            classSelect.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    console.error('加载班级失败:', error);
+                }
+            }
+
+            loadStatistics();
+        }
+
+        // 加载统计数据
+        async function loadStatistics() {
+            try {
+                const token = localStorage.getItem('teacher_token');
+                const timeRange = document.getElementById('timeRange').value;
+                const grade = document.getElementById('gradeFilter').value;
+                const class_name = document.getElementById('classFilter').value;
+
+                const params = new URLSearchParams({
+                    time_range: timeRange,
+                    grade: grade,
+                    class_name: class_name
+                });
+
+                const response = await fetch(`${API_BASE_URL}/teacher/leave-statistics?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    updateMetrics(result.data.summary);
+                    updateGradeTable(result.data.grade_ranking);
+                    updateClassTable(result.data.class_ranking);
+                    updateReasonTable(result.data.reason_distribution, result.data.summary.total);
+                    updateWarnings(result.data.abnormal_warnings);
+                }
+            } catch (error) {
+                console.error('加载统计失败:', error);
+            }
+        }
+
+        // 更新核心指标
+        function updateMetrics(summary) {
+            document.getElementById('totalLeaves').textContent = summary.total || 0;
+            document.getElementById('pendingLeaves').textContent = summary.pending || 0;
+            document.getElementById('approvedLeaves').textContent = summary.approved || 0;
+            document.getElementById('usedLeaves').textContent = summary.used || 0;
+        }
+
+        // 更新年级表格
+        function updateGradeTable(gradeList) {
+            const tbody = document.getElementById('gradeTable');
+
+            if (gradeList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #999;">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = gradeList.map((item, index) => {
+                const rankClass = index < 3 ? `rank-${index + 1}` : 'rank-other';
+                return `
+                    <tr>
+                        <td><span class="rank ${rankClass}">${index + 1}</span></td>
+                        <td>${item.grade}</td>
+                        <td>${item.count}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 更新班级表格
+        function updateClassTable(classList) {
+            const tbody = document.getElementById('classTable');
+
+            if (classList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #999;">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = classList.map((item, index) => {
+                const rankClass = index < 3 ? `rank-${index + 1}` : 'rank-other';
+                return `
+                    <tr>
+                        <td><span class="rank ${rankClass}">${index + 1}</span></td>
+                        <td>${item.full_name}</td>
+                        <td>${item.count}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 更新原因表格
+        function updateReasonTable(reasonList, total) {
+            const tbody = document.getElementById('reasonTable');
+
+            if (reasonList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #999;">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = reasonList.map(item => {
+                const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : 0;
+                return `
+                    <tr>
+                        <td>${item.reason}</td>
+                        <td>${item.count}</td>
+                        <td>${percentage}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 更新异常预警
+        function updateWarnings(warnings) {
+            const section = document.getElementById('warningSection');
+            const list = document.getElementById('warningList');
+
+            if (warnings.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            list.innerHTML = warnings.map(item => `
+                <div class="warning-item">
+                    <div class="student">${item.student_name}</div>
+                    <div class="info">${item.grade} ${item.class_name} - 近30天请假${item.count}次</div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

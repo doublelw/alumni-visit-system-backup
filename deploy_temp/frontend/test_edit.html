@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户编辑测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 3px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            border-left: 4px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <h1>用户编辑功能测试</h1>
+
+    <div class="test-section">
+        <h3>1. 登录测试</h3>
+        <button class="btn" onclick="testLogin()">测试登录</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 获取用户列表</h3>
+        <button class="btn" onclick="testGetUsers()">获取用户列表</button>
+        <div id="usersResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 测试用户编辑</h3>
+        <input type="number" id="userId" placeholder="用户ID" value="23">
+        <button class="btn" onclick="testGetUser()">获取用户信息</button>
+        <button class="btn" onclick="testEditUser()">编辑用户</button>
+        <div id="editResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. 测试角色管理</h3>
+        <button class="btn" onclick="testGetRoles()">获取所有角色</button>
+        <button class="btn" onclick="testGetUserRoles()">获取用户角色</button>
+        <div id="rolesResult" class="result"></div>
+    </div>
+
+    <script>
+        // 动态获取API地址
+        const getApiBaseUrl = () => {
+            const protocol = window.location.protocol;
+            const hostname = window.location.hostname;
+            const currentPort = window.location.port;
+
+            let apiPort = currentPort;
+            if (currentPort === '8080' || !currentPort) {
+                apiPort = '5000';
+            }
+
+            return `${protocol}//${hostname}:${apiPort}/api`;
+        };
+
+        const BASE_URL = getApiBaseUrl();
+        let authToken = '';
+
+        function showResult(elementId, content, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = content;
+            element.className = 'result ' + (isError ? 'error' : 'success');
+        }
+
+        async function testLogin() {
+            try {
+                const response = await fetch(`${BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    authToken = data.access_token;
+                    showResult('loginResult', `登录成功!\nToken: ${authToken.substring(0, 20)}...`);
+                } else {
+                    showResult('loginResult', `登录失败: ${JSON.stringify(data, null, 2)}`, true);
+                }
+            } catch (error) {
+                showResult('loginResult', `登录请求失败: ${error.message}`, true);
+            }
+        }
+
+        async function testGetUsers() {
+            if (!authToken) {
+                showResult('usersResult', '请先登录', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/admin/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('usersResult', `获取用户列表成功!\n用户数量: ${data.users.length}\n第一个用户: ${JSON.stringify(data.users[0], null, 2)}`);
+                } else {
+                    showResult('usersResult', `获取用户列表失败: ${JSON.stringify(data, null, 2)}`, true);
+                }
+            } catch (error) {
+                showResult('usersResult', `获取用户列表请求失败: ${error.message}`, true);
+            }
+        }
+
+        async function testGetUser() {
+            const userId = document.getElementById('userId').value;
+            if (!authToken) {
+                showResult('editResult', '请先登录', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/admin/users/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('editResult', `获取用户信息成功!\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    showResult('editResult', `获取用户信息失败: ${JSON.stringify(data, null, 2)}`, true);
+                }
+            } catch (error) {
+                showResult('editResult', `获取用户信息请求失败: ${error.message}`, true);
+            }
+        }
+
+        async function testEditUser() {
+            const userId = document.getElementById('userId').value;
+            if (!authToken) {
+                showResult('editResult', '请先登录', true);
+                return;
+            }
+
+            try {
+                const updateData = {
+                    real_name: `测试用户_${Date.now()}`,
+                    phone: `1380000${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+                    user_type: 'teacher',
+                    status: 'active'
+                };
+
+                const response = await fetch(`${BASE_URL}/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('editResult', `更新用户信息成功!\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    showResult('editResult', `更新用户信息失败: ${JSON.stringify(data, null, 2)}`, true);
+                }
+            } catch (error) {
+                showResult('editResult', `更新用户信息请求失败: ${error.message}`, true);
+            }
+        }
+
+        async function testGetRoles() {
+            if (!authToken) {
+                showResult('rolesResult', '请先登录', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/roles`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('rolesResult', `获取所有角色成功!\n角色数量: ${data.data.roles.length}\n${JSON.stringify(data.data.roles, null, 2)}`);
+                } else {
+                    showResult('rolesResult', `获取角色失败: ${JSON.stringify(data, null, 2)}`, true);
+                }
+            } catch (error) {
+                showResult('rolesResult', `获取角色请求失败: ${error.message}`, true);
+            }
+        }
+
+        async function testGetUserRoles() {
+            const userId = document.getElementById('userId').value;
+            if (!authToken) {
+                showResult('rolesResult', '请先登录', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/roles/user/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('rolesResult', `获取用户角色成功!\n角色数量: ${data.data.roles.length}\n${JSON.stringify(data.data, null, 2)}`);
+                } else {
+                    showResult('rolesResult', `获取用户角色失败: ${JSON.stringify(data, null, 2)}`, true);
+                }
+            } catch (error) {
+                showResult('rolesResult', `获取用户角色请求失败: ${error.message}`, true);
+            }
+        }
+
+        // 页面加载时自动登录
+        window.onload = function() {
+            testLogin();
+        };
+    </script>
+</body>
+</html>

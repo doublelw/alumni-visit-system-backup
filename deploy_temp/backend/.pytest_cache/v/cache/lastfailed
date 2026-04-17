@@ -1,0 +1,3 @@
+{
+  "tests/test_smoke.py::TestSmokeTest::test_06_access_code_generation": true
+}

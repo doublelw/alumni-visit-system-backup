@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>端到端测试报告</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', sans-serif; margin: 20px; background: #f5f5f5; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 30px; }
+        .summary { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .story { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .story.success { border-left: 5px solid #4caf50; }
+        .story.failed { border-left: 5px solid #f44336; }
+        .code { background: #fff3cd; padding: 15px; border-radius: 5px; text-align: center; font-family: monospace; font-size: 18px; font-weight: bold; margin: 10px 0; }
+        .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 15px; }
+        .screenshot-item img { width: 100%; border-radius: 5px; }
+        .screenshot-caption { background: #f8f9fa; padding: 10px; text-align: center; border-radius: 0 0 5px 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>校友入校系统 - 端到端测试报告</h1>
+        <p>测试时间: 2026-03-28 18:53:26</p>
+        <p>成功: 5/5</p>
+    </div>
+
+    <div class="summary">
+        <h2>测试概览</h2>
+        <p>总用户故事: 5</p>
+        <p>总截图: 58</p>
+    </div>
+
+    <div class="story success">
+        <h2>用户故事1: 学生请假 ✅ 成功</h2>
+<div class='code'>请假码: 652549</div><div class='code'>出校码: 290799</div>    </div>
+
+    <div class="story success">
+        <h2>用户故事2: 教师直接创建 ✅ 成功</h2>
+<div class='code'>出校码: 290799</div>    </div>
+
+    <div class="story success">
+        <h2>用户故事3: 家长访问 ✅ 成功</h2>
+    </div>
+
+    <div class="story success">
+        <h2>用户故事4: 校友访问 ✅ 成功</h2>
+    </div>
+
+    <div class="story success">
+        <h2>用户故事5: 访客登记 ✅ 成功</h2>
+    </div>
+    <div class='summary'><h2>所有截图</h2><div class='screenshot-grid'>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185011_1_家长页面.png'>
+            <div class='screenshot-caption'>1. 1_家长页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185012_2_填写家长信息.png'>
+            <div class='screenshot-caption'>2. 2_填写家长信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185022_3_生成请假码.png'>
+            <div class='screenshot-caption'>3. 3_生成请假码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185026_5_教师页面.png'>
+            <div class='screenshot-caption'>4. 5_教师页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185027_6_填写教师信息.png'>
+            <div class='screenshot-caption'>5. 6_填写教师信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185037_7_教师登录成功.png'>
+            <div class='screenshot-caption'>6. 7_教师登录成功</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185038_8_输入审批码.png'>
+            <div class='screenshot-caption'>7. 8_输入审批码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185046_9_查询结果.png'>
+            <div class='screenshot-caption'>8. 9_查询结果</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185055_10_审批完成.png'>
+            <div class='screenshot-caption'>9. 10_审批完成</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185059_10_门卫页面.png'>
+            <div class='screenshot-caption'>10. 10_门卫页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185059_11_输入出校码.png'>
+            <div class='screenshot-caption'>11. 11_输入出校码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185101_12_验证结果.png'>
+            <div class='screenshot-caption'>12. 12_验证结果</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185103_1_教师页面.png'>
+            <div class='screenshot-caption'>13. 1_教师页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185104_2_填写教师信息.png'>
+            <div class='screenshot-caption'>14. 2_填写教师信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185109_3_教师登录成功.png'>
+            <div class='screenshot-caption'>15. 3_教师登录成功</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185117_4_申请页面.png'>
+            <div class='screenshot-caption'>16. 4_申请页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185118_5_填写学生信息.png'>
+            <div class='screenshot-caption'>17. 5_填写学生信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185121_6_生成出校码.png'>
+            <div class='screenshot-caption'>18. 6_生成出校码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185125_7_门卫页面.png'>
+            <div class='screenshot-caption'>19. 7_门卫页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185126_8_输入出校码.png'>
+            <div class='screenshot-caption'>20. 8_输入出校码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185128_9_验证结果.png'>
+            <div class='screenshot-caption'>21. 9_验证结果</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185129_1_家长页面.png'>
+            <div class='screenshot-caption'>22. 1_家长页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185130_2_填写家长信息.png'>
+            <div class='screenshot-caption'>23. 2_填写家长信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185140_3_生成访问码.png'>
+            <div class='screenshot-caption'>24. 3_生成访问码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185144_4_教师页面.png'>
+            <div class='screenshot-caption'>25. 4_教师页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185145_5_填写教师信息.png'>
+            <div class='screenshot-caption'>26. 5_填写教师信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185150_6_教师登录成功.png'>
+            <div class='screenshot-caption'>27. 6_教师登录成功</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185151_7_输入访问码.png'>
+            <div class='screenshot-caption'>28. 7_输入访问码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185159_8_查询结果.png'>
+            <div class='screenshot-caption'>29. 8_查询结果</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185202_9_审批完成.png'>
+            <div class='screenshot-caption'>30. 9_审批完成</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185204_10_门卫页面.png'>
+            <div class='screenshot-caption'>31. 10_门卫页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185205_11_输入访问码.png'>
+            <div class='screenshot-caption'>32. 11_输入访问码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185207_12_验证结果.png'>
+            <div class='screenshot-caption'>33. 12_验证结果</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185208_1_校友页面.png'>
+            <div class='screenshot-caption'>34. 1_校友页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185209_2_填写校友信息.png'>
+            <div class='screenshot-caption'>35. 2_填写校友信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185219_3_生成访问码.png'>
+            <div class='screenshot-caption'>36. 3_生成访问码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185223_4_教师页面.png'>
+            <div class='screenshot-caption'>37. 4_教师页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185224_5_填写教师信息.png'>
+            <div class='screenshot-caption'>38. 5_填写教师信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185229_6_教师登录成功.png'>
+            <div class='screenshot-caption'>39. 6_教师登录成功</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185230_7_输入访问码.png'>
+            <div class='screenshot-caption'>40. 7_输入访问码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185238_8_查询结果.png'>
+            <div class='screenshot-caption'>41. 8_查询结果</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185241_9_审批完成.png'>
+            <div class='screenshot-caption'>42. 9_审批完成</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185243_10_门卫页面.png'>
+            <div class='screenshot-caption'>43. 10_门卫页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185243_11_输入访问码.png'>
+            <div class='screenshot-caption'>44. 11_输入访问码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185246_12_验证结果.png'>
+            <div class='screenshot-caption'>45. 12_验证结果</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185248_1_访客登记页面.png'>
+            <div class='screenshot-caption'>46. 1_访客登记页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185250_2_填写访客信息.png'>
+            <div class='screenshot-caption'>47. 2_填写访客信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185250_3_完整信息.png'>
+            <div class='screenshot-caption'>48. 3_完整信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185300_4_生成访客码.png'>
+            <div class='screenshot-caption'>49. 4_生成访客码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185304_5_教师页面.png'>
+            <div class='screenshot-caption'>50. 5_教师页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185304_6_填写教师信息.png'>
+            <div class='screenshot-caption'>51. 6_填写教师信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185310_7_教师登录成功.png'>
+            <div class='screenshot-caption'>52. 7_教师登录成功</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185317_8_访客验证页面.png'>
+            <div class='screenshot-caption'>53. 8_访客验证页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185318_9_粘贴访客信息.png'>
+            <div class='screenshot-caption'>54. 9_粘贴访客信息</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185321_10_添加完成.png'>
+            <div class='screenshot-caption'>55. 10_添加完成</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185323_11_门卫页面.png'>
+            <div class='screenshot-caption'>56. 11_门卫页面</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185323_12_输入访客码.png'>
+            <div class='screenshot-caption'>57. 12_输入访客码</div>
+        </div>
+
+        <div class='screenshot-item'>
+            <img src='e2e_screenshots_strict/185325_13_验证结果.png'>
+            <div class='screenshot-caption'>58. 13_验证结果</div>
+        </div>
+    </div></div>
+</body>
+</html>

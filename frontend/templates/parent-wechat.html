@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>辽宁省实验中学入校管理系统</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            padding: 15px;
+            font-size: 16px;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(212, 175, 55, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(212, 175, 55, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.98);
+            border: 2px solid #d4af37;
+            border-radius: 0;
+            padding: 40px 30px;
+            box-shadow:
+                0 0 0 1px rgba(212, 175, 55, 0.3),
+                0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            pointer-events: none;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .logo .icon {
+            font-size: 55px;
+            margin-bottom: 15px;
+        }
+
+        .logo h1 {
+            font-size: 22px;
+            color: #0a0a0a;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            font-weight: 700;
+            font-family: 'Cinzel', serif;
+            line-height: 1.4;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 10px;
+            color: #0a0a0a;
+            margin-bottom: 6px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            height: 44px;
+            padding: 0 14px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: all 0.3s;
+            appearance: none;
+            -webkit-appearance: none;
+            border-radius: 0;
+        }
+
+        .form-group select {
+            background: #fafafa url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 9L1 4h10z'/%3E%3C/svg%3E") no-repeat right 16px center;
+            padding-right: 40px;
+            cursor: pointer;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #d4af37;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            height: 54px;
+            border: 1px solid #d4af37;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            transition: all 0.3s;
+            border-radius: 0;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            color: #d4af37;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #0a0a0a;
+            border-color: #ccc;
+        }
+
+        .btn-secondary:hover {
+            background: #fafafa;
+            border-color: #d4af37;
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        .action-card {
+            background: rgba(255, 255, 255, 0.98);
+            border: 2px solid #d4af37;
+            border-radius: 0;
+            padding: 30px 28px;
+            margin-bottom: 15px;
+            box-shadow:
+                0 0 0 1px rgba(212, 175, 55, 0.3),
+                0 15px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .action-card::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            pointer-events: none;
+        }
+
+        .action-card h2 {
+            font-size: 18px;
+            color: #0a0a0a;
+            margin-bottom: 18px;
+            text-align: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+            font-family: 'Cinzel', serif;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            flex: 1;
+            height: 65px;
+            border: 1px solid #d4af37;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            transition: all 0.3s;
+        }
+
+        .action-btn-visit {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            color: #d4af37;
+        }
+
+        .action-btn-visit:hover {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .action-btn-leave {
+            background: white;
+            color: #0a0a0a;
+            border-color: #ccc;
+        }
+
+        .action-btn-leave:hover {
+            background: #fafafa;
+            border-color: #d4af37;
+        }
+
+        .result-card {
+            display: none;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            padding: 24px;
+            margin-top: 20px;
+            border-radius: 2px;
+        }
+
+        .result-card.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-item {
+            background: white;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            padding: 18px;
+            margin-bottom: 12px;
+            border-radius: 2px;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-item .label {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        .result-item .value {
+            font-size: 16px;
+            color: #0a0a0a;
+            font-weight: 600;
+        }
+
+        .result-item .value.highlight {
+            color: #d4af37;
+            font-size: 28px;
+            letter-spacing: 4px;
+            text-align: center;
+            font-weight: 700;
+            padding: 8px 0;
+        }
+
+        /* 电子校友卡 - 6位验证码展示 */
+        .verification-code-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border: 2px solid #d4af37;
+            border-radius: 8px;
+            padding: 30px 20px;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3);
+        }
+
+        .verification-code-card .code-label {
+            color: #d4af37;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .verification-code-card .code-number {
+            color: #d4af37;
+            font-size: 56px;
+            font-weight: 900;
+            letter-spacing: 12px;
+            line-height: 1;
+            margin: 20px 0;
+            text-shadow: 0 2px 8px rgba(212, 175, 55, 0.4);
+            font-family: 'Courier New', monospace;
+        }
+
+        .verification-code-card .code-info {
+            color: #ffffff;
+            font-size: 13px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .verification-code-card .code-info .student-name {
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+
+        .verification-code-card .code-status {
+            display: inline-block;
+            background: #d4af37;
+            color: #1a1a1a;
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+
+        .copy-button {
+            background: rgba(212, 175, 55, 0.2);
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .copy-button:hover {
+            background: rgba(212, 175, 55, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .copy-button:active {
+            transform: translateY(0);
+        }
+
+        .copy-button.copied {
+            background: #d4af37;
+            color: #1a1a1a;
+        }
+
+        .student-info {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.06), rgba(212, 175, 55, 0.03));
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            border-radius: 2px;
+        }
+
+        .student-info .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+        }
+
+        .student-info .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .student-info .label {
+            color: #888;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .student-info .value {
+            color: #0a0a0a;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .select-group {
+            margin-bottom: 15px;
+        }
+
+        .select-group label {
+            display: block;
+            font-size: 12px;
+            color: #0a0a0a;
+            margin-bottom: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        .select-group select {
+            width: 100%;
+            height: 52px;
+            padding: 0 16px;
+            border: 1px solid #ccc;
+            background: #fafafa;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .select-group select:focus {
+            border-color: #d4af37;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            outline: none;
+        }
+
+        .header-bar {
+            display: none;
+            background: rgba(10, 10, 10, 0.95);
+            border: 2px solid #d4af37;
+            color: #d4af37;
+            padding: 15px 20px;
+            border-radius: 0;
+            margin-bottom: 20px;
+            box-shadow:
+                0 0 0 1px rgba(212, 175, 55, 0.3),
+                0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .header-bar.show {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-bar .user-info {
+            font-size: 14px;
+            letter-spacing: 1px;
+            font-family: 'Cinzel', serif;
+        }
+
+        .header-bar .logout {
+            padding: 6px 18px;
+            background: rgba(212, 175, 55, 0.2);
+            border: 1px solid #d4af37;
+            border-radius: 0;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            transition: all 0.3s;
+        }
+
+        .header-bar .logout:hover {
+            background: rgba(212, 175, 55, 0.3);
+        }
+
+        .error-message {
+            background: #fff5f5;
+            color: #8b0000;
+            border: 1px solid #fcc;
+            padding: 12px 16px;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .success-message {
+            background: #f5fff5;
+            color: #2d5a2d;
+            border: 1px solid #cfc;
+            padding: 12px 16px;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .note {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.05));
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-left: 3px solid #d4af37;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.7;
+            border-radius: 2px;
+        }
+
+        .note strong {
+            color: #0a0a0a;
+            font-weight: 600;
+        }
+
+        .step-list {
+            margin-top: 15px;
+        }
+
+        .step-item {
+            background: white;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            padding: 16px;
+            margin-bottom: 10px;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 26px;
+            height: 26px;
+            background: #0a0a0a;
+            color: #d4af37;
+            border: 1px solid #d4af37;
+            text-align: center;
+            line-height: 24px;
+            font-size: 12px;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .step-text {
+            font-size: 14px;
+            color: #0a0a0a;
+        }
+
+        .child-list {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .child-list.show {
+            display: block;
+        }
+
+        .child-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+        }
+
+        .child-item.selected {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .child-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .child-class {
+            font-size: 14px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 400px) {
+            .container {
+                padding: 0 15px;
+            }
+
+            .login-card {
+                padding: 30px 20px;
+            }
+
+            .action-card {
+                padding: 25px 20px;
+            }
+
+            .logo h1 {
+                font-size: 18px;
+                letter-spacing: 2px;
+            }
+
+            .form-group label {
+                font-size: 10px;
+            }
+
+            .btn {
+                height: 50px;
+                font-size: 14px;
+            }
+        }
+
+        @media (min-width: 601px) {
+            body {
+                background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+                align-items: center;
+            }
+
+            .container {
+                margin: 40px auto;
+            }
+        }
+
+        /* 模态框样式 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border: 2px solid #d4af37;
+            border-radius: 0;
+            padding: 30px;
+            max-width: 90%;
+            width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            font-size: 22px;
+            color: #0a0a0a;
+        }
+
+        .modal-content #modalMessage {
+            margin-bottom: 25px;
+            font-size: 16px;
+            color: #333;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 登录前 -->
+        <div id="loginSection" class="login-card">
+            <div class="logo">
+                <h1>辽宁省实验中学入校管理系统</h1>
+            </div>
+
+            <div class="note">
+                <strong>🔐 安全提示：</strong><br>
+                请使用学校预留的手机号和自设密码登录
+            </div>
+
+            <div class="form-group">
+                <label for="phone">手机号</label>
+                <input type="tel" id="phone" placeholder="请输入手机号" maxlength="11">
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="text" id="password" placeholder="请输入密码（2-6位）" maxlength="6" style="letter-spacing: 3px;">
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <button class="btn btn-primary" onclick="login()">登录</button>
+        </div>
+
+        <!-- 登录后 -->
+        <div id="mainSection" class="main-content">
+            <!-- 头部信息栏 -->
+            <div class="header-bar">
+                <div class="user-info">
+                    <span id="parentName">家长</span>
+                </div>
+                <button class="logout" onclick="logout()">退出</button>
+            </div>
+
+            <!-- 验证码显示区域（移到最上方） -->
+            <div id="resultCard" class="result-card">
+                <!-- 生成结果动态显示 -->
+            </div>
+
+            <!-- 生成6位码 -->
+            <div class="action-card">
+                <h2>📋 生成6位码</h2>
+
+                <div class="note">
+                    <strong>💡 说明：</strong><br>
+                    生成6位码后，当天有效。门卫验证时系统自动判断有效期。
+                </div>
+
+                <!-- 学生信息显示区域（只有一个孩子时） -->
+                <div id="studentInfo" style="display: none;" class="student-info">
+                    <div class="info-row">
+                        <span class="label">学生姓名：</span>
+                        <span class="value" id="studentName">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">班级：</span>
+                        <span class="value" id="studentClass">-</span>
+                    </div>
+                </div>
+
+                <!-- 学生选择框（有多个孩子时） -->
+                <div class="form-group" id="studentSelectGroup" style="display: none;">
+                    <label for="studentSelect">选择学生</label>
+                    <select id="studentSelect">
+                        <option value="">请选择学生...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="applicationType">申请类型</label>
+                    <select id="applicationType">
+                        <option value="enter-school">入校</option>
+                        <option value="leave">请假</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="purposeGroup">
+                    <label for="visitPurpose">申请目的</label>
+                    <select id="visitPurpose">
+                        <option value="visit-child">看望孩子</option>
+                        <option value="visit-teacher">拜访老师</option>
+                        <option value="other">其他事务</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="leaveReasonGroup" style="display: none;">
+                    <label for="leaveReason">请假原因</label>
+                    <select id="leaveReason">
+                        <option value="sick">生病</option>
+                        <option value="family">家庭事务</option>
+                        <option value="other">其他原因</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="visitDate">日期</label>
+                    <select id="visitDate">
+                        <option value="today">今天</option>
+                        <option value="tomorrow">明天</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary" onclick="generateCode()">生成6位码</button>
+            </div>
+
+            <!-- 访客登记 -->
+            <div class="action-card">
+                <h2>👥 访客登记</h2>
+
+                <div class="note">
+                    <strong>💡 说明：</strong><br>
+                    为访客预先登记信息，访客到校时需联系老师获取验证码。
+                </div>
+
+                <div class="form-group">
+                    <label for="visitorName">访客姓名 <span style="color: red;">*</span></label>
+                    <input type="text" id="visitorName" placeholder="请输入访客姓名">
+                </div>
+
+                <div class="form-group">
+                    <label for="visitorPhone">手机号码 <span style="color: red;">*</span></label>
+                    <input type="tel" id="visitorPhone" placeholder="请输入11位手机号" maxlength="11">
+                </div>
+
+                <div class="form-group">
+                    <label for="visitorIdCard">身份证号 <span style="color: red;">*</span></label>
+                    <input type="text" id="visitorIdCard" placeholder="请输入18位身份证号" maxlength="18">
+                </div>
+
+                <div class="form-group">
+                    <label for="visitPurpose">访问目的</label>
+                    <select id="visitorPurpose">
+                        <option value="meeting">开会</option>
+                        <option value="interview">面试</option>
+                        <option value="business">商务洽谈</option>
+                        <option value="other">其他事务</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="hostName">被访人</label>
+                    <input type="text" id="hostName" placeholder="请输入被访人姓名">
+                </div>
+
+                <div class="form-group">
+                    <label for="visitorDate">访问日期</label>
+                    <select id="visitorDate">
+                        <option value="today">今天</option>
+                        <option value="tomorrow">明天</option>
+                        <option value="custom">自选日期</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="customDateGroup" style="display: none;">
+                    <label for="customVisitDate">选择日期</label>
+                    <input type="date" id="customVisitDate">
+                </div>
+
+                <button class="btn btn-primary" onclick="registerVisitor()">登记访客</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 访客登记成功提示 -->
+    <div id="visitorModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2 id="modalTitle">访客登记</h2>
+            <div id="modalMessage"></div>
+            <button class="btn btn-primary" onclick="closeModal()">确定</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api/wechat/parent';
+        let currentParentData = null;
+        let currentStudent = null; // 当前选中的学生（单孩子时自动设置）
+        let childrenList = []; // 所有孩子列表
+
+        // ========== HMAC动态码配置 ==========
+        // 注意：这里的密钥需要与后端保持一致
+        const HMAC_SECRET_KEY = 'ls-alumni-access-code-hmac-2026-secret-do-not-expose';
+
+        /**
+         * 生成HMAC-SHA256哈希
+         * @param {string} message - 要哈希的消息
+         * @returns {string} - HMAC-SHA256哈希值（十六进制）
+         */
+        async function hmacSHA256(message) {
+            try {
+                console.log('DEBUG: 开始生成HMAC, message =', message);
+
+                const encoder = new TextEncoder();
+                const data = encoder.encode(message);
+                const keyData = encoder.encode(HMAC_SECRET_KEY);
+
+                console.log('DEBUG: 密钥长度 =', keyData.length);
+
+                const cryptoKey = await crypto.subtle.importKey(
+                    'raw',
+                    keyData,
+                    { name: 'HMAC', hash: 'SHA-256' },
+                    false,
+                    ['sign']
+                );
+
+                console.log('DEBUG: crypto.subtle.importKey 成功');
+
+                const signature = await crypto.subtle.sign(
+                    'HMAC',
+                    cryptoKey,
+                    data
+                );
+
+                console.log('DEBUG: crypto.subtle.sign 成功');
+
+                // 将ArrayBuffer转换为十六进制字符串
+                const hashArray = Array.from(new Uint8Array(signature));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                console.log('DEBUG: 生成的HMAC哈希 =', hashHex);
+
+                return hashHex;
+            } catch (error) {
+                console.error('DEBUG: HMAC生成失败:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * 生成HMAC动态码（6位数字）
+         * @param {string} phone - 手机号
+         * @param {string} password - 密码
+         * @param {number} timestamp - Unix时间戳（秒），默认当前时间
+         * @returns {Promise<string>} - 6位数字字符串
+         */
+        async function generateHMACCode(phone, password, timestamp = null) {
+            if (timestamp === null) {
+                timestamp = Math.floor(Date.now() / 1000); // 当前Unix时间戳（秒）
+            }
+
+            const message = `${phone}${password}${timestamp}`;
+            const hmacHex = await hmacSHA256(message);
+
+            // 提取所有数字
+            let digits = '';
+            for (let char of hmacHex) {
+                if (char >= '0' && char <= '9') {
+                    digits += char;
+                }
+            }
+
+            // 如果不足6位，循环使用
+            while (digits.length < 6) {
+                digits += digits;
+            }
+
+            return digits.substring(0, 6);
+        }
+
+        // ========== 原有功能 ==========
+
+        // 申请类型切换事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const appTypeSelect = document.getElementById('applicationType');
+            if (appTypeSelect) {
+                appTypeSelect.addEventListener('change', function() {
+                    const purposeGroup = document.getElementById('purposeGroup');
+                    const leaveReasonGroup = document.getElementById('leaveReasonGroup');
+
+                    if (this.value === 'leave') {
+                        // 请假：显示请假原因，隐藏申请目的
+                        purposeGroup.style.display = 'none';
+                        leaveReasonGroup.style.display = 'block';
+                    } else {
+                        // 入校：显示申请目的，隐藏请假原因
+                        purposeGroup.style.display = 'block';
+                        leaveReasonGroup.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        // 检查登录状态
+        window.onload = function() {
+            checkLoginStatus();
+        };
+
+        function checkLoginStatus() {
+            const token = localStorage.getItem('parent_token');
+            const parentData = localStorage.getItem('parent_data');
+
+            if (token && parentData) {
+                currentParentData = JSON.parse(parentData);
+                showMainContent();
+                loadChildren(); // 自动登录时也加载学生列表
+            }
+        }
+
+        // 登录
+        async function login() {
+            const phone = document.getElementById('phone').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorDiv = document.getElementById('errorMessage');
+
+            errorDiv.style.display = 'none';
+
+            if (!phone || phone.length !== 11) {
+                errorDiv.textContent = '请输入正确的11位手机号';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (!password || password.length < 2 || password.length > 6) {
+                errorDiv.textContent = '请输入2-6位数字密码';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, password })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 保存token和用户信息（30天有效期）
+                    localStorage.setItem('parent_token', result.data.token);
+                    localStorage.setItem('parent_data', JSON.stringify(result.data.parent));
+                    localStorage.setItem('parent_password', password); // 保存密码用于HMAC生成码
+                    currentParentData = result.data.parent;
+
+                    showMainContent();
+                    loadChildren(); // 加载学生列表
+                } else {
+                    errorDiv.textContent = result.error || '登录失败';
+                    errorDiv.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('登录失败:', error);
+                errorDiv.textContent = '网络错误，请重试';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // 加载学生列表
+        async function loadChildren() {
+            try {
+                const token = localStorage.getItem('parent_token');
+                const response = await fetch(`${API_BASE_URL}/get-children`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+                console.log('加载学生结果:', result);
+
+                if (result.success && result.data.children.length > 0) {
+                    childrenList = result.data.children;
+                    console.log('学生列表:', childrenList);
+
+                    if (childrenList.length === 1) {
+                        // 只有一个孩子：自动选中，显示学生信息，隐藏选择框
+                        currentStudent = childrenList[0];
+                        console.log('自动选中学生:', currentStudent);
+                        document.getElementById('studentName').textContent = currentStudent.name;
+                        document.getElementById('studentClass').textContent = currentStudent.class_name;
+                        document.getElementById('studentInfo').style.display = 'block';
+                        document.getElementById('studentSelectGroup').style.display = 'none';
+                    } else {
+                        // 多个孩子：显示选择框，隐藏学生信息
+                        const select = document.getElementById('studentSelect');
+                        select.innerHTML = '<option value="">请选择学生...</option>';
+                        childrenList.forEach(child => {
+                            select.innerHTML += `<option value="${child.id}">${child.name} - ${child.class_name}</option>`;
+                        });
+                        document.getElementById('studentInfo').style.display = 'none';
+                        document.getElementById('studentSelectGroup').style.display = 'block';
+                    }
+                } else {
+                    console.error('未找到学生信息:', result);
+                    alert('未找到关联的学生信息');
+                }
+
+            } catch (error) {
+                console.error('加载学生列表失败:', error);
+                alert('加载学生信息失败，请重试');
+            }
+        }
+
+        // 生成6位码
+        async function generateCode() {
+            console.log('childrenList长度:', childrenList.length);
+            console.log('currentStudent:', currentStudent);
+
+            // 获取学生ID（单孩子自动使用，多孩子从选择框获取）
+            let studentId;
+            if (childrenList.length === 1 && currentStudent) {
+                studentId = currentStudent.id;
+                console.log('使用自动选中的学生ID:', studentId);
+            } else if (childrenList.length > 1) {
+                studentId = document.getElementById('studentSelect').value;
+                if (!studentId) {
+                    alert('请选择学生');
+                    return;
+                }
+                studentId = parseInt(studentId);
+                console.log('使用手动选择的学生ID:', studentId);
+            } else {
+                alert('未找到学生信息，请重新登录');
+                return;
+            }
+
+            const visitDate = document.getElementById('visitDate').value;
+            const applicationType = document.getElementById('applicationType').value;
+            const resultDiv = document.getElementById('resultCard');
+
+            console.log('申请类型:', applicationType);
+
+            // 计算实际日期
+            const today = new Date();
+            const actualDate = visitDate === 'today' ? today : new Date(today.setDate(today.getDate() + 1));
+            const visitDateStr = actualDate.toISOString().split('T')[0];
+
+            // 根据申请类型确定访问目的
+            let visitPurpose = '';
+            if (applicationType === 'leave') {
+                // 请假
+                const leaveReason = document.getElementById('leaveReason').value;
+                const reasonMap = {
+                    'sick': '学生请假',
+                    'family': '学生请假',
+                    'other': '学生请假'
+                };
+                visitPurpose = reasonMap[leaveReason] || '学生请假';
+                console.log('请假目的:', visitPurpose);
+            } else {
+                // 入校
+                const purpose = document.getElementById('visitPurpose').value;
+                const purposeMap = {
+                    'visit-child': '家长进校',
+                    'visit-teacher': '家长进校',
+                    'other': '家长进校'
+                };
+                visitPurpose = purposeMap[purpose] || '家长进校';
+                console.log('入校目的:', visitPurpose);
+            }
+
+            try {
+                const phone = currentParentData.phone;
+                const password = localStorage.getItem('parent_password');
+
+                console.log('DEBUG: phone =', phone);
+                console.log('DEBUG: password =', password);
+
+                if (!phone || !password) {
+                    alert('登录信息不完整，请重新登录');
+                    return;
+                }
+
+                // 尝试前端HMAC生成
+                let code;
+                try {
+                    code = await generateHMACCode(phone, password);
+                    console.log('DEBUG: 前端HMAC生成成功 =', code);
+                } catch (hmacError) {
+                    console.warn('前端HMAC生成失败，使用后端API:', hmacError);
+                    // Fallback: 调用后端API生成
+                    const token = localStorage.getItem('parent_token');
+                    const response = await fetch(`${API_BASE_URL}/generate-hmac-code`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            phone: phone,
+                            password: password
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        code = result.data.code;
+                        console.log('DEBUG: 后端HMAC生成成功 =', code);
+                    } else {
+                        throw new Error(result.error || '后端生成失败');
+                    }
+                }
+
+                const typeName = applicationType === 'leave' ? '请假码' : '入校码';
+                const status = applicationType === 'leave' ? '待班主任审批' : '待门卫验证';
+
+                // 电子校友卡样式
+                let html = '<div class="verification-code-card">';
+                html += '<div class="code-label">ELECTRONIC ACCESS CODE</div>';
+                html += '<div class="code-number">' + code + '</div>';
+                html += '<div class="code-info">';
+                html += '<div class="student-name">' + currentStudent.name + ' - ' + currentStudent.class_name + '</div>';
+                html += '<div>' + typeName + ' · ' + visitDateStr + '</div>';
+                html += '</div>';
+                html += '<div class="code-status">' + status + '</div>';
+
+                // 复制按钮
+                html += '<button class="copy-button" onclick="copyCode(\'' + code + '\', this)">📋 一键复制</button>';
+                html += '</div>';
+
+                resultDiv.innerHTML = html;
+                resultDiv.classList.add('show');
+
+            } catch (error) {
+                console.error('生成失败:', error);
+                resultDiv.innerHTML = '<div class="result-item"><div class="label">错误</div><div class="value">生成失败：' + error.message + '</div></div>';
+                resultDiv.classList.add('show');
+            }
+        }
+
+        // 复制验证码
+        function copyCode(code, button) {
+            // 只复制6位数字，不包含前缀
+            const textToCopy = code;
+
+            // 使用现代Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    // 复制成功
+                    button.textContent = '✅ 已复制';
+                    button.classList.add('copied');
+
+                    setTimeout(() => {
+                        button.textContent = '📋 一键复制';
+                        button.classList.remove('copied');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    fallbackCopy(textToCopy, button);
+                });
+            } else {
+                // 回退到传统方法
+                fallbackCopy(textToCopy, button);
+            }
+        }
+
+        // 传统复制方法（兼容旧浏览器）
+        function fallbackCopy(text, button) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                document.execCommand('copy');
+                button.textContent = '✅ 已复制';
+                button.classList.add('copied');
+
+                setTimeout(() => {
+                    button.textContent = '📋 一键复制';
+                    button.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                console.error('复制失败:', err);
+                button.textContent = '❌ 复制失败';
+                setTimeout(() => {
+                    button.textContent = '📋 一键复制';
+                }, 2000);
+            }
+
+            document.body.removeChild(textarea);
+        }
+
+        // 显示主内容
+        function showMainContent() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainSection').style.display = 'block';
+            document.querySelector('.header-bar').classList.add('show');
+
+            if (currentParentData) {
+                document.getElementById('parentName').textContent = currentParentData.real_name || '家长';
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('parent_token');
+            localStorage.removeItem('parent_data');
+            currentParentData = null;
+
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('mainSection').style.display = 'none';
+            document.getElementById('phone').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('resultCard').classList.remove('show');
+        }
+
+        // ========== 访客登记功能 ==========
+
+        // 监听访客日期选择
+        document.addEventListener('DOMContentLoaded', function() {
+            const visitorDateSelect = document.getElementById('visitorDate');
+            if (visitorDateSelect) {
+                visitorDateSelect.addEventListener('change', function() {
+                    const customDateGroup = document.getElementById('customDateGroup');
+                    if (this.value === 'custom') {
+                        customDateGroup.style.display = 'block';
+                    } else {
+                        customDateGroup.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        // 登记访客
+        async function registerVisitor() {
+            const visitorName = document.getElementById('visitorName').value.trim();
+            const visitorPhone = document.getElementById('visitorPhone').value.trim();
+            const visitorIdCard = document.getElementById('visitorIdCard').value.trim();
+            const visitPurpose = document.getElementById('visitorPurpose').value;
+            const hostName = document.getElementById('hostName').value.trim();
+            const visitDateType = document.getElementById('visitorDate').value;
+
+            // 验证必填字段
+            if (!visitorName) {
+                showModal('登记失败', '请输入访客姓名');
+                return;
+            }
+
+            if (!visitorPhone) {
+                showModal('登记失败', '请输入手机号码');
+                return;
+            }
+
+            // 验证手机号格式
+            if (!/^1[3-9]\d{9}$/.test(visitorPhone)) {
+                showModal('登记失败', '手机号码格式不正确');
+                return;
+            }
+
+            if (!visitorIdCard) {
+                showModal('登记失败', '请输入身份证号');
+                return;
+            }
+
+            // 验证身份证号格式
+            if (!/^\d{17}[\dXx]$/.test(visitorIdCard)) {
+                showModal('登记失败', '身份证号格式不正确');
+                return;
+            }
+
+            if (!hostName) {
+                showModal('登记失败', '请输入被访人姓名');
+                return;
+            }
+
+            // 计算访问日期
+            let visitDate;
+            if (visitDateType === 'today') {
+                visitDate = new Date();
+            } else if (visitDateType === 'tomorrow') {
+                visitDate = new Date();
+                visitDate.setDate(visitDate.getDate() + 1);
+            } else if (visitDateType === 'custom') {
+                const customDate = document.getElementById('customVisitDate').value;
+                if (!customDate) {
+                    showModal('登记失败', '请选择访问日期');
+                    return;
+                }
+                visitDate = new Date(customDate);
+            }
+
+            // 格式化日期为 YYYY-MM-DD
+            const visitDateStr = visitDate.toISOString().split('T')[0];
+
+            try {
+                // 调用访客登记API
+                const response = await fetch(`${API_BASE_URL}/register-visitor`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        visitor_name: visitorName,
+                        visitor_phone: visitorPhone,
+                        id_card: visitorIdCard,
+                        visit_purpose: visitPurpose,
+                        host_name: hostName,
+                        visit_date: visitDateStr
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showModal('登记成功', `访客信息已登记成功！\n\n访客：${visitorName}\n日期：${visitDateStr}\n\n请提醒访客到校时联系被访人获取验证码。`);
+
+                    // 清空表单
+                    document.getElementById('visitorName').value = '';
+                    document.getElementById('visitorPhone').value = '';
+                    document.getElementById('visitorIdCard').value = '';
+                    document.getElementById('hostName').value = '';
+                    document.getElementById('visitorPurpose').value = 'meeting';
+                    document.getElementById('visitorDate').value = 'today';
+                    document.getElementById('customDateGroup').style.display = 'none';
+                } else {
+                    showModal('登记失败', result.message || '登记失败，请稍后重试');
+                }
+
+            } catch (error) {
+                console.error('访客登记失败:', error);
+                showModal('登记失败', '网络错误，请检查网络连接后重试');
+            }
+        }
+
+        // 显示模态框
+        function showModal(title, message) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('visitorModal').style.display = 'flex';
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('visitorModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

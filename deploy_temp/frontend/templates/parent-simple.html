@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>辽宁省实验中学 - 访客登记</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            padding: 15px;
+            font-size: 16px;
+            position: relative;
+            overflow-y: auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(212, 175, 55, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(212, 175, 55, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            padding: 20px 0;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.98);
+            border: 2px solid #d4af37;
+            border-radius: 0;
+            padding: 40px 30px;
+            box-shadow:
+                0 0 0 1px rgba(212, 175, 55, 0.3),
+                0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            pointer-events: none;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .logo .icon {
+            font-size: 55px;
+            margin-bottom: 15px;
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            color: #0a0a0a;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            font-weight: 700;
+            font-family: 'Cinzel', serif;
+            line-height: 1.4;
+        }
+
+        .logo p {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            color: #0a0a0a;
+            margin-bottom: 6px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: all 0.3s;
+            border-radius: 0;
+            font-family: 'Cinzel', serif;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: #d4af37;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            outline: none;
+        }
+
+        .form-group small {
+            color: #999;
+            font-size: 10px;
+            display: block;
+            margin-top: 4px;
+        }
+
+        .btn {
+            width: 100%;
+            height: 54px;
+            border: 1px solid #d4af37;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            transition: all 0.3s;
+            border-radius: 0;
+            background: white;
+            color: #0a0a0a;
+        }
+
+        .btn:hover {
+            background: #d4af37;
+            color: white;
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            border-color: #ddd;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #ddd;
+            border-color: #bbb;
+        }
+
+        /* 类型选择器样式 */
+        .type-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .type-option {
+            flex: 1;
+            position: relative;
+        }
+
+        .type-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .type-option span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 0;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .type-option input[type="radio"]:checked + span {
+            border-color: #d4af37;
+            background: white;
+            color: #d4af37;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .type-option:hover span {
+            border-color: #d4af37;
+            background: white;
+        }
+
+        /* 访客信息输入区域 */
+        #visitorFormSection {
+            display: none;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #eee;
+        }
+
+        #visitorFormSection.show {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 生成的访客信息卡片 */
+        .visitor-info-card {
+            margin-top: 25px;
+            padding: 30px;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            border: 2px solid #d4af37;
+            text-align: left;
+            position: relative;
+            display: none;
+        }
+
+        .visitor-info-card::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            pointer-events: none;
+        }
+
+        .visitor-info-card.show {
+            display: block;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        /* 通行码卡片样式 */
+        .code-card {
+            margin-top: 25px;
+            padding: 30px;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            border: 2px solid #d4af37;
+            text-align: center;
+            position: relative;
+            display: none;
+        }
+
+        .code-card::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            pointer-events: none;
+        }
+
+        .code-card.show {
+            display: block;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .code-title {
+            font-size: 12px;
+            color: rgba(212, 175, 55, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .code-number {
+            font-size: 48px;
+            font-weight: 700;
+            color: #d4af37;
+            letter-spacing: 8px;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-info {
+            margin-bottom: 15px;
+        }
+
+        .code-status {
+            font-size: 14px;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .code-student-info {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .code-validity {
+            margin: 15px 0;
+            padding-top: 15px;
+            border-top: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .code-validity small {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.4;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .visitor-info-title {
+            font-size: 10px;
+            color: #d4af37;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            text-align: center;
+        }
+
+        .visitor-info-content {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 2;
+            white-space: pre-line;
+        }
+
+        .visitor-info-content .label {
+            color: #d4af37;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 80px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-copy {
+            flex: 1;
+            padding: 12px 24px;
+            background: #d4af37;
+            color: #0a0a0a;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            border-radius: 0;
+        }
+
+        .btn-copy:hover {
+            background: white;
+            color: #0a0a0a;
+        }
+
+        .btn-copy.copied {
+            background: #4caf50;
+            color: white;
+        }
+
+        .error-msg {
+            background: rgba(211, 47, 47, 0.1);
+            color: #c62828;
+            padding: 12px 15px;
+            border: 1px solid rgba(211, 47, 47, 0.3);
+            font-size: 12px;
+            margin-top: 15px;
+            display: none;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .error-msg.show {
+            display: block;
+            animation: shake 0.3s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .info-tip {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            margin-top: 20px;
+            line-height: 1.8;
+            letter-spacing: 0.5px;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #d4af37, transparent);
+        }
+
+        .divider span {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 0 15px;
+            position: relative;
+            color: #d4af37;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-card">
+            <div class="logo">
+                <div class="icon">🏫</div>
+                <h1>辽宁省实验中学</h1>
+                <p>VISITOR REGISTRATION</p>
+            </div>
+
+            <form id="typeForm">
+                <div class="form-group">
+                    <label>申请类型 / TYPE</label>
+                    <div class="type-selector">
+                        <label class="type-option">
+                            <input type="radio" name="visitType" value="parent-visit" checked>
+                            <span>🏫 入校申请</span>
+                        </label>
+                        <label class="type-option">
+                            <input type="radio" name="visitType" value="student-leave">
+                            <span>📝 学生请假</span>
+                        </label>
+                        <label class="type-option">
+                            <input type="radio" name="visitType" value="visitor">
+                            <span>👥 访客登记</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="phoneGroup">
+                    <label>手机号 / PHONE</label>
+                    <input type="tel" id="phone" maxlength="11" placeholder="请输入11位手机号">
+                    <small>家长/学生使用注册手机号，访客使用本人手机号</small>
+                </div>
+
+                <div class="form-group" id="passwordGroup">
+                    <label>密码 / PASSWORD</label>
+                    <input type="password" id="password" maxlength="6" placeholder="请输入您的密码（2-6位）">
+                    <small>请输入您在系统中设置的密码</small>
+                </div>
+
+                <button type="submit" class="btn">生成通行码</button>
+            </form>
+
+            <!-- 访客信息输入表单 -->
+            <div id="visitorFormSection">
+                <div class="form-group">
+                    <label>访客姓名 / NAME *</label>
+                    <input type="text" id="visitorName" placeholder="请输入访客真实姓名" required>
+                </div>
+
+                <div class="form-group">
+                    <label>手机号码 / PHONE *</label>
+                    <input type="tel" id="visitorPhone" maxlength="11" placeholder="请输入11位手机号码" required>
+                </div>
+
+                <div class="form-group">
+                    <label>身份证号 / ID CARD *</label>
+                    <input type="text" id="visitorIdCard" maxlength="18" placeholder="请输入18位身份证号码" required>
+                </div>
+
+                <div class="form-group">
+                    <label>访问密码 / PASSWORD *</label>
+                    <input type="tel" id="visitorPassword" maxlength="2" placeholder="设置2位数字密码" required>
+                    <small>访客到校时使用的验证密码（2位数字）</small>
+                </div>
+
+                <div class="form-group">
+                    <label>访问目的 / PURPOSE *</label>
+                    <select id="visitorPurpose" required>
+                        <option value="">请选择访问目的</option>
+                        <option value="商务会议">商务会议</option>
+                        <option value="参观访问">参观访问</option>
+                        <option value="面试招聘">面试招聘</option>
+                        <option value="设备维护">设备维护</option>
+                        <option value="快递送货">快递送货</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>访问说明 / DESCRIPTION</label>
+                    <textarea id="visitorDescription" placeholder="请简要说明访问事由（选填）" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>拜访对象 / CONTACT</label>
+                    <input type="text" id="visitorContact" placeholder="拜访的老师或部门（选填）">
+                </div>
+
+                <button type="button" class="btn" id="btnGenerateVisitorInfo">生成访客信息</button>
+                <button type="button" class="btn btn-secondary" id="btnResetVisitorForm" style="margin-top: 10px;">重置表单</button>
+            </div>
+
+            <div id="errorCode" class="error-msg"></div>
+
+            <div class="divider" style="display: none;" id="resultDivider">
+                <span>GENERATED INFO</span>
+            </div>
+
+            <!-- 生成的访客信息 -->
+            <div id="visitorInfoCard" class="visitor-info-card">
+                <div class="visitor-info-title">VISITOR INFORMATION</div>
+                <div class="visitor-info-content" id="visitorInfoContent"></div>
+                <div class="btn-group">
+                    <button class="btn-copy" id="btnCopy">📋 一键复制</button>
+                </div>
+            </div>
+
+            <!-- 通行码显示卡片 -->
+            <div id="codeCard" class="code-card" style="display: none;">
+                <div class="code-title">您的通行码</div>
+                <div class="code-number" id="codeNumber">------</div>
+                <div class="code-info">
+                    <div class="code-status" id="codeStatus">-</div>
+                    <div class="code-student-info" id="studentInfo">-</div>
+                </div>
+                <div class="code-validity">
+                    <small>有效期：老师审批后24小时内 | 门卫验证3分钟内</small>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-copy" id="btnCopyCode">📋 复制通行码</button>
+                </div>
+            </div>
+
+            <div class="info-tip">
+                <div id="defaultTip">生成后可发给老师审批，审批后到校门出示给门卫验证<br>有效期：老师审批24小时内 | 门卫验证3分钟内</div>
+                <div id="visitorTip" style="display: none;">填写完整信息后生成访客登记信息，复制后发送给老师添加访客</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const API_BASE_URL = '/api/wechat';
+        const HMAC_SECRET_KEY = 'ls-alumni-access-code-hmac-2026-secret-do-not-expose';
+
+        // 访客登记表单显示状态
+        let isVisitorFormVisible = false;
+
+        // 监听类型选择变化
+        document.querySelectorAll('input[name="visitType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const visitType = this.value;
+                const visitorFormSection = document.getElementById('visitorFormSection');
+                const phoneGroup = document.getElementById('phoneGroup');
+                const passwordGroup = document.getElementById('passwordGroup');
+                const typeForm = document.getElementById('typeForm');
+                const defaultTip = document.getElementById('defaultTip');
+                const visitorTip = document.getElementById('visitorTip');
+
+                if (visitType === 'visitor') {
+                    // 访客登记：显示访客信息表单
+                    visitorFormSection.classList.add('show');
+                    phoneGroup.style.display = 'none';
+                    passwordGroup.style.display = 'none';
+                    typeForm.style.display = 'none';
+                    defaultTip.style.display = 'none';
+                    visitorTip.style.display = 'block';
+                    isVisitorFormVisible = true;
+
+                    // 隐藏之前的生成结果
+                    document.getElementById('visitorInfoCard').classList.remove('show');
+                    document.getElementById('resultDivider').style.display = 'none';
+                } else {
+                    // 其他类型：隐藏访客信息表单，显示通行码表单
+                    visitorFormSection.classList.remove('show');
+                    phoneGroup.style.display = 'block';
+                    passwordGroup.style.display = 'block';
+                    typeForm.style.display = 'block';
+                    defaultTip.style.display = 'block';
+                    visitorTip.style.display = 'none';
+                    isVisitorFormVisible = false;
+
+                    // 隐藏访客信息卡片
+                    document.getElementById('visitorInfoCard').classList.remove('show');
+                    document.getElementById('resultDivider').style.display = 'none';
+                }
+            });
+        });
+
+        // 生成访客信息
+        document.getElementById('btnGenerateVisitorInfo').addEventListener('click', async function() {
+            const name = document.getElementById('visitorName').value.trim();
+            const phone = document.getElementById('visitorPhone').value.trim();
+            const idCard = document.getElementById('visitorIdCard').value.trim();
+            const password = document.getElementById('visitorPassword').value.trim();
+            const purpose = document.getElementById('visitorPurpose').value;
+            const description = document.getElementById('visitorDescription').value.trim();
+            const contact = document.getElementById('visitorContact').value.trim();
+
+            // 验证必填项
+            if (!name) {
+                showError('请输入访客姓名');
+                return;
+            }
+            if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+                showError('请输入正确的11位手机号码');
+                return;
+            }
+            if (!idCard || !/^\d{17}[\dXx]$/.test(idCard)) {
+                showError('请输入正确的18位身份证号码');
+                return;
+            }
+            if (!password || !/^\d{2}$/.test(password)) {
+                showError('请输入2位数字密码');
+                return;
+            }
+            if (!purpose) {
+                showError('请选择访问目的');
+                return;
+            }
+
+            // 生成访客信息文本
+            const now = new Date();
+            const timeStr = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+
+            // 使用访客设置的密码生成6位访问码（基于HMAC）
+            const timestamp = Math.floor(Date.now() / 1000);
+            const accessCode = await generateHMACCode(phone, password, timestamp);
+
+            // 生成复制的内容（纯访客信息，不包含提示）
+            let visitorInfoText = `【访客登记信息】\n`;
+            visitorInfoText += `姓名：${name}\n`;
+            visitorInfoText += `手机：${phone}\n`;
+            visitorInfoText += `身份证：${idCard}\n`;
+            visitorInfoText += `访问目的：${purpose}\n`;
+            if (description) {
+                visitorInfoText += `访问说明：${description}\n`;
+            }
+            if (contact) {
+                visitorInfoText += `拜访对象：${contact}\n`;
+            }
+            visitorInfoText += `访问密码：${password}\n`;
+            visitorInfoText += `访问码：${accessCode}\n`;
+            visitorInfoText += `申请时间：${timeStr}`;
+
+            // 生成显示的内容（包含提示文字）
+            let displayText = visitorInfoText;
+            displayText += `\n\n💡 提示：请老师点击"访客认证"按钮，粘贴以上信息完成访客添加。`;
+
+            // 显示访客信息卡片
+            const contentDiv = document.getElementById('visitorInfoContent');
+            contentDiv.innerHTML = displayText.replace(/\n/g, '<br>');
+
+            document.getElementById('visitorInfoCard').classList.add('show');
+            document.getElementById('resultDivider').style.display = 'block';
+
+            // 绑定复制按钮（只复制纯访客信息，不包含提示）
+            const btnCopy = document.getElementById('btnCopy');
+            btnCopy.onclick = () => copyText(visitorInfoText, btnCopy);
+
+            // 滚动到结果区域
+            setTimeout(() => {
+                document.getElementById('visitorInfoCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        });
+
+        // 重置访客表单
+        document.getElementById('btnResetVisitorForm').addEventListener('click', function() {
+            document.getElementById('visitorName').value = '';
+            document.getElementById('visitorPhone').value = '';
+            document.getElementById('visitorIdCard').value = '';
+            document.getElementById('visitorPassword').value = '';
+            document.getElementById('visitorPurpose').value = '';
+            document.getElementById('visitorDescription').value = '';
+            document.getElementById('visitorContact').value = '';
+            document.getElementById('visitorInfoCard').classList.remove('show');
+            document.getElementById('resultDivider').style.display = 'none';
+        });
+
+        /**
+         * 生成HMAC-SHA256哈希
+         */
+        async function hmacSHA256(message) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(message);
+            const keyData = encoder.encode(HMAC_SECRET_KEY);
+
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw',
+                keyData,
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+
+            const signature = await crypto.subtle.sign(
+                'HMAC',
+                cryptoKey,
+                data
+            );
+
+            const hashArray = Array.from(new Uint8Array(signature));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        /**
+         * 生成HMAC动态码（6位数字）
+         */
+        async function generateHMACCode(phone, password, timestamp = null) {
+            if (timestamp === null) {
+                timestamp = Math.floor(Date.now() / 1000);
+            }
+
+            const message = `${phone}${password}${timestamp}`;
+            const hmacHex = await hmacSHA256(message);
+
+            // 提取所有数字
+            let digits = '';
+            for (let char of hmacHex) {
+                if (char >= '0' && char <= '9') {
+                    digits += char;
+                }
+            }
+
+            // 如果不足6位，循环使用
+            while (digits.length < 6) {
+                digits += digits;
+            }
+
+            return digits.substring(0, 6);
+        }
+
+        /**
+         * 显示错误信息
+         */
+        function showError(message) {
+            const errorDiv = document.getElementById('errorCode');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        /**
+         * 复制文本到剪贴板
+         */
+        function copyText(text, button) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    button.textContent = '✅ 已复制';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.textContent = '📋 一键复制';
+                        button.classList.remove('copied');
+                    }, 2000);
+                }).catch(err => {
+                    showError('复制失败，请手动复制');
+                });
+            } else {
+                showError('您的浏览器不支持自动复制，请手动复制');
+            }
+        }
+
+        /**
+         * 表单提交处理（入校申请/学生请假）
+         */
+        document.getElementById('typeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const phone = document.getElementById('phone').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const visitType = document.querySelector('input[name="visitType"]:checked').value;
+
+            // 验证
+            if (!phone || phone.length !== 11) {
+                showError('请输入正确的11位手机号');
+                return;
+            }
+
+            if (!password || password.length < 2 || password.length > 6) {
+                showError('请输入2-6位密码');
+                return;
+            }
+
+            if (!/^\d{2,6}$/.test(password)) {
+                showError('密码必须是2-6位数字');
+                return;
+            }
+
+            // 根据类型处理phone（加后缀标识）
+            let requestPhone = phone;
+            let codeType = '';
+
+            if (visitType === 'student-leave') {
+                // 学生请假：在手机号后加STU标识
+                requestPhone = phone + 'STU';
+                codeType = 'student';
+            } else if (visitType === 'visitor') {
+                // 访客登记：直接用手机号
+                requestPhone = phone;
+                codeType = 'visitor';
+            } else {
+                // 入校申请：直接用手机号
+                requestPhone = phone;
+                codeType = 'parent';
+            }
+
+            // 前端直接计算HMAC码
+            let code;
+            try {
+                code = await generateHMACCode(requestPhone, password);
+                console.log(`${visitType}码生成成功:`, code);
+            } catch (err) {
+                showError('生成通行码失败：' + err.message);
+                console.error('HMAC计算失败:', err);
+                return;
+            }
+
+            // 显示通行码（使用原逻辑）
+            let studentInfo = phone;
+            if (visitType === 'student-leave') {
+                studentInfo = phone + ' (学生请假)';
+            } else if (visitType === 'visitor') {
+                studentInfo = phone + ' (访客登记)';
+            } else {
+                studentInfo = phone + ' (入校申请)';
+            }
+
+            // 显示通行码
+            document.getElementById('codeNumber').textContent = code;
+            document.getElementById('studentInfo').textContent = studentInfo;
+
+            // 根据类型显示状态
+            let statusText = '';
+            if (visitType === 'parent-visit') {
+                statusText = '入校申请';
+            } else if (visitType === 'student-leave') {
+                statusText = '学生请假';
+            } else if (visitType === 'visitor') {
+                statusText = '访客登记';
+            }
+            document.getElementById('codeStatus').textContent = statusText;
+            document.getElementById('codeCard').classList.add('show');
+
+            // 绑定复制按钮
+            const btnCopy = document.getElementById('btnCopy');
+            btnCopy.onclick = () => copyCode(code, btnCopy);
+        });
+
+        // 自动聚焦手机号输入框
+        document.getElementById('phone').focus();
+    </script>
+</body>
+</html>

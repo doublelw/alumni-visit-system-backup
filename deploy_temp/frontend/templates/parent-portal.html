@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家长服务中心</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .portal-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            height: 50px;
+            padding: 0 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .action-btn {
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .action-btn .icon {
+            font-size: 24px;
+        }
+
+        .action-btn .text {
+            font-size: 14px;
+        }
+
+        .action-btn.visit {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .action-btn.leave {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .result-card {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+            animation: fadeIn 0.3s ease-out;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-card.success {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: white;
+        }
+
+        .code-display {
+            background: white;
+            color: #333;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .code-display .label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .code-display .code {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .info-box {
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #333;
+        }
+
+        .info-box h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .info-box p {
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 5px 0;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+
+        .step-number {
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            width: 100%;
+            height: 45px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #856404;
+            line-height: 1.5;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .children-selector {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .child-option {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .child-option:hover {
+            border-color: #667eea;
+            background: #e3f2fd;
+        }
+
+        .child-option.selected {
+            border-color: #667eea;
+            background: #e3f2fd;
+        }
+
+        .child-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .child-class {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="portal-container">
+        <div class="header">
+            <h1>👨‍👩‍👧 家长服务中心</h1>
+            <div class="subtitle">一键生成6位码 • 安全便捷</div>
+        </div>
+
+        <div class="note">
+            <strong>🔐 安全提示：</strong><br>
+            • 所有进出均使用6位动态码，学生无需独立账号<br>
+            • 家长进校：生成审批码 → 老师选日期批准 → 到校后生成入校码<br>
+            • 学生请假：生成请假码 → 老师审批 → 学生凭码出校<br>
+            • 门卫只能凭码验证，无码无法查看任何信息
+        </div>
+
+        <!-- 家长登录 -->
+        <div id="loginSection">
+            <div class="form-group">
+                <label for="parentPhone">家长手机号</label>
+                <input type="tel" id="parentPhone" placeholder="请输入手机号" maxlength="11">
+            </div>
+
+            <div class="form-group">
+                <label for="parentPin">2位密码</label>
+                <input type="text" id="parentPin" placeholder="请输入2位数字密码" maxlength="2" style="letter-spacing: 5px;">
+            </div>
+
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+            <div class="action-buttons">
+                <button class="action-btn visit" onclick="generateVisitCode()">
+                    <div class="icon">🏫</div>
+                    <div class="text">我要进校</div>
+                </button>
+                <button class="action-btn leave" onclick="generateLeaveCode()">
+                    <div class="icon">📝</div>
+                    <div class="text">孩子请假</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- 选择孩子（请假用） -->
+        <div id="childrenSelector" class="children-selector">
+            <label style="font-size: 14px; color: #666; margin-bottom: 10px; display: block; font-weight: bold;">选择请假的学生：</label>
+            <div id="childrenList"></div>
+        </div>
+
+        <!-- 生成结果 -->
+        <div class="result-card" id="resultCard">
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api/parent';
+        let currentParentData = null;
+        let currentAction = null; // 'visit' or 'leave'
+
+        // 生成进校码
+        async function generateVisitCode() {
+            currentAction = 'visit';
+            const phone = document.getElementById('parentPhone').value.trim();
+            const pin = document.getElementById('parentPin').value.trim();
+
+            if (!validateInput(phone, pin)) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/generate-visit-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, pin })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showVisitCodeResult(result.data);
+                } else {
+                    showError(result.error || '生成失败');
+                }
+
+            } catch (error) {
+                console.error('生成失败:', error);
+                showError('网络错误，请重试');
+            }
+        }
+
+        // 生成请假码
+        async function generateLeaveCode() {
+            currentAction = 'leave';
+            const phone = document.getElementById('parentPhone').value.trim();
+            const pin = document.getElementById('parentPin').value.trim();
+
+            if (!validateInput(phone, pin)) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/get-children`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, pin })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.data.children.length > 0) {
+                    currentParentData = result.data;
+                    showChildrenSelector(result.data.children);
+                } else if (result.success && result.data.children.length === 0) {
+                    showError('未找到关联的学生，请联系学校添加');
+                } else {
+                    showError(result.error || '查询失败');
+                }
+
+            } catch (error) {
+                console.error('查询失败:', error);
+                showError('网络错误，请重试');
+            }
+        }
+
+        // 显示孩子选择器
+        function showChildrenSelector(children) {
+            const selector = document.getElementById('childrenSelector');
+            const list = document.getElementById('childrenList');
+            const loginSection = document.getElementById('loginSection');
+
+            list.innerHTML = children.map((child, index) => `
+                <div class="child-option" onclick="selectChild(${index})">
+                    <div class="child-name">${child.name}</div>
+                    <div class="child-class">${child.class_name}</div>
+                </div>
+            `).join('');
+
+            loginSection.style.display = 'none';
+            selector.style.display = 'block';
+        }
+
+        // 选择孩子并生成请假码
+        async function selectChild(index) {
+            const child = currentParentData.children[index];
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/generate-leave-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: document.getElementById('parentPhone').value.trim(),
+                        pin: document.getElementById('parentPin').value.trim(),
+                        student_id: child.id
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showLeaveCodeResult(result.data, child);
+                } else {
+                    showError(result.error || '生成失败');
+                }
+
+            } catch (error) {
+                console.error('生成失败:', error);
+                showError('网络错误，请重试');
+            }
+        }
+
+        // 显示进校码结果
+        function showVisitCodeResult(data) {
+            const resultCard = document.getElementById('resultCard');
+            const resultContent = document.getElementById('resultContent');
+
+            resultCard.className = 'result-card success';
+            resultCard.style.display = 'block';
+            document.getElementById('loginSection').style.display = 'none';
+
+            resultContent.innerHTML = `
+                <h2 style="font-size: 24px; margin-bottom: 15px;">✅ 审批码已生成</h2>
+
+                <div class="code-display">
+                    <div class="label">6位审批码（长期有效）</div>
+                    <div class="code">${data.approval_code}</div>
+                </div>
+
+                <div class="info-box">
+                    <h3>📋 下一步操作：</h3>
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div>将这个审批码发给老师（微信/短信）</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div>老师在内网页面输入审批码，选择审批日期</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div>审批通过后，到校当天再打开本页面</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div>重新登录，生成"入校码"（3分钟有效）</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">5</div>
+                        <div>将入校码给门卫，验证后入校</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="generateEntryCode()">我已到校，生成入校码</button>
+                <button class="btn btn-secondary" onclick="resetForm()">返回</button>
+            `;
+        }
+
+        // 生成入校码（到校后）
+        async function generateEntryCode() {
+            if (!currentParentData) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/generate-entry-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: currentParentData.phone,
+                        pin: document.getElementById('parentPin').value.trim()
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showEntryCodeResult(result.data);
+                } else {
+                    showError(result.error || '生成失败');
+                }
+
+            } catch (error) {
+                console.error('生成失败:', error);
+                showError('网络错误，请重试');
+            }
+        }
+
+        // 显示入校码结果
+        function showEntryCodeResult(data) {
+            const resultContent = document.getElementById('resultContent');
+
+            resultContent.innerHTML = `
+                <h2 style="font-size: 24px; margin-bottom: 15px;">✅ 入校码已生成</h2>
+
+                <div class="code-display">
+                    <div class="label">6位入校码（3分钟有效）</div>
+                    <div class="code">${data.entry_code}</div>
+                </div>
+
+                <div class="info-box">
+                    <p><strong>⏰ 有效期：</strong>${data.expires_at}</p>
+                    <p><strong>📍 请将此码出示给门卫</strong></p>
+                </div>
+
+                <button class="btn btn-secondary" onclick="resetForm()">返回</button>
+            `;
+        }
+
+        // 显示请假码结果
+        function showLeaveCodeResult(data, child) {
+            const resultCard = document.getElementById('resultCard');
+            const resultContent = document.getElementById('resultContent');
+
+            resultCard.className = 'result-card success';
+            resultCard.style.display = 'block';
+            document.getElementById('childrenSelector').style.display = 'none';
+
+            resultContent.innerHTML = `
+                <h2 style="font-size: 24px; margin-bottom: 15px;">✅ 请假码已生成</h2>
+
+                <div class="info-box" style="background: rgba(255,255,255,0.95);">
+                    <p><strong>学生：</strong>${child.name}</p>
+                    <p><strong>班级：</strong>${child.class_name}</p>
+                </div>
+
+                <div class="code-display">
+                    <div class="label">6位请假码（告诉孩子或老师）</div>
+                    <div class="code">${data.leave_code}</div>
+                </div>
+
+                <div class="info-box">
+                    <h3>📋 下一步操作：</h3>
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div>将请假码告诉孩子或发给老师</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div>老师在内网页面输入请假码</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div>老师选择"学生出校"类型和日期</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div>审批通过后，孩子凭此码到门卫处</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">5</div>
+                        <div>门卫验证后放行</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary" onclick="resetForm()">返回</button>
+            `;
+        }
+
+        // 验证输入
+        function validateInput(phone, pin) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.style.display = 'none';
+
+            if (!phone || phone.length !== 11) {
+                showError('请输入正确的11位手机号');
+                return false;
+            }
+
+            if (!pin || pin.length !== 2 || !/^\d{2}$/.test(pin)) {
+                showError('请输入2位数字密码');
+                return false;
+            }
+
+            return true;
+        }
+
+        // 显示错误
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // 重置表单
+        function resetForm() {
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('childrenSelector').style.display = 'none';
+            document.getElementById('resultCard').style.display = 'none';
+            document.getElementById('parentPhone').value = '';
+            document.getElementById('parentPin').value = '';
+            currentParentData = null;
+            currentAction = null;
+        }
+    </script>
+</body>
+</html>

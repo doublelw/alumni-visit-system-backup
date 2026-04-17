@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>连接错误 - 校友入校登记系统</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .error-container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .error-icon {
+            font-size: 64px;
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+        .error-title {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .error-message {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn-success {
+            background: #27ae60;
+        }
+        .btn-success:hover {
+            background: #229954;
+        }
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">🔒</div>
+        <h1 class="error-title">SSL连接错误</h1>
+        <p class="error-message">
+            检测到SSL证书问题，这是因为开发环境使用自签名证书。<br>
+            请按照以下步骤解决：
+        </p>
+
+        <div class="step">
+            <strong>方法一：使用SSL设置指南</strong><br>
+            点击下方按钮查看详细的SSL证书设置指南：
+            <br><br>
+            <a href="/ssl-setup" class="btn">🔧 SSL设置指南</a>
+        </div>
+
+        <div class="step">
+            <strong>方法二：直接接受证书</strong><br>
+            1. 点击下方按钮直接访问服务器<br>
+            2. 在浏览器警告页面点击"高级" → "继续前往"<br>
+            3. 返回此页面并刷新
+            <br><br>
+            <a href="https://localhost:5000" target="_blank" class="btn-success">🚀 直接访问服务器</a>
+        </div>
+
+        <div class="step">
+            <strong>方法三：重试连接</strong><br>
+            如果您已经设置了SSL证书，可以点击下方按钮重试：
+            <br><br>
+            <a href="javascript:history.back()" class="btn">🔄 返回重试</a>
+        </div>
+
+        <p style="margin-top: 30px; font-size: 14px; color: #95a5a6;">
+            如需帮助，请联系系统管理员
+        </p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>访客登记 - GUCCI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: #000000;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 20px;
+        }
+
+        .container {
+            background: #ffffff;
+            max-width: 580px;
+            width: 100%;
+            padding: 80px 60px;
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            border: 1px solid #000000;
+            pointer-events: none;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 50px;
+            letter-spacing: 12px;
+        }
+
+        .logo h1 {
+            font-size: 42px;
+            font-weight: normal;
+            color: #000000;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666666;
+            margin-bottom: 50px;
+            font-size: 13px;
+            font-family: 'Helvetica Neue', 'Arial', sans-serif;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .form-group {
+            margin-bottom: 28px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #000000;
+            font-size: 12px;
+            font-family: 'Helvetica Neue', 'Arial', sans-serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 14px 0;
+            border: none;
+            border-bottom: 1px solid #000000;
+            font-size: 15px;
+            font-family: 'Georgia', serif;
+            color: #000000;
+            background: transparent;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #999999;
+            font-style: italic;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-bottom-color: #d4af37;
+        }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23000000' d='M6 9L1 4h10z'/%3E%3C/svg%3E") no-repeat right center;
+        }
+
+        button {
+            width: 100%;
+            padding: 18px;
+            background: #000000;
+            color: #ffffff;
+            border: 1px solid #000000;
+            font-size: 13px;
+            font-family: 'Helvetica Neue', 'Arial', sans-serif;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .result-card {
+            margin-top: 50px;
+            display: none;
+        }
+
+        .result-card.show {
+            display: block;
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .code-display {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 0;
+            border-top: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+        }
+
+        .code-label {
+            color: #666666;
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            font-family: 'Helvetica Neue', 'Arial', sans-serif;
+        }
+
+        .code-number {
+            font-size: 56px;
+            font-weight: normal;
+            color: #000000;
+            letter-spacing: 12px;
+            margin: 10px 0;
+            font-family: 'Georgia', serif;
+        }
+
+        .copy-section {
+            margin-bottom: 30px;
+        }
+
+        .copy-text {
+            width: 100%;
+            min-height: 180px;
+            padding: 20px 0;
+            border: 1px solid #e0e0e0;
+            font-family: 'Georgia', serif;
+            font-size: 14px;
+            line-height: 1.8;
+            resize: vertical;
+            background: #fafafa;
+            color: #333333;
+        }
+
+        .copy-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn-copy {
+            flex: 2;
+        }
+
+        .btn-reset {
+            flex: 1;
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .btn-reset:hover {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .instructions {
+            padding: 25px;
+            border: 1px solid #e0e0e0;
+            font-size: 13px;
+            line-height: 1.8;
+            color: #333333;
+            font-family: 'Georgia', serif;
+        }
+
+        .instructions h4 {
+            margin-bottom: 15px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Helvetica Neue', 'Arial', sans-serif;
+            font-weight: 500;
+        }
+
+        .instructions p {
+            margin-bottom: 8px;
+            color: #666666;
+        }
+
+        .error {
+            background: #000000;
+            color: #ffffff;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            display: none;
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        .error.show {
+            display: block;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 600px) {
+            .container {
+                padding: 60px 30px;
+            }
+
+            .logo h1 {
+                font-size: 32px;
+                letter-spacing: 6px;
+            }
+
+            .code-number {
+                font-size: 42px;
+                letter-spacing: 8px;
+            }
+        }
+
+        /* 优雅的滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #000000;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #333333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>Visitor</h1>
+        </div>
+        <p class="subtitle">访客登记系统</p>
+
+        <div id="errorMsg" class="error"></div>
+
+        <form id="visitorForm">
+            <div class="form-group">
+                <label>姓名 Name</label>
+                <input type="text" id="visitorName" required placeholder="请输入您的姓名">
+            </div>
+
+            <div class="form-group">
+                <label>电话 Phone</label>
+                <input type="tel" id="visitorPhone" required placeholder="请输入11位手机号" maxlength="11">
+            </div>
+
+            <div class="form-group">
+                <label>身份证 ID Card</label>
+                <input type="text" id="idCard" placeholder="请输入18位身份证号（可选）" maxlength="18">
+            </div>
+
+            <div class="form-group">
+                <label>访问目的 Purpose</label>
+                <select id="visitPurpose" required>
+                    <option value="">请选择访问目的</option>
+                    <option value="meeting">商务会议</option>
+                    <option value="visit">参观访问</option>
+                    <option value="interview">面试</option>
+                    <option value="delivery">送货</option>
+                    <option value="other">其他</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>访问说明 Reason</label>
+                <textarea id="visitReason" rows="3" placeholder="请简要说明访问事由"></textarea>
+            </div>
+
+            <button type="submit">生成访客码</button>
+        </form>
+
+        <div id="resultCard" class="result-card">
+            <div class="code-display">
+                <div class="code-label">您的访客码</div>
+                <div class="code-number" id="codeNumber"></div>
+            </div>
+
+            <div class="copy-section">
+                <label style="margin-bottom: 15px;">复制信息（发送给老师）</label>
+                <textarea id="copyText" class="copy-text" readonly></textarea>
+            </div>
+
+            <div class="copy-buttons">
+                <button class="btn-copy" onclick="copyToClipboard()">复制信息</button>
+                <button class="btn-reset" onclick="resetForm()">重新填写</button>
+            </div>
+
+            <div class="instructions">
+                <h4>使用说明</h4>
+                <p>1. 点击"复制信息"按钮</p>
+                <p>2. 将复制的信息发送给老师（微信/QQ等）</p>
+                <p>3. 老师在教师页面点击"访客验证"按钮</p>
+                <p>4. 老师粘贴信息并点击添加，您的访客账号即创建成功</p>
+                <p>5. 下次来访可直接使用6位访客码</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        async function generateHMACCode(phone, timestamp = null) {
+            if (timestamp === null) {
+                timestamp = Math.floor(Date.now() / 1000);
+            }
+
+            const secretKey = 'ls-alumni-access-code-hmac-2026-secret-do-not-expose';
+            const message = `${phone}${timestamp}`;
+
+            const hmac = CryptoJS.HmacSHA256(message, secretKey);
+            const hmacDigest = hmac.toString(CryptoJS.enc.Hex);
+
+            const digits = hmacDigest.replace(/\D/g, '');
+            const code = digits.padEnd(6, digits).substring(0, 6);
+
+            return code;
+        }
+
+        document.getElementById('visitorForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('visitorName').value.trim();
+            const phone = document.getElementById('visitorPhone').value.trim();
+            const idCard = document.getElementById('idCard').value.trim();
+            const visitPurpose = document.getElementById('visitPurpose').value;
+            const visitReason = document.getElementById('visitReason').value.trim();
+
+            // 验证
+            if (!name) {
+                showError('请输入访客姓名');
+                return;
+            }
+
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                showError('请输入正确的手机号码');
+                return;
+            }
+
+            if (idCard && !/^\d{17}[\dXx]$/.test(idCard)) {
+                showError('请输入正确的身份证号');
+                return;
+            }
+
+            if (!visitPurpose) {
+                showError('请选择访问目的');
+                return;
+            }
+
+            // 生成访客码
+            const code = await generateHMACCode(phone);
+
+            // 获取当前时间
+            const now = new Date();
+            const dateStr = now.toLocaleString('zh-CN');
+
+            // 访问目的文本
+            const purposeText = {
+                'meeting': '商务会议',
+                'visit': '参观访问',
+                'interview': '面试',
+                'delivery': '送货',
+                'other': '其他'
+            }[visitPurpose] || visitPurpose;
+
+            // 生成复制信息
+            const copyInfo = `【访客登记信息】
+姓名：${name}
+手机：${phone}
+身份证：${idCard || '未填写'}
+访问目的：${purposeText}
+访问说明：${visitReason || '无'}
+访客码：${code}
+申请时间：${dateStr}
+
+请老师点击"访客验证"按钮，粘贴以上信息完成访客添加。`;
+
+            // 显示结果
+            document.getElementById('codeNumber').textContent = code;
+            document.getElementById('copyText').value = copyInfo;
+            document.getElementById('resultCard').classList.add('show');
+
+            // 隐藏表单
+            document.getElementById('visitorForm').style.display = 'none';
+
+            // 清除错误
+            hideError();
+        });
+
+        function copyToClipboard() {
+            const copyText = document.getElementById('copyText');
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+
+            try {
+                navigator.clipboard.writeText(copyText.value).then(() => {
+                    alert('复制成功！请将此信息发送给老师');
+                });
+            } catch (err) {
+                document.execCommand('copy');
+                alert('复制成功！请将此信息发送给老师');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('visitorForm').reset();
+            document.getElementById('visitorForm').style.display = 'block';
+            document.getElementById('resultCard').classList.remove('show');
+            hideError();
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('errorMsg').classList.remove('show');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSL证书设置 - 校友入校登记系统</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-top: 50px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+        .step {
+            background: #f7fafc;
+            border-left: 4px solid #4299e1;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        .step h3 {
+            color: #2b6cb0;
+            margin-top: 0;
+        }
+        .button {
+            display: inline-block;
+            background: #4299e1;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #3182ce;
+        }
+        .button.success {
+            background: #48bb78;
+        }
+        .button.success:hover {
+            background: #38a169;
+        }
+        .warning {
+            background: #fef5e7;
+            border: 1px solid #f9e79f;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .code {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .done {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: #d4edda;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 SSL证书设置指南</h1>
+            <p>校友入校登记系统 - 开发环境配置</p>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ 重要提示：</strong> 本指南仅在开发环境中使用。生产环境请使用有效的SSL证书。
+        </div>
+
+        <h2>📋 问题说明</h2>
+        <p>当您访问校友入校登记系统时，可能会遇到SSL证书错误。这是因为开发环境使用的是自签名证书，需要手动接受。</p>
+
+        <h2>🔧 解决步骤</h2>
+
+        <div class="step">
+            <h3>步骤 1: 直接访问服务器</h3>
+            <p>点击下面的按钮直接访问服务器地址：</p>
+            <a href="https://localhost:5000" target="_blank" class="button">
+                🔗 访问 https://localhost:5000
+            </a>
+            <p>或者手动在浏览器地址栏输入：<code>https://localhost:5000</code></p>
+        </div>
+
+        <div class="step">
+            <h3>步骤 2: 接受安全风险</h3>
+            <p>浏览器会显示"您的连接不是私密连接"或类似警告页面：</p>
+            <ul>
+                <li><strong>Chrome/Edge:</strong> 点击"高级" → "继续前往 localhost (不安全)"</li>
+                <li><strong>Firefox:</strong> 点击"高级" → "接受风险并继续"</li>
+                <li><strong>Safari:</strong> 点击"访问此网站"或"显示详细信息" → "访问此网站"</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>步骤 3: 验证访问成功</h3>
+            <p>成功接受证书后，您应该能看到：</p>
+            <ul>
+                <li>浏览器地址栏显示锁图标（可能有警告标记）</li>
+                <li>页面显示"Hello World"或系统首页</li>
+                <li>没有SSL证书错误提示</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>步骤 4: 返回原系统</h3>
+            <p>证书接受后，返回您之前访问的页面并刷新：</p>
+            <a href="https://127.0.0.1:5000" target="_blank" class="button success">
+                🎉 访问校友入校登记系统
+            </a>
+        </div>
+
+        <div class="done">
+            <h3>✅ 完成！</h3>
+            <p>如果您已经完成了以上步骤，系统应该可以正常使用了。如果仍有问题，请清除浏览器缓存后重试。</p>
+            <a href="https://127.0.0.1:5000" target="_blank" class="button success">
+                🚀 立即使用系统
+            </a>
+        </div>
+
+        <div class="warning">
+            <strong>💡 技术说明：</strong><br>
+            • 此设置只在当前浏览器中有效<br>
+            • 证书有效期较长，通常不需要重复设置<br>
+            • 开发环境使用自签名证书是正常的做法
+        </div>
+    </div>
+
+    <script>
+        // 检测用户是否已经设置了SSL证书
+        function checkSSLStatus() {
+            fetch('https://localhost:5000/api/public/calendar/events')
+                .then(response => {
+                    if (response.ok) {
+                        document.querySelector('.done').style.display = 'block';
+                        document.querySelector('.done').innerHTML = `
+                            <h3>🎉 SSL证书已配置！</h3>
+                            <p>检测到您的浏览器已经接受了SSL证书，系统可以正常使用了。</p>
+                            <a href="https://127.0.0.1:5000" target="_blank" class="button success">
+                                🚀 立即使用系统
+                            </a>
+                        `;
+                    }
+                })
+                .catch(() => {
+                    // SSL证书还未配置
+                });
+        }
+
+        // 页面加载时检查SSL状态
+        window.addEventListener('load', checkSSLStatus);
+
+        // 为所有外部链接添加跟踪
+        document.querySelectorAll('a[href^="https"]').forEach(link => {
+            link.addEventListener('click', function() {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>

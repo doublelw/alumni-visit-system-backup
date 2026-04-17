@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1976d2">
+    <title>校友入校登记系统</title>
+
+    <!-- 引入字体 -->
+    <style>
+        /* 使用系统字体避免HTTPS请求 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: scale(0.9);}
+            to {opacity: 1; transform: scale(1);}
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+        }
+
+        .modal-body {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .modal-footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* 受访者验证相关样式 */
+        .input-with-button {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .input-with-button input {
+            flex: 1;
+        }
+
+        .validate-btn {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .validate-btn:hover {
+            background: #1976d2;
+        }
+
+        .validate-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .validation-status {
+            margin-top: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .validation-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .validation-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .validation-status.loading {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+            display: block;
+        }
+
+        .btn-icon {
+            font-weight: bold;
+        }
+    </style>
+
+    <!-- 引入图标 -->
+    <link rel="stylesheet" href="/static/vendor/remixicon.css">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="/static/css/mobile.css?v=2.6">
+    <link rel="stylesheet" href="/static/css/alumni-card.css">
+  <style>
+        /* 申请列表样式 */
+        .recent-applications, .pending-approvals {
+            margin-bottom: 20px;
+        }
+
+        .recent-applications h3, .pending-approvals h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .applications-list, .approvals-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .application-item, .approval-item {
+            background: #fff;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 12px 16px;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .application-item:hover, .approval-item:hover {
+            border-color: #4a90e2;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
+        }
+
+        .application-item {
+            flex-direction: row;
+            gap: 16px;
+        }
+
+        .application-header, .approval-header {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .student-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .application-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .application-statuses {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-end;
+            min-width: 120px;
+        }
+
+        .student-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .student-class {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .application-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        .status-pending { background: #ff9800; }
+        .status-parent-approved { background: #2196f3; }
+        .status-teacher-approved { background: #4caf50; }
+        .status-approved { background: #4caf50; }
+        .status-rejected { background: #f44336; }
+        .status-completed { background: #9e9e9e; }
+        .status-cancelled { background: #757575; }
+
+        .application-details, .approval-details {
+            margin-bottom: 12px;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+
+        .detail-row .label {
+            color: #666;
+            font-size: 14px;
+            min-width: 80px;
+            margin-right: 8px;
+        }
+
+        .detail-row .value {
+            color: #333;
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .approval-status {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .approval-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .approval-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .approval-badge.approved {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .approval-badge.rejected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .approval-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .approval-actions .btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .empty-state, .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-icon, .error-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #ccc;
+        }
+
+        .error-icon {
+            color: #f44336;
+        }
+
+        .empty-message, .error-message {
+            margin-bottom: 16px;
+            font-size: 16px;
+        }
+
+        .error-message {
+            color: #f44336;
+        }
+
+        @media (max-width: 768px) {
+            .application-header, .approval-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .detail-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .detail-row .label {
+                min-width: auto;
+                margin-right: 0;
+                margin-bottom: 2px;
+            }
+        }
+
+        /* 优化最近申请卡片布局 */
+        .application-purpose {
+            font-size: 13px;
+            color: #555;
+            margin: 4px 0;
+            line-height: 1.3;
+        }
+
+        .application-time {
+            font-size: 12px;
+            color: #777;
+            margin: 2px 0;
+        }
+
+        .application-target {
+            font-size: 12px;
+            color: #666;
+            margin: 2px 0;
+        }
+
+        .application-type {
+            font-size: 11px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .application-date {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .application-status {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.approved {
+            background-color: #28a745;
+        }
+
+        .status-dot.pending {
+            background-color: #ffc107;
+        }
+
+        .status-dot.rejected {
+            background-color: #dc3545;
+        }
+
+        /* 待审批申请样式 */
+        .pending-approval-item {
+            background: #fff;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .pending-approval-item:hover {
+            border-color: #4a90e2;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
+        }
+
+        .approval-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .approval-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .approval-type {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .approval-date {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .approval-details p {
+            margin: 4px 0;
+            font-size: 12px;
+            color: #555;
+        }
+
+        .approval-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .approval-actions .btn {
+            font-size: 11px;
+            padding: 4px 8px;
+            line-height: 1.2;
+        }
+
+        /* 快速审核操作按钮优化 */
+        .quick-review-actions {
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .quick-review-actions .btn {
+            font-size: 11px;
+            padding: 4px 8px;
+            line-height: 1.2;
+        }
+
+        .quick-review-actions .btn i {
+            font-size: 12px;
+        }
+
+        .review-hint {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载动画 -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+        </div>
+    </div>
+
+    <!-- 主应用容器 -->
+    <div id="app" class="app-container">
+        <!-- 底部导航栏 -->
+        <nav class="bottom-nav" id="bottomNav">
+            <div class="nav-item active" data-page="home">
+                <i class="ri-home-4-line"></i>
+                <span>首页</span>
+            </div>
+            <div class="nav-item" data-page="visit">
+                <i class="ri-calendar-line"></i>
+                <span>访问申请</span>
+            </div>
+            <div class="nav-item" data-page="face">
+                <i class="ri-camera-2-line"></i>
+                <span>人脸识别</span>
+            </div>
+            <div class="nav-item" data-page="profile">
+                <i class="ri-user-line"></i>
+                <span>我的</span>
+            </div>
+        </nav>
+
+        <!-- 页面容器 -->
+        <div class="page-container">
+            <!-- 首页 -->
+            <div class="page active" id="homePage">
+                <header class="page-header">
+                    <h1>校友入校登记</h1>
+                </header>
+
+                <main class="page-content">
+                    <!-- 欢迎卡片 -->
+                    <section class="welcome-card">
+                        <div class="welcome-content">
+                            <h2>欢迎回来，<span id="userName">校友</span></h2>
+                            <p>便捷的访问申请，智能的入校体验</p>
+                        </div>
+                        <div class="welcome-icon">
+                            <i class="ri-graduation-cap-fill"></i>
+                        </div>
+                    </section>
+
+                    <!-- 校历活动 -->
+                    <section class="calendar-events">
+                        <h3>校园活动</h3>
+                        <div class="events-carousel" id="eventsCarousel">
+                            <div class="events-container" id="eventsContainer">
+                                <!-- 动态加载活动列表 -->
+                            </div>
+                            <div class="carousel-nav">
+                                <button class="carousel-btn prev" id="eventsPrevBtn">
+                                    <i class="ri-arrow-left-s-line"></i>
+                                </button>
+                                <button class="carousel-btn next" id="eventsNextBtn">
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="events-indicators" id="eventsIndicators">
+                            <!-- 动态加载指示器 -->
+                        </div>
+                    </section>
+
+                    <!-- 待审批申请 -->
+                    <section class="pending-approvals" id="pendingApprovalsSection" style="display: none;">
+                        <h3>待审批申请</h3>
+                        <div class="approvals-list" id="pendingApprovalsList">
+                            <!-- 动态加载待审批申请 -->
+                        </div>
+                    </section>
+
+                    <!-- 快捷操作 -->
+                    <section class="quick-actions">
+                        <h3>快捷操作</h3>
+                        <div class="action-grid">
+                            <div class="action-card" id="quickVisit">
+                                <div class="action-icon">
+                                    <i class="ri-time-line"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>快速申请</h4>
+                                    <p>提交入校申请</p>
+                                </div>
+                            </div>
+
+                            <div class="action-card" id="studentExitApplication">
+                                <div class="action-icon">
+                                    <i class="ri-walk-line"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>学生出校申请</h4>
+                                    <p>申请出校许可</p>
+                                </div>
+                            </div>
+
+                            <div class="action-card" id="parentApplyForExit">
+                                <div class="action-icon">
+                                    <i class="ri-user-heart-line"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>为孩子申请出校</h4>
+                                    <p>家长代办出校申请</p>
+                                </div>
+                            </div>
+
+                            <div class="action-card" id="teacherApproval">
+                                <div class="action-icon">
+                                    <i class="ri-clipboard-check-line"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>审批管理</h4>
+                                    <p>审批学生出校申请</p>
+                                </div>
+                            </div>
+                            <div class="action-card" id="quickFace">
+                                <div class="action-icon">
+                                    <i class="ri-camera-2-line"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>人脸注册</h4>
+                                    <p>录入人脸信息</p>
+                                </div>
+                            </div>
+                            <div class="action-card" id="quickQR">
+                                <div class="action-icon">
+                                    <i class="ri-qr-code-line"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>访问验证码</h4>
+                                    <p>出示访问凭证</p>
+                                </div>
+                            </div>
+                            <div class="action-card" id="studentExitQRCode">
+                                <div class="action-icon">
+                                    <i class="ri-qr-scan-2-line"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>离校验证码</h4>
+                                    <p>出示出校凭证</p>
+                                </div>
+                            </div>
+                                <div class="action-card" id="quickAlumniCard">
+                                <div class="action-icon">
+                                    <i class="ri-id-card-line"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>电子校友卡</h4>
+                                    <p>校友身份证明</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 最近申请 -->
+                    <section class="recent-applications">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0;">最近申请</h3>
+                            <button type="button" id="refreshRecentApplications" class="btn btn-outline btn-sm" onclick="refreshRecentApplications()" style="margin: 0;">
+                                <i class="ri-refresh-line" id="refreshIcon"></i>
+                                <span id="refreshText">刷新</span>
+                            </button>
+                        </div>
+                        <div class="application-list" id="recentApplications">
+                            <!-- 动态加载 -->
+                        </div>
+                    </section>
+
+                    <!-- 校园信息 -->
+                    <section class="campus-info">
+                        <h3>校园信息</h3>
+                        <div class="info-cards">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <i class="ri-map-pin-line"></i>
+                                </div>
+                                <div class="info-content">
+                                    <h4>校区地址</h4>
+                                    <p>某某市某某区某某路123号</p>
+                                </div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <i class="ri-phone-line"></i>
+                                </div>
+                                <div class="info-content">
+                                    <h4>联系电话</h4>
+                                    <p>010-12345678</p>
+                                </div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <i class="ri-time-line"></i>
+                                </div>
+                                <div class="info-content">
+                                    <h4>开放时间</h4>
+                                    <p>周一至周五 8:00-18:00</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+            </div>
+
+            <!-- 访问申请页面 -->
+            <div class="page" id="visitPage">
+                <header class="page-header">
+                    <h1>访问申请</h1>
+                </header>
+
+                <main class="page-content">
+                    <!-- 申请表单 -->
+                    <section class="visit-form">
+                        <form id="visitApplicationForm">
+                            <div class="form-group">
+                                <label for="visitDate">访问日期</label>
+                                <input type="date" id="visitDate" required>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="timeStart">开始时间</label>
+                                    <input type="time" id="timeStart" required min="08:00" max="18:00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="timeEnd">结束时间</label>
+                                    <input type="time" id="timeEnd" required min="08:00" max="18:00">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="visitPurpose">访问目的</label>
+                                <select id="visitPurpose" required>
+                                    <option value="">请选择访问目的</option>
+                                    <option value="学术交流">学术交流</option>
+                                    <option value="参观校园">参观校园</option>
+                                    <option value="拜访老师">拜访老师</option>
+                                    <option value="同学聚会">同学聚会</option>
+                                    <option value="参加活动">参加活动</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="targetWorkId">受访者工作ID/学号</label>
+                                <input type="text" id="targetWorkId" placeholder="请输入受访者工作ID或学号" required>
+                                <small class="form-help">例如：EMP001 或 STU2023001</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="targetPerson">受访者姓名</label>
+                                <div class="input-with-button">
+                                    <input type="text" id="targetPerson" placeholder="请输入受访者真实姓名" required>
+                                    <button type="button" id="validateTargetBtn" class="validate-btn">
+                                        <span class="btn-icon">✓</span>验证
+                                    </button>
+                                </div>
+                                <small class="form-help">请确保ID和姓名完全匹配，验证通过后自动填充部门信息</small>
+                                <div id="validationStatus" class="validation-status"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="targetDepartment">受访部门/班级</label>
+                                <input type="text" id="targetDepartment" placeholder="验证通过后自动填充" readonly>
+                            </div>
+
+                            <!-- 访问人信息 -->
+                            <div class="form-section">
+                                <h3 class="section-title">访问人信息</h3>
+                                <div class="form-group">
+                                    <label for="visitorName">访问人姓名 <span class="required">*</span></label>
+                                    <input type="text" id="visitorName" placeholder="请输入访问人姓名" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="visitorPhone">联系电话 <span class="required">*</span></label>
+                                    <input type="tel" id="visitorPhone" placeholder="请输入联系电话" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="visitorEmail">邮箱地址</label>
+                                    <input type="email" id="visitorEmail" placeholder="请输入邮箱地址（选填）">
+                                </div>
+                                <div class="form-group">
+                                    <label for="visitorIdCard">身份证号 <span class="required">*</span></label>
+                                    <input type="text" id="visitorIdCard" placeholder="请输入身份证号" required maxlength="18">
+                                    <small class="form-help">身份证号将用于身份验证</small>
+                                </div>
+                            </div>
+
+                            <!-- 同行人信息 -->
+                            <div class="form-section">
+                                <h3 class="section-title">同行人信息</h3>
+                                <div class="companion-list" id="companionList">
+                                    <!-- 动态添加同行人 -->
+                                </div>
+                                <button type="button" class="btn btn-outline btn-sm" id="addCompanion">
+                                    <i class="ri-add-line"></i>
+                                    添加同行人
+                                </button>
+                            </div>
+
+       
+                            <div class="form-group">
+                                <label for="visitNotes">备注说明</label>
+                                <textarea id="visitNotes" rows="3" placeholder="请输入其他需要说明的信息"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ri-send-plane-line"></i>
+                                提交申请
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- 申请历史 -->
+                    <section class="visit-history">
+                        <h3>申请历史</h3>
+                        <div class="history-list" id="visitHistory">
+                            <!-- 动态加载 -->
+                        </div>
+                    </section>
+                </main>
+            </div>
+
+            <!-- 人脸识别页面 -->
+            <div class="page" id="facePage">
+                <header class="page-header">
+                    <h1>人脸识别</h1>
+                </header>
+
+                <main class="page-content">
+                    <!-- 人脸状态 -->
+                    <section class="face-status" id="faceStatus">
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="ri-camera-2-line"></i>
+                            </div>
+                            <div class="status-content">
+                                <h3>人脸注册状态</h3>
+                                <p id="faceStatusText">检查中...</p>
+                            </div>
+                            <div class="status-action">
+                                <button class="btn btn-outline" id="refreshFaceStatus">
+                                    <i class="ri-refresh-line"></i>
+                                    刷新
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 人脸注册 -->
+                    <section class="face-register" id="faceRegister">
+                        <h3>人脸注册</h3>
+                        <div class="upload-area" id="faceUploadArea">
+                            <input type="file" id="faceImageInput" accept="image/*" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2;">
+                            <div class="upload-content" style="position: relative; z-index: 1; pointer-events: none;">
+                                <i class="ri-camera-line"></i>
+                                <p>点击上传或拍照</p>
+                                <small>请确保面部清晰，光线充足</small>
+                            </div>
+                        </div>
+                        <div class="preview-area" id="facePreview" style="display: none;">
+                            <img id="facePreviewImage" alt="人脸预览">
+                            <div class="preview-actions">
+                                <button class="btn btn-outline" id="retakePhoto">
+                                    <i class="ri-camera-line"></i>
+                                    重新拍照
+                                </button>
+                                <button class="btn btn-primary" id="submitFace">
+                                    <i class="ri-check-line"></i>
+                                    提交注册
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 人脸信息管理 -->
+                    <section class="face-management" id="faceManagement">
+                        <h3>人脸信息管理</h3>
+                        <div class="face-info-card">
+                            <div class="face-info-header">
+                                <div class="face-preview">
+                                    <img id="registeredFaceImage" alt="已注册人脸" style="width: 120px; height: 120px; border-radius: 60px; object-fit: cover; border: 3px solid #1976d2; cursor: pointer;" onclick="showFacePreviewModal()">
+                                </div>
+                                <div class="preview-actions">
+                                    <button class="btn btn-sm btn-outline" onclick="showFacePreviewModal()" title="查看大图">
+                                        <i class="ri-zoom-in-line"></i>
+                                    </button>
+                                </div>
+                                <div class="face-info-details">
+                                    <h4>人脸信息</h4>
+                                    <div class="info-item">
+                                        <span class="info-label">注册时间：</span>
+                                        <span id="faceRegistrationTime">-</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">质量分数：</span>
+                                        <span id="faceQualityScore">-</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">状态：</span>
+                                        <span class="status-badge active">已激活</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="face-info-actions">
+                                <button class="btn btn-primary btn-sm" id="updateFaceBtn">
+                                    <i class="ri-refresh-line"></i>
+                                    更新人脸
+                                </button>
+                                <button class="btn btn-outline btn-sm" id="deleteFaceBtn">
+                                    <i class="ri-delete-bin-line"></i>
+                                    删除人脸
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                <!-- 人脸预览模态框 -->
+                <div class="modal" id="facePreviewModal">
+                    <div class="modal-content">
+                        <span class="close" onclick="hideFacePreviewModal()">&times;</span>
+                        <h3>人脸照片预览</h3>
+                        <div class="modal-body">
+                            <img id="modalFaceImage" alt="人脸预览" style="max-width: 100%; max-height: 400px; border-radius: 8px;">
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-outline" onclick="hideFacePreviewModal()">关闭</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 个人中心页面 -->
+            <div class="page" id="profilePage">
+                <header class="page-header">
+                    <h1>个人中心</h1>
+                </header>
+
+                <main class="page-content">
+                    <!-- 用户信息卡片 -->
+                    <section class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                <i class="ri-user-fill"></i>
+                            </div>
+                            <div class="profile-info">
+                                <h2 id="profileName">未登录</h2>
+                                <p id="profileRole">校友</p>
+                            </div>
+                        </div>
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <span class="stat-value" id="visitCount">0</span>
+                                <span class="stat-label">访问次数</span>
+                            </div>
+                                    <div class="stat-item">
+                                <span class="stat-value" id="faceRegistered">未注册</span>
+                                <span class="stat-label">人脸状态</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 功能菜单 -->
+                    <section class="profile-menu">
+                        <div class="menu-group">
+                            <h3>个人信息</h3>
+                            <div class="menu-item" id="editProfile">
+                                <div class="menu-icon">
+                                    <i class="ri-graduation-cap-line"></i>
+                                </div>
+                                <div class="menu-content">
+                                    <span>编辑校友档案</span>
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item" id="changePassword">
+                                <div class="menu-icon">
+                                    <i class="ri-lock-line"></i>
+                                </div>
+                                <div class="menu-content">
+                                    <span>修改密码</span>
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="menu-group">
+                            <h3>我的服务</h3>
+                            <div class="menu-item" id="myQRCode">
+                                <div class="menu-icon">
+                                    <i class="ri-qr-code-line"></i>
+                                </div>
+                                <div class="menu-content">
+                                    <span>访问验证码</span>
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item" id="visitRecords">
+                                <div class="menu-icon">
+                                    <i class="ri-history-line"></i>
+                                </div>
+                                <div class="menu-content">
+                                    <span>访问记录</span>
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item" id="reviewManagement" style="display: none;">
+                                <div class="menu-icon">
+                                    <i class="ri-file-list-3-line"></i>
+                                </div>
+                                <div class="menu-content">
+                                    <span>审核管理</span>
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="menu-group">
+                            <h3>其他</h3>
+                            <div class="menu-item" id="about">
+                                <div class="menu-icon">
+                                    <i class="ri-information-line"></i>
+                                </div>
+                                <div class="menu-content">
+                                    <span>关于我们</span>
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item" id="logout">
+                                <div class="menu-icon">
+                                    <i class="ri-logout-box-line"></i>
+                                </div>
+                                <div class="menu-content">
+                                    <span>退出登录</span>
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+            </div>
+
+            <!-- 审核管理页面 -->
+            <div class="page" id="reviewPage">
+                <header class="page-header">
+                    <h1>审核管理</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-outline btn-sm" id="refreshReviewList">
+                            <i class="ri-refresh-line"></i>
+                            刷新
+                        </button>
+                        <button class="btn btn-outline btn-sm" id="exitReview">
+                            <i class="ri-logout-box-line"></i>
+                            退出
+                        </button>
+                    </div>
+                </header>
+
+                <main class="page-content">
+                    <!-- 审核统计 -->
+                    <section class="review-stats">
+                        <div class="stats-grid">
+                            <div class="stat-card pending">
+                                <div class="stat-icon">
+                                    <i class="ri-time-line"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <span class="stat-value" id="pendingCount">0</span>
+                                    <span class="stat-label">待审核</span>
+                                </div>
+                            </div>
+                            <div class="stat-card approved">
+                                <div class="stat-icon">
+                                    <i class="ri-check-line"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <span class="stat-value" id="approvedCount">0</span>
+                                    <span class="stat-label">已通过</span>
+                                </div>
+                            </div>
+                            <div class="stat-card rejected">
+                                <div class="stat-icon">
+                                    <i class="ri-close-line"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <span class="stat-value" id="rejectedCount">0</span>
+                                    <span class="stat-label">已拒绝</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 筛选器 -->
+                    <section class="review-filters">
+                        <div class="filter-tabs">
+                            <button class="filter-tab active" data-status="pending">待审核</button>
+                            <button class="filter-tab" data-status="teacher_approved">待家长确认</button>
+                            <button class="filter-tab" data-status="approved">已通过</button>
+                            <button class="filter-tab" data-status="rejected">已拒绝</button>
+                            <button class="filter-tab" data-status="all">全部</button>
+                        </div>
+                    </section>
+
+                    <!-- 申请列表 -->
+                    <section class="review-list">
+                        <div class="application-cards" id="reviewApplicationsList">
+                            <!-- 动态加载申请列表 -->
+                        </div>
+
+                        <!-- 分页容器 -->
+                        <div class="pagination-container" id="reviewPagination">
+                            <!-- 动态加载分页 -->
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录模态框 -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>登录</h2>
+                <button class="modal-close" id="closeLoginModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 登录错误提示区域 -->
+                <div id="loginErrorAlert" style="display: none; margin-bottom: 15px; padding: 10px; border-radius: 6px; border: 1px solid #f5c6cb; background-color: #f8d7da; color: #721c24; font-size: 14px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="ri-error-warning-line" style="font-size: 16px;"></i>
+                        <div>
+                            <strong style="font-weight: 600;">登录失败</strong>
+                            <div id="loginErrorMessage" style="margin-top: 2px; font-size: 13px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <input type="text" id="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="rememberMe">
+                            <span class="checkmark"></span>
+                            记住密码
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">登录</button>
+                </form>
+
+  
+                <div class="modal-footer">
+                    <p>还没有账号？<a href="/register" class="link-primary">立即注册</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+  
+    <!-- 编辑资料模态框 -->
+    <div class="modal" id="editProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>编辑个人资料</h2>
+                <button class="modal-close" id="closeEditProfileModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <!-- 基本信息部分 -->
+                    <div class="form-section">
+                        <h3>基本信息</h3>
+                        <div class="form-group">
+                            <label for="editRealName">真实姓名 *</label>
+                            <input type="text" id="editRealName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editEmail">邮箱地址 *</label>
+                            <input type="email" id="editEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editPhone">手机号码 *</label>
+                            <input type="tel" id="editPhone" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editIdCard">身份证号码</label>
+                            <input type="text" id="editIdCard" placeholder="请输入身份证号码" maxlength="18">
+                            <small class="form-help">身份证号用于访问申请时的身份验证</small>
+                        </div>
+                    </div>
+
+                    <!-- 校友档案部分 -->
+                    <div class="form-section" id="alumniSection">
+                        <h3>校友档案</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="alumniGraduationYear">毕业年份 *</label>
+                                <input type="number" id="alumniGraduationYear" min="1950" max="2030" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="alumniStudentId">学号</label>
+                                <input type="text" id="alumniStudentId" placeholder="请输入学号">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="alumniClassName">毕业班级 *</label>
+                            <input type="text" id="alumniClassName" placeholder="如：高三（1）班" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group department-group">
+                                <label for="alumniDepartment">校部 *</label>
+                                <input type="text" id="alumniDepartment" placeholder="如：教务处、学生处等" required>
+                            </div>
+                            <div class="form-group major-group">
+                                <label for="alumniMajor">专业 *</label>
+                                <input type="text" id="alumniMajor" placeholder="如：计算机科学与技术" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="alumniContactTeacher">班主任 *</label>
+                            <input type="text" id="alumniContactTeacher" placeholder="班主任姓名" required>
+                        </div>
+                    </div>
+
+                    <!-- 联系信息部分 -->
+                    <div class="form-section">
+                        <h3>联系信息</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="alumniContactTeacherPhone">班主任电话 *</label>
+                                <input type="tel" id="alumniContactTeacherPhone" placeholder="班主任电话" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="alumniEmergencyContact">紧急联系人 *</label>
+                                <input type="text" id="alumniEmergencyContact" placeholder="紧急联系人姓名" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="alumniEmergencyPhone">紧急联系人电话 *</label>
+                                <input type="tel" id="alumniEmergencyPhone" placeholder="紧急联系人电话" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 工作信息部分 -->
+                    <div class="form-section">
+                        <h3>工作信息</h3>
+                        <div class="form-group">
+                            <label for="alumniCompany">工作单位</label>
+                            <input type="text" id="alumniCompany" placeholder="请输入工作单位">
+                        </div>
+                        <div class="form-group">
+                            <label for="alumniPosition">职位</label>
+                            <input type="text" id="alumniPosition" placeholder="请输入职位">
+                        </div>
+                        <div class="form-group">
+                            <label for="alumniIndustry">行业</label>
+                            <input type="text" id="alumniIndustry" placeholder="请输入所属行业">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" id="cancelEditProfile">取消</button>
+                        <button type="submit" class="btn btn-primary">保存修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改密码模态框 -->
+    <div class="modal" id="changePasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>修改密码</h2>
+                <button class="modal-close" id="closeChangePasswordModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">当前密码</label>
+                        <input type="password" id="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">新密码</label>
+                        <input type="password" id="newPassword" required minlength="8">
+                        <small class="form-help">密码长度至少8位</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmNewPassword">确认新密码</label>
+                        <input type="password" id="confirmNewPassword" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" id="cancelChangePassword">取消</button>
+                        <button type="submit" class="btn btn-primary">修改密码</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 访问申请详情模态框 -->
+    <div class="modal" id="visitDetailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>访问申请详情</h2>
+                <button class="modal-close" id="closeVisitDetailsModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="visitDetailsContent">
+                    <!-- 详情内容将通过JavaScript动态加载 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="closeVisitDetails">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 访问记录模态框 -->
+    <div class="modal" id="visitRecordsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>访问记录</h2>
+                <button class="modal-close" id="closeVisitRecordsModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="visit-records-list" id="visitRecordsList">
+                    <!-- 动态加载访问记录 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 人脸预览模态框 -->
+    <div class="modal" id="facePreviewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>人脸信息预览</h2>
+                <button class="modal-close" id="closeFacePreviewModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="face-preview-container">
+                    <img id="facePreviewImage" alt="人脸预览" style="max-width: 100%; max-height: 400px; border-radius: 8px;">
+                </div>
+                <div class="face-preview-info">
+                    <div class="info-item">
+                        <span class="info-label">照片状态：</span>
+                        <span class="status-badge active">正常</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">注册时间：</span>
+                        <span id="previewRegistrationTime">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">质量分数：</span>
+                        <span id="previewQualityScore">-</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+        </div>
+
+    <!-- 关于我们模态框 -->
+    <div class="modal" id="aboutModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>关于我们</h2>
+                <button class="modal-close" id="closeAboutModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="about-content">
+                    <div class="about-section">
+                        <h3>校友入校登记系统</h3>
+                        <p>版本：v2.0</p>
+                        <p>为校友提供便捷的入校申请服务，让访问校园更加简单高效。</p>
+                    </div>
+                    <div class="about-section">
+                        <h4>主要功能</h4>
+                        <ul>
+                            <li>在线访问申请</li>
+                            <li>人脸识别验证</li>
+                            <li>申请进度跟踪</li>
+                            <li>快速审核通道</li>
+                        </ul>
+                    </div>
+                    <div class="about-section">
+                        <h4>联系方式</h4>
+                        <p><i class="ri-phone-line"></i> 客服电话：010-12345678</p>
+                        <p><i class="ri-mail-line"></i> 邮箱：support@school.edu.cn</p>
+                        <p><i class="ri-map-pin-line"></i> 地址：某某市某某区某某路123号</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 电子校友卡模态框 -->
+    <div class="modal" id="alumniCardModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>电子校友卡</h2>
+                <button class="modal-close" id="closeAlumniCardModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="alumni-card-container">
+                    <!-- 校友卡正面 -->
+                    <div class="alumni-card" id="alumniCard">
+                        <div class="card-header">
+                            <div class="school-logo">
+                                <i class="ri-graduation-cap-fill"></i>
+                            </div>
+                            <div class="school-info">
+                                <h3>辽宁省实验中学</h3>
+                                <p>电子校友卡</p>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="user-photo">
+                                <div class="photo-placeholder" id="cardUserPhoto">
+                                    <i class="ri-user-fill"></i>
+                                </div>
+                            </div>
+
+                            <div class="user-info">
+                                <div class="info-row">
+                                    <span class="label">姓名：</span>
+                                    <span class="value" id="cardRealName">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">学号：</span>
+                                    <span class="value" id="cardStudentId">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">毕业年份：</span>
+                                    <span class="value" id="cardGraduationYear">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">班级：</span>
+                                    <span class="value" id="cardClassName">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">学部：</span>
+                                    <span class="value" id="cardDivision">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="qr-code">
+                                <div id="alumniCardQRCode"></div>
+                                <small>校友身份验证码</small>
+                            </div>
+                            <div class="validity">
+                                <small>有效期</small>
+                                <span id="cardValidity">永久有效</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="card-actions">
+                        <button class="btn btn-outline" id="flipCardBtn">
+                            <i class="ri-arrow-left-right-line"></i>
+                            查看背面
+                        </button>
+                        <button class="btn btn-primary" id="downloadCardBtn">
+                            <i class="ri-download-line"></i>
+                            保存卡片
+                        </button>
+                        <button class="btn btn-success" id="shareCardBtn">
+                            <i class="ri-share-line"></i>
+                            分享校友卡
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 校友卡背面（隐藏，默认不显示） -->
+                <div class="alumni-card-back" id="alumniCardBack" style="display: none;">
+                    <div class="card-back-header">
+                        <h3>校友联系方式</h3>
+                        <button class="btn btn-sm btn-outline" id="backToFrontBtn">
+                            <i class="ri-arrow-left-line"></i>
+                            返回正面
+                        </button>
+                    </div>
+
+                    <div class="card-back-body">
+                        <div class="contact-info">
+                            <div class="info-row">
+                                <span class="label"><i class="ri-phone-line"></i> 电话：</span>
+                                <span class="value" id="cardPhone">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label"><i class="ri-mail-line"></i> 邮箱：</span>
+                                <span class="value" id="cardEmail">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label"><i class="ri-building-line"></i> 工作单位：</span>
+                                <span class="value" id="cardWorkUnit">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label"><i class="ri-briefcase-line"></i> 职务：</span>
+                                <span class="value" id="cardPosition">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label"><i class="ri-map-pin-line"></i> 现居城市：</span>
+                                <span class="value" id="cardCurrentCity">-</span>
+                            </div>
+                        </div>
+
+                        <div class="verification-section">
+                            <h4>身份验证信息</h4>
+                            <div class="verification-info">
+                                <div class="info-row">
+                                    <span class="label">身份证号：</span>
+                                    <span class="value" id="cardIdCard">************1234</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">校友档案号：</span>
+                                    <span class="value" id="cardAlumniId">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">发卡时间：</span>
+                                    <span class="value" id="cardIssueTime">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-features">
+                            <h4>校友卡功能</h4>
+                            <ul>
+                                <li><i class="ri-check-line"></i> 校园出入身份验证</li>
+                                <li><i class="ri-check-line"></i> 校友活动参与凭证</li>
+                                <li><i class="ri-check-line"></i> 图书馆访问权限</li>
+                                <li><i class="ri-check-line"></i> 校内消费优惠</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学生出校申请模态框 -->
+    <div class="modal" id="studentExitApplicationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>学生出校申请</h3>
+                <button class="modal-close" onclick="UI.hideModal('studentExitApplicationModal')">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="studentExitApplicationForm" method="post" action="javascript:void(0)">
+                    <div class="form-section">
+                        <h3 class="section-title">学生信息</h3>
+                        <div class="form-group" id="studentInfoSection">
+                            <label for="studentSelect">选择学生 <span class="required">*</span></label>
+                            <select id="studentSelect" name="studentSelect" required>
+                                <option value="">请选择学生</option>
+                                <!-- 根据用户类型动态加载学生列表 -->
+                            </select>
+                            <small class="form-help">班主任可选择本班学生，家长可选择自己的孩子，学生自动加载个人信息</small>
+                        </div>
+                        <div class="form-group" id="studentInfoDisplay" style="display: none;">
+                            <label>学生信息</label>
+                            <div class="student-info-card">
+                                <div class="info-item">
+                                    <span class="label">学号：</span>
+                                    <span id="displayStudentId" class="value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">姓名：</span>
+                                    <span id="displayStudentName" class="value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">班级：</span>
+                                    <span id="displayStudentClass" class="value">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">出校信息</h3>
+                        <div class="form-group">
+                            <label for="exitDate">出校日期 <span class="required">*</span></label>
+                            <input type="date" id="exitDate" name="exitDate" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="exitTimeStart">出校时间 <span class="required">*</span></label>
+                                <input type="time" id="exitTimeStart" name="exitTimeStart" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="exitTimeEnd">预计返校时间 <span class="required">*</span></label>
+                                <input type="time" id="exitTimeEnd" name="exitTimeEnd" value="20:00" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="exitReason">出校原因 <span class="required">*</span></label>
+                            <textarea id="exitReason" name="exitReason" rows="3" placeholder="请详细说明出校原因" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="destination">目的地</label>
+                            <input type="text" id="destination" name="destination" placeholder="请输入目的地">
+                        </div>
+                        <div class="form-group">
+                            <label for="transportMethod">交通方式</label>
+                            <select id="transportMethod" name="transportMethod">
+                                <option value="">请选择交通方式</option>
+                                <option value="步行">步行</option>
+                                <option value="自行车">自行车</option>
+                                <option value="公交车">公交车</option>
+                                <option value="地铁">地铁</option>
+                                <option value="家长接送">家长接送</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">紧急联系人</h3>
+                        <div class="form-group">
+                            <label for="emergencyContact">紧急联系人</label>
+                            <input type="text" id="emergencyContact" name="emergencyContact" placeholder="请输入紧急联系人姓名">
+                        </div>
+                        <div class="form-group">
+                            <label for="emergencyPhone">紧急联系电话</label>
+                            <input type="tel" id="emergencyPhone" name="emergencyPhone" placeholder="请输入紧急联系电话">
+                        </div>
+                    </div>
+
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ri-check-line"></i>
+                            提交申请
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="UI.hideModal('studentExitApplicationModal')">
+                            <i class="ri-close-line"></i>
+                            取消
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 家长为孩子申请出校模态框 -->
+    <div class="modal" id="parentApplyForExitModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>为孩子申请出校</h3>
+                <button class="modal-close" onclick="UI.hideModal('parentApplyForExitModal')">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="parentApplyForExitForm">
+                    <div class="form-section">
+                        <h3 class="section-title">选择学生</h3>
+                        <div class="form-group">
+                            <label for="parentStudentSelect">选择学生 <span class="required">*</span></label>
+                            <select id="parentStudentSelect" name="parentStudentSelect" required>
+                                <option value="">请选择要申请出校的学生</option>
+                                <!-- 动态加载关联的学生 -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">出校信息</h3>
+                        <div class="form-group">
+                            <label for="parentExitDate">出校日期 <span class="required">*</span></label>
+                            <input type="date" id="parentExitDate" name="parentExitDate" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="parentExitTimeStart">出校时间 <span class="required">*</span></label>
+                                <input type="time" id="parentExitTimeStart" name="parentExitTimeStart" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="parentExitTimeEnd">预计返校时间 <span class="required">*</span></label>
+                                <input type="time" id="parentExitTimeEnd" name="parentExitTimeEnd" value="20:00" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="parentExitReason">出校原因 <span class="required">*</span></label>
+                            <textarea id="parentExitReason" name="parentExitReason" rows="3" placeholder="请详细说明出校原因" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="parentDestination">目的地</label>
+                            <input type="text" id="parentDestination" name="parentDestination" placeholder="请输入目的地">
+                        </div>
+                        <div class="form-group">
+                            <label for="parentTransportMethod">交通方式</label>
+                            <select id="parentTransportMethod" name="parentTransportMethod">
+                                <option value="">请选择交通方式</option>
+                                <option value="步行">步行</option>
+                                <option value="自行车">自行车</option>
+                                <option value="公交车">公交车</option>
+                                <option value="地铁">地铁</option>
+                                <option value="家长接送">家长接送</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="parentEmergencyContact">紧急联系人</label>
+                            <input type="text" id="parentEmergencyContact" name="parentEmergencyContact" placeholder="请输入紧急联系人姓名">
+                        </div>
+                        <div class="form-group">
+                            <label for="parentEmergencyPhone">紧急联系人电话</label>
+                            <input type="tel" id="parentEmergencyPhone" name="parentEmergencyPhone" placeholder="请输入紧急联系人电话">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ri-check-line"></i>
+                            提交申请
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="UI.hideModal('parentApplyForExitModal')">
+                            <i class="ri-close-line"></i>
+                            取消
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- QR码模态框 -->
+    <div class="modal" id="qrCodeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>访问验证码</h3>
+                <button class="modal-close" id="closeQrCodeModal" onclick="UI.hideModal('qrCodeModal')">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="qrCodeContainer">
+                    <!-- QR码将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <!-- 引入QR码生成库 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
+  
+        // 显示登录错误提示
+        function showLoginError(message) {
+            const errorAlert = document.getElementById('loginErrorAlert');
+            const errorMessage = document.getElementById('loginErrorMessage');
+
+            // 支持HTML内容（用于注册链接）
+            if (message.includes('<a')) {
+                errorMessage.innerHTML = message;
+            } else {
+                errorMessage.textContent = message;
+            }
+
+            errorAlert.style.display = 'block';
+
+            // 滚动到错误提示位置
+            errorAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // 5秒后自动隐藏错误提示
+            setTimeout(() => {
+                hideLoginError();
+            }, 5000);
+        }
+
+        // 隐藏登录错误提示
+        function hideLoginError() {
+            const errorAlert = document.getElementById('loginErrorAlert');
+            errorAlert.style.display = 'none';
+        }
+
+        // 显示登录提示信息
+        function showLoginInfo(message) {
+            // 创建提示元素
+            const infoDiv = document.createElement('div');
+            infoDiv.style.cssText = `
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+                border-radius: 4px;
+                padding: 8px 12px;
+                font-size: 11px;
+                margin-top: 5px;
+                z-index: 1000;
+                white-space: nowrap;
+            `;
+            infoDiv.textContent = message;
+
+            // 添加到登录表单
+            const loginForm = document.getElementById('loginForm');
+            loginForm.style.position = 'relative';
+            loginForm.appendChild(infoDiv);
+
+            // 2秒后自动移除
+            setTimeout(() => {
+                if (infoDiv.parentNode) {
+                    infoDiv.parentNode.removeChild(infoDiv);
+                }
+            }, 2000);
+        }
+
+        // 页面加载完成后设置登录表单事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            // 监听登录表单提交
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    // 隐藏之前的错误提示
+                    hideLoginError();
+                });
+            }
+
+            // 监听用户名输入框变化，如果用户开始输入就隐藏错误提示
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+
+            if (usernameInput) {
+                usernameInput.addEventListener('input', hideLoginError);
+            }
+            if (passwordInput) {
+                passwordInput.addEventListener('input', hideLoginError);
+            }
+        });
+    </script>
+
+    <!-- 引入脚本 -->
+    <script src="/static/js/config.js?v=2.4"></script>
+    <script src="/static/js/mobile.js?v=8.7"></script>
+    <!-- 引入学生出校申请脚本 -->
+    <script src="/static/js/student-exit.js?v=1.2"></script>
+    <!-- 引入校友卡脚本 -->
+    <script src="/static/js/alumni-card.js?v=3.7"></script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>校园出入管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .hero {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .hero p {
+            font-size: 18px;
+            opacity: 0.9;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .portal-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px 25px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .portal-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .portal-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .portal-card h2 {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .portal-card p {
+            font-size: 14px;
+            color: #999;
+            line-height: 1.5;
+        }
+
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            opacity: 0.8;
+            animation: fadeIn 1s ease-out 0.5s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 0.8;
+            }
+        }
+
+        /* 电子校友卡特殊样式 */
+        .portal-card.electronic-card {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+
+        .portal-card.electronic-card h2,
+        .portal-card.electronic-card p {
+            color: white;
+        }
+
+        /* 门卫验证特殊样式 */
+        .portal-card.guard {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        }
+
+        .portal-card.guard h2,
+        .portal-card.guard p {
+            color: white;
+        }
+
+        /* 教师审批特殊样式 */
+        .portal-card.teacher {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .portal-card.teacher h2,
+        .portal-card.teacher p {
+            color: white;
+        }
+
+        /* 后台管理特殊样式 */
+        .portal-card.admin {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .portal-card.admin h2,
+        .portal-card.admin p {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>🏫 校园出入管理系统</h1>
+            <p>请选择您的身份</p>
+        </div>
+
+        <div class="portal-grid">
+            <!-- 电子校友卡（家长/校友） -->
+            <a href="/electronic-card" class="portal-card electronic-card">
+                <div class="portal-icon">💳</div>
+                <h2>电子校友卡</h2>
+                <p>家长 / 校友 / 学生<br>输入密码生成验证码</p>
+            </a>
+
+            <!-- 门卫验证 -->
+            <a href="/guard-verify" class="portal-card guard">
+                <div class="portal-icon">🛡️</div>
+                <h2>门卫验证</h2>
+                <p>验证6位码<br>核对身份信息</p>
+            </a>
+
+            <!-- 教师审批 -->
+            <a href="/teacher-wechat" class="portal-card teacher">
+                <div class="portal-icon">👨‍🏫</div>
+                <h2>教师审批</h2>
+                <p>审批家长进校 / 学生请假<br>管理校园出入</p>
+            </a>
+
+            <!-- 后台管理 -->
+            <a href="/admin-login" class="portal-card admin">
+                <div class="portal-icon">⚙️</div>
+                <h2>后台管理</h2>
+                <p>系统管理 / 数据统计<br>用户管理 / 密钥管理</p>
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>© 2026 校园出入管理系统 | 电子校友卡 v1.0</p>
+        </div>
+    </div>
+</body>
+</html>

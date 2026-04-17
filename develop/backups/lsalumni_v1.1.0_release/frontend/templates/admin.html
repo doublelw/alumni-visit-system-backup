@@ -1,0 +1,3247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1976d2">
+    <title>校友入校登记系统 - 管理后台</title>
+
+    <!-- 引入字体 -->
+    <style>
+        /* 使用系统字体避免HTTPS请求 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+
+        /* 模态对话框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow: hidden;
+            animation: slideIn 0.3s ease-in-out;
+        }
+
+        /* 用户类型复选框样式 */
+        .user-type-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-secondary);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .checkbox-item:hover {
+            background-color: var(--bg-hover);
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .checkbox-item input[type="checkbox"]:checked + label {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .checkbox-item:has(input:checked) {
+            background-color: var(--primary-color);
+            background-color: rgba(65, 153, 225, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-secondary);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: var(--font-size-xl);
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            transition: all var(--transition);
+        }
+
+        .modal-close:hover {
+            background-color: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: var(--spacing-lg);
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+            background-color: var(--bg-secondary);
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: flex-end;
+        }
+
+        /* 复选框样式 */
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+
+        /* 角色管理样式 */
+        .user-info {
+            background-color: var(--bg-secondary);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .user-info h4 {
+            margin: 0 0 var(--spacing-sm) 0;
+            color: var(--text-primary);
+        }
+
+        .user-info p {
+            margin: 0;
+            color: var(--text-secondary);
+        }
+
+        .roles-section {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            background-color: var(--bg-secondary);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header h4 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: var(--font-size-md);
+        }
+
+        .current-roles-section,
+        .available-roles-section {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .current-roles-section:last-child,
+        .available-roles-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .current-roles-section h5,
+        .available-roles-section h5 {
+            margin: 0 0 var(--spacing-sm) 0;
+            color: var(--text-primary);
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+        }
+
+        .roles-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            min-height: 60px;
+        }
+
+        .role-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-sm);
+            background-color: var(--bg-primary);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            transition: all var(--transition);
+        }
+
+        .role-item:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .role-item.assigned {
+            background-color: rgba(var(--primary-color-rgb), 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .role-info {
+            flex: 1;
+        }
+
+        .role-info h6 {
+            margin: 0 0 var(--spacing-xs) 0;
+            color: var(--text-primary);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+
+        .role-info p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 10px;
+            line-height: 1.3;
+        }
+
+        .role-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2px var(--spacing-xs);
+            border-radius: var(--radius-sm);
+            font-size: 10px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .role-item .btn {
+            padding: 2px var(--spacing-xs);
+            font-size: 10px;
+            height: auto;
+            line-height: 1.2;
+        }
+
+        .role-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* 用户管理页面按钮布局优化 */
+        .page-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .search-filter {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-filter input,
+        .search-filter select {
+            min-width: 120px;
+        }
+
+        .search-filter input {
+            min-width: 200px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-xs);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons .btn {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: var(--font-size-sm);
+            white-space: nowrap;
+        }
+
+        .action-buttons .btn i {
+            margin-right: 4px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .page-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-filter {
+                justify-content: center;
+            }
+
+            .action-buttons {
+                justify-content: center;
+                margin-top: var(--spacing-sm);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-filter {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-filter input,
+            .search-filter select {
+                width: 100%;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-buttons .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* 页面管理样式 */
+        .page {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* 关系管理特定样式 */
+        .relationship-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-secondary);
+        }
+
+        .relationship-section h4 {
+            margin: 0 0 15px 0;
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .relationship-section .form-group {
+            margin-bottom: 15px;
+        }
+
+        .relationship-section .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .user-list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .user-list-item:hover {
+            background-color: var(--bg-hover);
+            border-color: var(--primary-color);
+        }
+
+        .user-list-item.selected {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .user-list-item .user-info {
+            flex: 1;
+        }
+
+        .user-list-item .user-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .user-list-item .user-details {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .user-list-item .user-checkbox {
+            margin-right: 12px;
+        }
+
+        .user-list-item .user-type {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .user-list-item.selected .user-type {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .teacher-selection-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .teacher-selection-list .user-list-item {
+            cursor: pointer;
+        }
+
+        .teacher-selection-list .user-list-item:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .teacher-selection-list .user-list-item.selected {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .special-fields-group {
+            background-color: var(--bg-secondary);
+            padding: 20px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .special-fields-group .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .special-fields-group .form-row .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 768px) {
+            .special-fields-group .form-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+
+            .relationship-section {
+                padding: 15px;
+            }
+        }
+    </style>
+
+    <!-- 引入图标 -->
+    <link href="/static/vendor/remixicon.css" rel="stylesheet">
+
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="/static/css/admin.css?v=20251111_4">
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="ri-graduation-cap-fill"></i>
+                <span>校友管理系统</span>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="ri-menu-line"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <h3>主控面板</h3>
+                <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                    <i class="ri-dashboard-line"></i>
+                    <span>仪表板</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>用户管理</h3>
+                <a href="#users" class="nav-item" data-page="users">
+                    <i class="ri-user-line"></i>
+                    <span>用户列表</span>
+                </a>
+                                <a href="#organization" class="nav-item" data-page="organization">
+                    <i class="ri-building-line"></i>
+                    <span>组织管理</span>
+                </a>
+                <a href="#alumni-approve" class="nav-item" data-page="alumni-approve">
+                    <i class="ri-user-star-line"></i>
+                    <span>校友审核</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>访问管理</h3>
+                <a href="#visit-applications" class="nav-item" data-page="visit-applications">
+                    <i class="ri-calendar-check-line"></i>
+                    <span>访问申请</span>
+                </a>
+                <a href="#visit-records" class="nav-item" data-page="visit-records">
+                    <i class="ri-history-line"></i>
+                    <span>访问记录</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>车辆管理</h3>
+                <a href="#vehicles" class="nav-item" data-page="vehicles">
+                    <i class="ri-car-line"></i>
+                    <span>车辆列表</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>校历管理</h3>
+                <a href="#calendar" class="nav-item" data-page="calendar">
+                    <i class="ri-calendar-event-line"></i>
+                    <span>校历事件</span>
+                </a>
+                <a href="#survey" class="nav-item" data-page="survey">
+                    <i class="ri-file-list-3-line"></i>
+                    <span>问卷管理</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>系统设置</h3>
+                <a href="#statistics" class="nav-item" data-page="statistics">
+                    <i class="ri-bar-chart-line"></i>
+                    <span>数据统计</span>
+                </a>
+                <a href="#event-statistics" class="nav-item" data-page="event-statistics">
+                    <i class="ri-calendar-event-line"></i>
+                    <span>返校日报名统计</span>
+                </a>
+                <a href="#batch-approve" class="nav-item" data-page="batch-approve">
+                    <i class="ri-group-line"></i>
+                    <span>批量授权</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="avatar">
+                    <i class="ri-user-fill"></i>
+                </div>
+                <div class="user-details">
+                    <div class="name" id="adminName">管理员</div>
+                    <div class="role">系统管理员</div>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">
+                <i class="ri-logout-box-line"></i>
+                退出
+            </button>
+        </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <!-- 顶部栏 -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="mobile-sidebar-toggle" id="mobileSidebarToggle">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="breadcrumb">
+                    <span class="breadcrumb-item">首页</span>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item active" id="currentPage">仪表板</span>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="search-box">
+                    <i class="ri-search-line"></i>
+                    <input type="text" placeholder="搜索..." id="globalSearch">
+                </div>
+                <div class="notifications">
+                    <button class="notification-btn">
+                        <i class="ri-notification-3-line"></i>
+                        <span class="badge">3</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 页面内容 -->
+        <div class="content">
+            <!-- 仪表板页面 -->
+            <div class="page active" id="dashboardPage">
+                <div class="page-header">
+                    <div class="page-header-content">
+                        <div>
+                            <h1>仪表板</h1>
+                            <p>系统概览和关键指标</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="ri-user-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalUsers">0</h3>
+                            <p>总用户数</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="ri-graduation-cap-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalAlumni">0</h3>
+                            <p>注册校友</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="ri-calendar-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="todayVisits">0</h3>
+                            <p>今日访问</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon red">
+                            <i class="ri-time-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="dashboardPendingCount">0</h3>
+                            <p>待处理事项</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>最近7天访问趋势</h3>
+                            <div class="chart-actions">
+                                <button class="btn btn-sm">导出</button>
+                            </div>
+                        </div>
+                        <div class="chart-content">
+                            <canvas id="visitTrendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>访问目的分布</h3>
+                        </div>
+                        <div class="chart-content">
+                            <canvas id="purposeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近活动 -->
+                <div class="activity-section">
+                    <div class="section-header">
+                        <h3>最近活动</h3>
+                        <a href="#visit-records" class="view-all">查看全部</a>
+                    </div>
+                    <div class="activity-list" id="recentActivity">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户列表页面 -->
+            <div class="page" id="usersPage">
+                <div class="page-header">
+                    <h1>用户管理</h1>
+                    <div class="page-actions">
+                        <div class="search-filter">
+                            <input type="text" placeholder="搜索用户..." id="userSearch">
+                            <select id="userTypeFilter">
+                                <option value="">全部类型</option>
+                                <option value="alumni">校友</option>
+                                <option value="teacher">教师</option>
+                                <option value="security">保安</option>
+                                <option value="admin">管理员</option>
+                            </select>
+                            <select id="userStatusFilter">
+                                <option value="">全部状态</option>
+                                <option value="active">激活</option>
+                                <option value="inactive">禁用</option>
+                                <option value="pending">待审核</option>
+                            </select>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" id="addUserBtn">
+                                <i class="ri-add-line"></i>
+                                添加用户
+                            </button>
+                            <button class="btn btn-success" id="batchImportBtn">
+                                <i class="ri-upload-line"></i>
+                                批量导入
+                            </button>
+                            <button class="btn btn-info" id="batchExportBtn">
+                                <i class="ri-download-line"></i>
+                                批量导出
+                            </button>
+                            <button class="btn btn-warning" id="exportCardDataBtn">
+                                <i class="ri-download-line"></i>
+                                导出制卡数据
+                            </button>
+                            <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;">
+                                <i class="ri-delete-bin-line"></i>
+                                删除选中 (<span id="selectedCount">0</span>)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">
+                                    <input type="checkbox" id="selectAllUsers" title="全选/取消全选">
+                                </th>
+                                <th style="width: 60px;">序号</th>
+                                <th style="width: 100px;">用户名</th>
+                                <th>真实姓名</th>
+                                <th style="width: 140px;">类型</th>
+                                <th style="width: 160px;">邮箱</th>
+                                <th>手机号</th>
+                                <th>状态</th>
+                                <th>可拜访</th>
+                                <th>注册时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="usersPagination">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 拜访对象管理页面 -->
+            <div class="page" id="targetPersonsPage">
+                <div class="page-header">
+                    <h1>拜访对象管理</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="TargetPersonsPage.showCreateModal()">
+                            <i class="ri-add-line"></i> 添加拜访对象
+                        </button>
+                        <button class="btn btn-outline" onclick="TargetPersonsPage.syncWithTeachers()">
+                            <i class="ri-refresh-line"></i> 同步教师数据
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="ri-group-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="totalTargetPersons">0</div>
+                            <div class="stat-label">总拜访对象</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon active">
+                            <i class="ri-user-heart-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="activeTargetPersons">0</div>
+                            <div class="stat-label">活跃对象</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon inactive">
+                            <i class="ri-user-unfollow-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="inactiveTargetPersons">0</div>
+                            <div class="stat-label">停用对象</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 搜索和过滤 -->
+                <div class="search-filters">
+                    <div class="search-box">
+                        <i class="ri-search-line"></i>
+                        <input type="text" id="targetPersonsSearch" placeholder="搜索工作ID、姓名、部门..." />
+                    </div>
+                    <div class="filter-group">
+                        <select id="targetPersonsStatusFilter">
+                            <option value="active">活跃对象</option>
+                            <option value="inactive">停用对象</option>
+                            <option value="all">全部对象</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 拜访对象表格 -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>工作ID</th>
+                                <th>姓名</th>
+                                <th>部门</th>
+                                <th>职位</th>
+                                <th>邮箱</th>
+                                <th>电话</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="targetPersonsTableBody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页 -->
+                <div class="pagination" id="targetPersonsPagination">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+
+            <!-- 组织管理页面 -->
+            <div class="page" id="organizationPage">
+                <div class="page-header">
+                    <h1>组织管理</h1>
+                    <p>管理学校组织架构、用户权限和角色分配</p>
+                    <div class="page-actions">
+                        <div class="search-filter">
+                            <input type="text" placeholder="搜索组织..." id="orgSearch">
+                            <select id="orgTypeFilter">
+                                <option value="">全部类型</option>
+                                <option value="school">学校</option>
+                                <option value="campus">校区</option>
+                                <option value="graduation_year">毕业年份</option>
+                                <option value="class">班级</option>
+                                <option value="office">办公室</option>
+                                <option value="club_category">社团类别</option>
+                                <option value="club">社团</option>
+                            </select>
+                            <select id="orgStatusFilter">
+                                <option value="">全部状态</option>
+                                <option value="active">启用</option>
+                                <option value="inactive">禁用</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="addOrgBtn">
+                            <i class="ri-add-line"></i>
+                            添加组织
+                        </button>
+                        <button class="btn btn-outline" id="refreshOrgData">
+                            <i class="ri-refresh-line"></i>
+                            刷新数据
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="ri-building-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalOrgs">-</h3>
+                            <p>组织总数</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="ri-user-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalOrgUsers">-</h3>
+                            <p>用户总数</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="ri-shield-user-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalOrgRoles">-</h3>
+                            <p>角色总数</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="ri-graduation-cap-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalOrgTeachers">-</h3>
+                            <p>教师数量</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 组织表格 -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">
+                            <h3>组织列表</h3>
+                            <span class="table-count" id="orgTotalCount">共 0 条记录</span>
+                        </div>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-primary" id="addOrganizationBtn">
+                                <i class="ri-add-line"></i>
+                                添加组织
+                            </button>
+                            <button class="btn btn-sm btn-outline" id="exportOrgData">
+                                <i class="ri-download-line"></i>
+                                导出数据
+                            </button>
+                        </div>
+                    </div>
+
+                    <table class="data-table" id="organizationsTable">
+                        <thead>
+                            <tr>
+                                <th>组织名称</th>
+                                <th>组织代码</th>
+                                <th>类型</th>
+                                <th>层级</th>
+                                <th>父级组织</th>
+                                <th>状态</th>
+                                <th>联系人</th>
+                                <th>用户数</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="organizationsTableBody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+
+                    <div class="pagination" id="organizationsPagination">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+
+                <!-- 角色权限表格 -->
+                <div class="table-container" style="margin-top: 30px;">
+                    <div class="table-header">
+                        <div class="table-title">
+                            <h3>角色权限管理</h3>
+                            <span class="table-count" id="rolesTotalCount">共 0 条记录</span>
+                        </div>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-primary" id="addRoleBtn">
+                                <i class="ri-add-line"></i>
+                                添加角色
+                            </button>
+                        </div>
+                    </div>
+
+                    <table class="data-table" id="rolesTable">
+                        <thead>
+                            <tr>
+                                <th>角色名称</th>
+                                <th>显示名称</th>
+                                <th>描述</th>
+                                <th>权限</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rolesTableBody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+
+                    <div class="pagination" id="rolesPagination">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 校友审核页面 -->
+            <div class="page" id="alumni-approvePage">
+                <div class="page-header">
+                    <h1>校友审核</h1>
+                    <p>审核校友注册申请</p>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card" onclick="AlumniApprovePage.filterByStatus('pending')">
+                        <div class="stat-icon orange">
+                            <i class="ri-time-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="pendingCount">0</h3>
+                            <p>待审核</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="AlumniApprovePage.filterByStatus('approved')">
+                        <div class="stat-icon green">
+                            <i class="ri-check-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="approvedCount">0</h3>
+                            <p>已通过</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="AlumniApprovePage.filterByStatus('rejected')">
+                        <div class="stat-icon red">
+                            <i class="ri-close-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="rejectedCount">0</h3>
+                            <p>已拒绝</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="AlumniApprovePage.filterByStatus('all')">
+                        <div class="stat-icon blue">
+                            <i class="ri-group-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalCount">0</h3>
+                            <p>全部校友</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 筛选器 -->
+                <section class="approve-filters">
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-status="pending">待审核</button>
+                        <button class="filter-tab" data-status="approved">已通过</button>
+                        <button class="filter-tab" data-status="rejected">已拒绝</button>
+                        <button class="filter-tab" data-status="all">全部</button>
+                    </div>
+
+                    <div class="filter-controls">
+                        <div class="search-filter">
+                            <input type="text" placeholder="搜索校友姓名、学号、班级..." id="alumniSearch">
+                            <select id="alumniDivisionFilter">
+                                <option value="">全部学部</option>
+                            </select>
+                            <select id="alumniYearFilter">
+                                <option value="">全部年级</option>
+                            </select>
+                            <button class="btn btn-outline btn-sm" id="resetAlumniFilters">
+                                <i class="ri-refresh-line"></i>
+                                重置
+                            </button>
+                        </div>
+                        <button class="btn btn-primary btn-sm" id="refreshAlumniList">
+                            <i class="ri-refresh-line"></i>
+                            刷新
+                        </button>
+                    </div>
+                </section>
+
+                <!-- 校友列表 -->
+                <section class="alumni-list">
+                    <div class="table-container">
+                        <table class="data-table" id="alumniTable">
+                            <thead>
+                                <tr>
+                                    <th>校友信息</th>
+                                    <th>学号</th>
+                                    <th>班级</th>
+                                    <th>学部</th>
+                                    <th>专业/方向</th>
+                                    <th>毕业年份</th>
+                                    <th>申请时间</th>
+                                    <th>审核状态</th>
+                                    <th>审核人</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alumniTableBody">
+                                <!-- 动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="alumniPagination">
+                        <!-- 动态加载 -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- 访问申请页面 -->
+            <div class="page" id="visit-applicationsPage">
+                <div class="page-header">
+                    <h1>访问申请管理</h1>
+                    <p>统一管理所有访问申请，包括审核、车辆记录等</p>
+                    <div class="page-actions">
+                        <div class="search-filter">
+                            <input type="text" placeholder="搜索申请人、访问目的..." id="visitSearch">
+                            <select id="visitStatusFilter">
+                                <option value="">全部状态</option>
+                                <option value="pending">待审核</option>
+                                <option value="approved">已通过</option>
+                                <option value="rejected">已拒绝</option>
+                                <option value="completed">已完成</option>
+                                <option value="cancelled">已取消</option>
+                            </select>
+                            <input type="date" id="visitStartDate" placeholder="开始日期">
+                            <input type="date" id="visitEndDate" placeholder="结束日期">
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-outline" id="refreshVisitList">
+                                <i class="ri-refresh-line"></i>
+                                刷新
+                            </button>
+                            <button class="btn btn-primary" id="importExternalData">
+                                <i class="ri-download-line"></i>
+                                导入第三方数据
+                            </button>
+                            <button class="btn btn-success" id="batchApproveBtn">
+                                <i class="ri-check-double-line"></i>
+                                批量审核
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card" onclick="VisitApplicationsPage.filterByStatus('pending')">
+                        <div class="stat-icon orange">
+                            <i class="ri-time-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="visitPendingCount">0</h3>
+                            <p>待审核</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="VisitApplicationsPage.filterByStatus('approved')">
+                        <div class="stat-icon green">
+                            <i class="ri-check-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="visitApprovedCount">0</h3>
+                            <p>已通过</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="VisitApplicationsPage.filterByStatus('rejected')">
+                        <div class="stat-icon red">
+                            <i class="ri-close-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="visitRejectedCount">0</h3>
+                            <p>已拒绝</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="VisitApplicationsPage.filterByStatus('completed')">
+                        <div class="stat-icon blue">
+                            <i class="ri-calendar-check-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="visitCompletedCount">0</h3>
+                            <p>已完成</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 访问申请列表 -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">
+                            <h3>访问申请列表</h3>
+                            <span class="table-count" id="visitTotalCount">共 0 条记录</span>
+                        </div>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-outline" id="exportVisitData">
+                                <i class="ri-download-line"></i>
+                                导出数据
+                            </button>
+                        </div>
+                    </div>
+
+                    <table class="data-table" id="visitApplicationsTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAllVisits">
+                                </th>
+                                <th style="width: 25%;">申请人信息</th>
+                                <th style="width: 8%;">访问日期</th>
+                                <th style="width: 10%;">访问时间</th>
+                                <th style="width: 30%;">访问目的</th>
+                                <th style="width: 8%;">被访人</th>
+                                <th style="width: 8%;">车辆信息</th>
+                                <th style="width: 8%;">申请时间</th>
+                                <th style="width: 3%;">审核操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="visitApplicationsTableBody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+
+                    <div class="pagination" id="visitApplicationsPagination">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 访问记录页面 -->
+            <div class="page" id="visit-recordsPage">
+                <div class="page-header">
+                    <h1>访问记录</h1>
+                    <div class="page-actions">
+                        <div class="date-filter">
+                            <input type="date" id="recordStartDate">
+                            <span>至</span>
+                            <input type="date" id="recordEndDate">
+                        </div>
+                        <button class="btn btn-outline">
+                            <i class="ri-download-line"></i>
+                            导出记录
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="recordsTable">
+                        <thead>
+                            <tr>
+                                <th>访问者</th>
+                                <th>访问日期</th>
+                                <th>访问时间</th>
+                                <th>访问目的</th>
+                                <th>验证方式</th>
+                                <th>闸机</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="recordsPagination">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 车辆管理页面 -->
+            <div class="page" id="vehiclesPage">
+                <div class="page-header">
+                    <h1>车辆管理</h1>
+                    <div class="page-actions">
+                        <select id="vehicleStatusFilter">
+                            <option value="">全部状态</option>
+                            <option value="pending">待审核</option>
+                            <option value="approved">已通过</option>
+                            <option value="rejected">已拒绝</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="vehiclesTable">
+                        <thead>
+                            <tr>
+                                <th>车牌号</th>
+                                <th>车主</th>
+                                <th>车型</th>
+                                <th>颜色</th>
+                                <th>品牌</th>
+                                <th>关系</th>
+                                <th>状态</th>
+                                <th>登记时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 数据统计页面 -->
+            <div class="page" id="statisticsPage">
+                <div class="page-header">
+                    <h1>数据统计</h1>
+                    <p>系统数据分析和报表</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="ri-file-list-3-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalApplications">0</h3>
+                            <p>总申请数</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="ri-check-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="approvedApplications">0</h3>
+                            <p>已通过申请</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="ri-car-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalVehicles">0</h3>
+                            <p>注册车辆</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="ri-camera-2-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="faceRegistered">0</h3>
+                            <p>人脸注册</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-section">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>年级分布统计</h3>
+                        </div>
+                        <div class="chart-content">
+                            <canvas id="gradeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>校部分布统计</h3>
+                        </div>
+                        <div class="chart-content">
+                            <canvas id="departmentChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 校历管理页面 -->
+            <div class="page" id="calendarPage">
+                <div class="page-header">
+                    <h1>校历管理</h1>
+                    <p>管理学校重要活动、周年纪念、社团活动等校历事件</p>
+                    <div class="page-actions">
+                        <div class="search-filter">
+                            <input type="text" placeholder="搜索事件..." id="calendarSearch">
+                            <select id="eventTypeFilter">
+                                <option value="">全部类型</option>
+                                <option value="anniversary">周年活动</option>
+                                <option value="festival">传统节日</option>
+                                <option value="activity">校园活动</option>
+                                <option value="club">社团活动</option>
+                                <option value="meeting">重要会议</option>
+                            </select>
+                            <select id="eventStatusFilter">
+                                <option value="">全部状态</option>
+                                <option value="draft">草稿</option>
+                                <option value="published">已发布</option>
+                                <option value="cancelled">已取消</option>
+                                <option value="completed">已完成</option>
+                            </select>
+                            <select id="eventYearFilter">
+                                <option value="">全部年份</option>
+                            </select>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-outline" id="refreshCalendarList">
+                                <i class="ri-refresh-line"></i>
+                                刷新
+                            </button>
+                            <button class="btn btn-primary" id="createEventBtn">
+                                <i class="ri-add-line"></i>
+                                创建事件
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="ri-calendar-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalEvents">0</h3>
+                            <p>总事件数</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="ri-publish-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="publishedEvents">0</h3>
+                            <p>已发布</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="ri-time-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="upcomingEvents">0</h3>
+                            <p>即将到来</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="ri-gift-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="anniversaryEvents">0</h3>
+                            <p>周年活动</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 事件列表 -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">
+                            <h3>校历事件列表</h3>
+                            <span class="table-count" id="calendarTotalCount">共 0 条记录</span>
+                        </div>
+                        <div class="table-actions">
+                            <div class="action-group">
+                                <button class="btn btn-sm btn-primary" id="addEventBtn">
+                                    <i class="ri-add-line"></i>
+                                    新建事件
+                                </button>
+                                <button class="btn btn-sm btn-success" id="importEventsBtn">
+                                    <i class="ri-upload-2-line"></i>
+                                    导入事件
+                                </button>
+                                <button class="btn btn-sm btn-outline" id="downloadTemplateBtn">
+                                    <i class="ri-download-line"></i>
+                                    下载模板
+                                </button>
+                            </div>
+                            <div class="view-toggle">
+                                <button class="btn btn-sm btn-outline active" id="tableViewBtn">
+                                    <i class="ri-list-unordered"></i>
+                                    列表视图
+                                </button>
+                                <button class="btn btn-sm btn-outline" id="calendarViewBtn">
+                                    <i class="ri-calendar-2-line"></i>
+                                    日历视图
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="data-table" id="eventsTable">
+                        <thead>
+                            <tr>
+                                <th>事件信息</th>
+                                <th>类型</th>
+                                <th>日期时间</th>
+                                <th>地点</th>
+                                <th>目标群体</th>
+                                <th>状态</th>
+                                <th>优先级</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventsTableBody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+
+                    <div class="calendar-view" id="calendarView" style="display: none;">
+                        <!-- 日历视图 -->
+                        <div class="calendar-header">
+                            <div class="calendar-nav">
+                                <button class="btn btn-sm btn-outline" id="prevMonthBtn">
+                                    <i class="ri-arrow-left-s-line"></i>
+                                </button>
+                                <h3 id="currentMonthTitle">2025年10月</h3>
+                                <button class="btn btn-sm btn-outline" id="nextMonthBtn">
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </button>
+                            </div>
+                            <div class="calendar-actions">
+                                <button class="btn btn-sm btn-primary" id="todayBtn">
+                                    今天
+                                </button>
+                            </div>
+                        </div>
+                        <div class="calendar-grid" id="calendarGrid">
+                            <!-- 日历网格 -->
+                        </div>
+                    </div>
+
+                    <div class="pagination" id="eventsPagination">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 批量授权页面 -->
+            <div class="page" id="batch-approvePage">
+                <div class="page-header">
+                    <h1>批量授权</h1>
+                    <p>为特定群体批量创建访问授权</p>
+                </div>
+
+                <div class="batch-form">
+                    <form id="batchApproveForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>授权类型</label>
+                                <select id="batchType" required>
+                                    <option value="">请选择授权类型</option>
+                                    <option value="class">按班级</option>
+                                    <option value="year">按年级</option>
+                                    <option value="division">按学部</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>目标群体</label>
+                                <select id="batchTarget" disabled required>
+                                    <option value="">请先选择授权类型</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>访问日期</label>
+                                <input type="date" id="batchDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>开始时间</label>
+                                <input type="time" id="batchStartTime" required min="08:00" max="18:00">
+                            </div>
+                            <div class="form-group">
+                                <label>结束时间</label>
+                                <input type="time" id="batchEndTime" required min="08:00" max="18:00">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>访问目的</label>
+                            <input type="text" id="batchPurpose" placeholder="请输入访问目的" required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" id="previewBatch">
+                                <i class="ri-eye-line"></i>
+                                预览
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ri-check-line"></i>
+                                确认授权
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="batch-preview" id="batchPreview" style="display: none;">
+                    <h3>授权预览</h3>
+                    <div class="preview-content" id="previewContent">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 问卷管理页面 -->
+        <div class="page" id="surveyPage">
+            <div class="page-header">
+                <div class="page-header-content">
+                    <div>
+                        <h1>问卷管理</h1>
+                        <p>管理活动问卷调查、查看统计报表</p>
+                    </div>
+                    <div class="page-actions">
+                        <div class="search-filter">
+                            <input type="text" placeholder="搜索问卷..." id="surveySearch">
+                            <select id="surveyStatusFilter">
+                                <option value="">全部状态</option>
+                                <option value="draft">草稿</option>
+                                <option value="published">已发布</option>
+                                <option value="closed">已关闭</option>
+                                <option value="archived">已归档</option>
+                            </select>
+                            <select id="surveyEventFilter">
+                                <option value="">全部事件</option>
+                            </select>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-outline" id="refreshSurveyList">
+                                <i class="ri-refresh-line"></i>
+                                刷新
+                            </button>
+                            <button class="btn btn-primary" id="createSurveyBtn">
+                                <i class="ri-add-line"></i>
+                                创建问卷
+                            </button>
+                            <button class="btn btn-success" id="importQuestionsBtn">
+                                <i class="ri-upload-2-line"></i>
+                                批量导入问题
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="ri-file-list-3-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalSurveys">0</h3>
+                        <p>总问卷数</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="ri-publish-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="publishedSurveys">0</h3>
+                        <p>已发布</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon orange">
+                        <i class="ri-user-follow-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalResponses">0</h3>
+                        <p>总回答数</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon purple">
+                        <i class="ri-percent-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="avgCompletionRate">0%</h3>
+                        <p>平均完成率</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 问卷列表 -->
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">
+                        <h3>问卷列表</h3>
+                        <span class="table-count" id="surveyTotalCount">共 0 条记录</span>
+                    </div>
+                    <div class="table-actions">
+                        <button class="btn btn-sm btn-primary" id="addSurveyBtn">
+                            <i class="ri-add-line"></i>
+                            新建问卷
+                        </button>
+                        <button class="btn btn-sm btn-success" id="exportSurveysBtn">
+                            <i class="ri-download-line"></i>
+                            导出数据
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="surveysTable">
+                        <thead>
+                            <tr>
+                                <th>问卷标题</th>
+                                <th>关联事件</th>
+                                <th>状态</th>
+                                <th>问题数</th>
+                                <th>回答数</th>
+                                <th>完成率</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="surveysTableBody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-pagination" id="surveyPagination">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="adminToast">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+        <!-- 返校日报名统计页面 -->
+        <div class="page" id="event-statisticsPage">
+  
+            <!-- 页面操作区域 -->
+            <div class="page-content-header">
+                <div class="page-header-content">
+                    <div>
+                        <h1>返校日报名统计</h1>
+                        <p>查看返校日活动报名统计信息和详情</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="EventStatisticsPage.refreshData()">
+                            <i class="ri-refresh-line"></i>
+                            刷新数据
+                        </button>
+                        <button class="btn btn-success" onclick="EventStatisticsPage.exportData()">
+                            <i class="ri-download-line"></i>
+                            导出数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计概览 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="ri-user-add-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalRegistrations">0</h3>
+                        <p>总报名人数</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="ri-restaurant-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="diningRegistrations">0</h3>
+                        <p>就餐人数</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon orange">
+                        <i class="ri-user-unfollow-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="nonDiningRegistrations">0</h3>
+                        <p>非就餐人数</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon purple">
+                        <i class="ri-percent-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="diningPercentage">0%</h3>
+                        <p>就餐比例</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 菜品统计图表 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>最受欢迎菜品 TOP 10</h3>
+                </div>
+                <div class="card-body">
+                    <div id="dishChartContainer"></div>
+                </div>
+            </div>
+
+            <!-- 报名详情列表 -->
+            <div class="card" style="margin-left: calc(var(--sidebar-width) / 3); padding-left: var(--spacing-md);">
+                <div class="card-header">
+                    <h3>报名详情列表</h3>
+                    <div class="card-actions">
+                        <select class="form-control" id="diningFilter" style="width: 150px;">
+                            <option value="">全部</option>
+                            <option value="true">就餐</option>
+                            <option value="false">不就餐</option>
+                        </select>
+                        <button class="btn btn-outline" onclick="EventStatisticsPage.clearFilters()">
+                            <i class="ri-filter-off-line"></i>
+                            清除筛选
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>用户名</th>
+                                    <th>真实姓名</th>
+                                    <th>联系电话</th>
+                                    <th>就餐选择</th>
+                                    <th>选择的菜品</th>
+                                    <th>验证码</th>
+                                    <th>报名时间</th>
+                                    <th>备注</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registrationTableBody">
+                                <tr>
+                                    <td colspan="10" class="text-center">加载中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页 -->
+                    <div class="pagination-wrapper">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination" id="registrationPagination">
+                                <!-- 动态生成分页 -->
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- 确认对话框 -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>确认操作</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">确定要执行此操作吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelConfirm">取消</button>
+                <button class="btn btn-primary" id="confirmAction">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 事件创建/编辑模态框 -->
+    <div class="modal" id="eventModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="eventModalTitle">创建事件</h3>
+                <button class="modal-close" onclick="CalendarPage.closeEventModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="eventForm">
+                    <div class="form-section">
+                        <h4>基本信息</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>事件标题 <span class="required">*</span></label>
+                                <input type="text" id="eventTitle" name="title" required>
+                            </div>
+                            <div class="form-group">
+                                <label>事件类型 <span class="required">*</span></label>
+                                <select id="eventType" name="event_type" required>
+                                    <option value="">请选择类型</option>
+                                    <option value="anniversary">周年活动</option>
+                                    <option value="festival">传统节日</option>
+                                    <option value="activity">校园活动</option>
+                                    <option value="club">社团活动</option>
+                                    <option value="meeting">重要会议</option>
+                                    <option value="holiday">假期</option>
+                                    <option value="exam">考试</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>事件描述</label>
+                            <textarea id="eventDescription" name="description" rows="3" placeholder="请输入事件描述..."></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>优先级</label>
+                                <select id="eventPriority" name="priority">
+                                    <option value="low">低</option>
+                                    <option value="medium" selected>中</option>
+                                    <option value="high">高</option>
+                                    <option value="urgent">紧急</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>状态</label>
+                                <select id="eventStatus" name="status">
+                                    <option value="draft">草稿</option>
+                                    <option value="published">已发布</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>时间安排</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>开始日期 <span class="required">*</span></label>
+                                <input type="date" id="eventStartDate" name="start_date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>结束日期</label>
+                                <input type="date" id="eventEndDate" name="end_date">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>开始时间</label>
+                                <input type="time" id="eventStartTime" name="start_time">
+                            </div>
+                            <div class="form-group">
+                                <label>结束时间</label>
+                                <input type="time" id="eventEndTime" name="end_time">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="eventAllDay" name="all_day">
+                                全天事件
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>地点和联系信息</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>活动地点</label>
+                                <input type="text" id="eventLocation" placeholder="请输入活动地点...">
+                            </div>
+                            <div class="form-group">
+                                <label>在线链接</label>
+                                <input type="url" id="eventOnlineUrl" placeholder="https://...">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>联系人</label>
+                                <input type="text" id="eventContactPerson" placeholder="请输入联系人...">
+                            </div>
+                            <div class="form-group">
+                                <label>联系电话</label>
+                                <input type="tel" id="eventContactPhone" placeholder="请输入联系电话...">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>联系邮箱</label>
+                            <input type="email" id="eventContactEmail" placeholder="请输入联系邮箱...">
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>目标群体</h4>
+                        <div class="form-group">
+                            <label>目标受众</label>
+                            <select id="eventTargetAudience">
+                                <option value="all">所有人</option>
+                                <option value="alumni">校友</option>
+                                <option value="students">在校学生</option>
+                                <option value="teachers">教师</option>
+                                <option value="specific">特定群体</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>目标毕业年份（用逗号分隔）</label>
+                            <input type="text" id="eventTargetGraduationYears" placeholder="例如：2014,2015,2016">
+                        </div>
+                        <div class="form-group">
+                            <label>目标学部（用逗号分隔）</label>
+                            <input type="text" id="eventTargetDivisions" placeholder="例如：高中部,国际部">
+                        </div>
+                    </div>
+
+                    <div class="form-section" id="anniversarySection" style="display: none;">
+                        <h4>周年活动设置</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>周年年数</label>
+                                <input type="number" id="eventAnniversaryYear" min="1" placeholder="例如：10,20,30">
+                            </div>
+                            <div class="form-group">
+                                <label>对应毕业年份</label>
+                                <input type="number" id="eventGraduationYear" min="1900" max="2030" placeholder="请输入毕业年份">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section" id="clubSection" style="display: none;">
+                        <h4>社团活动设置</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>社团名称</label>
+                                <input type="text" id="eventClubName" placeholder="请输入社团名称">
+                            </div>
+                            <div class="form-group">
+                                <label>社团类型</label>
+                                <select id="eventClubType">
+                                    <option value="">请选择类型</option>
+                                    <option value="academic">学术</option>
+                                    <option value="sports">体育</option>
+                                    <option value="arts">艺术</option>
+                                    <option value="volunteer">志愿</option>
+                                    <option value="technology">技术</option>
+                                    <option value="other">其他</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section" id="bookingSection" style="display: none;">
+                        <h4>预约设置</h4>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="eventRequiresBooking">
+                                需要预约
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>最大参与人数</label>
+                                <input type="number" id="eventMaxParticipants" min="1" placeholder="请输入最大人数">
+                            </div>
+                            <div class="form-group">
+                                <label>预约截止时间</label>
+                                <input type="datetime-local" id="eventBookingDeadline">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="CalendarPage.closeEventModal()">取消</button>
+                <button class="btn btn-primary" onclick="CalendarPage.saveEvent()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 事件详情模态框 -->
+    <div class="modal" id="eventDetailModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>事件详情</h3>
+                <button class="modal-close" onclick="CalendarPage.closeDetailModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="eventDetailContent">
+                <!-- 动态加载 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="CalendarPage.closeDetailModal()">关闭</button>
+                <button class="btn btn-primary" id="editEventBtn">编辑</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 校历事件导入模态框 -->
+    <div class="modal" id="importEventsModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>导入校历事件</h3>
+                <button class="modal-close" onclick="CalendarPage.closeImportModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="import-steps">
+                    <!-- 步骤1：文件上传 -->
+                    <div class="import-step" id="uploadStep">
+                        <h4>步骤1：选择文件</h4>
+                        <div class="upload-area" id="importUploadArea">
+                            <i class="ri-upload-cloud-2-line"></i>
+                            <p>点击选择文件或拖拽文件到此处</p>
+                            <p class="upload-hint">支持格式：.xlsx, .xls, .csv</p>
+                            <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                        </div>
+
+                        <div class="upload-instructions">
+                            <h5>导入说明：</h5>
+                            <ul>
+                                <li>请先下载导入模板，按照模板格式填写数据</li>
+                                <li>必填字段：标题、事件类型、开始日期</li>
+                                <li>事件类型：anniversary(周年活动)、festival(传统节日)、activity(校园活动)、club(社团活动)、meeting(重要会议)、holiday(假期)、exam(考试)</li>
+                                <li>日期格式：YYYY-MM-DD（如：2024-05-04）</li>
+                                <li>时间格式：HH:MM（如：09:00）</li>
+                                <li>优先级：high(高)、medium(中)、low(低)</li>
+                                <li>状态：draft(草稿)、published(已发布)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 步骤2：数据预览 -->
+                    <div class="import-step" id="previewStep" style="display: none;">
+                        <h4>步骤2：数据预览</h4>
+                        <div class="preview-summary">
+                            <div class="summary-item">
+                                <label>解析成功：</label>
+                                <span class="success-count" id="importSuccessCount">0</span>
+                            </div>
+                            <div class="summary-item">
+                                <label>解析失败：</label>
+                                <span class="error-count" id="importErrorCount">0</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-table-container">
+                            <table class="preview-table" id="importPreviewTable">
+                                <thead>
+                                    <tr>
+                                        <th>标题</th>
+                                        <th>类型</th>
+                                        <th>开始日期</th>
+                                        <th>地点</th>
+                                        <th>状态</th>
+                                        <th>错误信息</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="importPreviewBody">
+                                    <!-- 动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="validation-errors" id="validationErrors" style="display: none;">
+                            <h5>数据验证错误：</h5>
+                            <ul id="validationErrorsList">
+                                <!-- 动态加载 -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 步骤3：导入结果 -->
+                    <div class="import-step" id="resultStep" style="display: none;">
+                        <h4>步骤3：导入结果</h4>
+                        <div class="import-result">
+                            <div class="result-icon success" id="importResultIcon">
+                                <i class="ri-check-double-line"></i>
+                            </div>
+                            <h5 id="importResultTitle">导入成功</h5>
+                            <div class="result-stats">
+                                <div class="stat-item">
+                                    <label>成功导入：</label>
+                                    <span class="success-count" id="importedCount">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <label>导入失败：</label>
+                                    <span class="error-count" id="importFailedCount">0</span>
+                                </div>
+                            </div>
+                            <div class="import-errors" id="importErrorDetails" style="display: none;">
+                                <h6>失败详情：</h6>
+                                <ul id="importErrorList">
+                                    <!-- 动态加载 -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelImportBtn" onclick="CalendarPage.closeImportModal()">取消</button>
+                <button class="btn btn-primary" id="downloadTemplateInModalBtn" onclick="CalendarPage.downloadTemplate()">
+                    <i class="ri-download-line"></i>
+                    下载模板
+                </button>
+                <button class="btn btn-success" id="confirmImportBtn" onclick="CalendarPage.confirmImport()" style="display: none;">
+                    <i class="ri-check-line"></i>
+                    确认导入
+                </button>
+                <button class="btn btn-primary" id="closeImportResultBtn" onclick="CalendarPage.closeImportModal()" style="display: none;">
+                    完成
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 组织编辑模态框 -->
+    <div class="modal" id="orgModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="orgModalTitle">添加组织</h3>
+                <button class="modal-close" onclick="OrganizationPage.closeOrgModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="orgForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>组织名称 <span class="required">*</span></label>
+                            <input type="text" id="orgName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>组织代码 <span class="required">*</span></label>
+                            <input type="text" id="orgCode" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>组织类型 <span class="required">*</span></label>
+                            <select id="orgType" required>
+                                <option value="">请选择类型</option>
+                                <option value="school">学校</option>
+                                <option value="campus">校区</option>
+                                <option value="graduation_year">毕业年份</option>
+                                <option value="class">班级</option>
+                                <option value="office">办公室</option>
+                                <option value="club_category">社团类别</option>
+                                <option value="club">社团</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>父级组织</label>
+                            <select id="orgParentId">
+                                <option value="">无父级组织</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea id="orgDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>状态</label>
+                            <select id="orgStatus">
+                                <option value="active">启用</option>
+                                <option value="inactive">禁用</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>排序</label>
+                            <input type="number" id="orgSortOrder" value="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>联系人</label>
+                        <input type="text" id="orgContactPerson">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>联系电话</label>
+                            <input type="tel" id="orgContactPhone">
+                        </div>
+                        <div class="form-group">
+                            <label>联系邮箱</label>
+                            <input type="email" id="orgContactEmail">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>地址</label>
+                        <input type="text" id="orgAddress">
+                    </div>
+
+                    <!-- 班级和社团特有字段 -->
+                    <div id="orgSpecialFields">
+                        <!-- 班级字段 -->
+                        <div id="classFields" style="display: none;">
+                            <h4 style="margin-top: 20px; margin-bottom: 10px; color: var(--primary-color);">班级设置</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>班主任</label>
+                                    <select id="classTeacherId">
+                                        <option value="">请选择班主任</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>年级组长</label>
+                                    <select id="headTeacherId">
+                                        <option value="">请选择年级组长</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 社团字段 -->
+                        <div id="clubFields" style="display: none;">
+                            <h4 style="margin-top: 20px; margin-bottom: 10px; color: var(--primary-color);">社团设置</h4>
+                            <div class="form-group">
+                                <label>社团负责人</label>
+                                <select id="leaderId">
+                                    <option value="">请选择社团负责人</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="OrganizationPage.closeOrgModal()">取消</button>
+                <button class="btn btn-primary" onclick="OrganizationPage.saveOrg()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 角色编辑模态框 -->
+    <div class="modal" id="roleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="roleModalTitle">添加角色</h3>
+                <button class="modal-close" onclick="OrganizationPage.closeRoleModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="roleForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>角色名称 <span class="required">*</span></label>
+                            <input type="text" id="roleName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>显示名称 <span class="required">*</span></label>
+                            <input type="text" id="roleDisplayName" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea id="roleDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>权限</label>
+                        <div class="permissions-grid" id="permissionsGrid">
+                            <label><input type="checkbox" value="user_management"> 用户管理</label>
+                            <label><input type="checkbox" value="org_management"> 组织管理</label>
+                            <label><input type="checkbox" value="visit_approval"> 访问审批</label>
+                            <label><input type="checkbox" value="system_settings"> 系统设置</label>
+                            <label><input type="checkbox" value="data_export"> 数据导出</label>
+                            <label><input type="checkbox" value="audit_logs"> 审计日志</label>
+                            <label><input type="checkbox" value="security_monitoring"> 安全监控</label>
+                            <label><input type="checkbox" value="emergency_contact"> 紧急联系</label>
+                            <label><input type="checkbox" value="alumni_management"> 校友管理</label>
+                            <label><input type="checkbox" value="event_management"> 活动管理</label>
+                            <label><input type="checkbox" value="class_management"> 班级管理</label>
+                            <label><input type="checkbox" value="student_communication"> 学生沟通</label>
+                            <label><input type="checkbox" value="profile_management"> 资料管理</label>
+                            <label><input type="checkbox" value="visit_application"> 访问申请</label>
+                            <label><input type="checkbox" value="event_registration"> 活动报名</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>状态</label>
+                        <select id="roleStatus">
+                            <option value="active">启用</option>
+                            <option value="inactive">禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="OrganizationPage.closeRoleModal()">取消</button>
+                <button class="btn btn-primary" onclick="OrganizationPage.saveRole()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量导入用户模态框 -->
+    <div class="modal" id="batchImportModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>批量导入用户</h3>
+                <button class="modal-close" onclick="UsersPage.hideBatchImportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="import-steps">
+                    <!-- 步骤1：文件上传 -->
+                    <div class="import-step" id="uploadStep">
+                        <h4>步骤1：选择文件</h4>
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-content">
+                                <i class="ri-upload-cloud-line upload-icon"></i>
+                                <p>拖拽Excel文件到此处，或点击选择文件</p>
+                                <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">
+                                    选择文件
+                                </button>
+                                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                            </div>
+                        </div>
+                        <div class="upload-info">
+                            <p><strong>支持的文件格式：</strong>Excel (.xlsx, .xls)</p>
+                            <p><strong>文件大小限制：</strong>最大10MB</p>
+                        </div>
+                    </div>
+
+                    <!-- 步骤2：数据预览 -->
+                    <div class="import-step" id="previewStep" style="display: none;">
+                        <h4>步骤2：数据预览</h4>
+                        <div class="preview-info">
+                            <p>检测到 <strong id="previewCount">0</strong> 条用户数据</p>
+                            <p>请检查数据是否正确，然后确认导入</p>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table" id="previewTable">
+                                <thead>
+                                    <tr>
+                                        <th>用户名</th>
+                                        <th>真实姓名</th>
+                                        <th>用户类型</th>
+                                        <th>邮箱</th>
+                                        <th>手机号</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previewTableBody">
+                                    <!-- 动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 步骤3：导入结果 -->
+                    <div class="import-step" id="resultStep" style="display: none;">
+                        <h4>导入结果</h4>
+                        <div class="import-summary" id="importSummary">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="UsersPage.hideBatchImportModal()">取消</button>
+                <button class="btn btn-info" id="downloadTemplateBtn" onclick="UsersPage.downloadUserTemplate()">
+                    <i class="ri-download-line"></i>
+                    下载模板
+                </button>
+                <button class="btn btn-success" id="confirmImportBtn" onclick="UsersPage.confirmBatchImport()" style="display: none;">
+                    <i class="ri-check-line"></i>
+                    确认导入
+                </button>
+                <button class="btn btn-primary" id="closeImportResultBtn" onclick="UsersPage.hideBatchImportModal()" style="display: none;">
+                    完成
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入Chart.js -->
+    <script src="/static/vendor/chart.js"></script>
+
+    <!-- 引入配置 -->
+    <script src="/static/js/config.js?v=2.3"></script>
+
+    <!-- 引入脚本 -->
+      <script src="/static/js/relationship-management.js?v=1.0"></script>
+<!-- 拜访对象模态框 -->
+<div class="modal" id="targetPersonModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="targetPersonModalTitle">添加拜访对象</h3>
+            <button class="modal-close" onclick="TargetPersonsPage.hideModal()">
+                <i class="ri-close-line"></i>
+            </button>
+        </div>
+        <form id="targetPersonForm" class="modal-body">
+            <input type="hidden" id="targetPersonId" />
+
+            <div class="form-group">
+                <label for="targetPersonWorkId">工作ID *</label>
+                <input type="text" id="targetPersonWorkId" required
+                       placeholder="例如: EMP000001" />
+            </div>
+
+            <div class="form-group">
+                <label for="targetPersonName">姓名 *</label>
+                <input type="text" id="targetPersonName" required
+                       placeholder="请输入姓名" />
+            </div>
+
+            <div class="form-group">
+                <label for="targetPersonDepartment">部门 *</label>
+                <input type="text" id="targetPersonDepartment" required
+                       placeholder="请输入部门" />
+            </div>
+
+            <div class="form-group">
+                <label for="targetPersonPosition">职位</label>
+                <input type="text" id="targetPersonPosition"
+                       placeholder="请输入职位" />
+            </div>
+
+            <div class="form-group">
+                <label for="targetPersonEmail">邮箱</label>
+                <input type="email" id="targetPersonEmail"
+                       placeholder="请输入邮箱地址" />
+            </div>
+
+            <div class="form-group">
+                <label for="targetPersonPhone">电话</label>
+                <input type="tel" id="targetPersonPhone"
+                       placeholder="请输入电话号码" />
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="targetPersonIsActive" checked />
+                    <span class="checkmark"></span>
+                    启用状态
+                </label>
+            </div>
+        </form>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="TargetPersonsPage.hideModal()">
+                取消
+            </button>
+            <button type="submit" class="btn btn-primary" onclick="TargetPersonsPage.saveTargetPerson()">
+                保存
+            </button>
+        </div>
+    </div>
+</div>
+
+  
+    <!-- 添加用户模态框 -->
+    <div class="modal" id="addUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>添加新用户</h3>
+                <button class="modal-close" onclick="UsersPage.hideAddUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="form-group">
+                        <label for="addUsername">用户名 *</label>
+                        <input type="text" id="addUsername" class="form-control" required>
+                        <small class="form-hint">用于登录系统的唯一标识</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addPassword">密码 *</label>
+                        <div class="password-input-container">
+                            <input type="password" id="addPassword" class="form-control" required>
+                            <button type="button" class="password-toggle-btn" onclick="UsersPage.togglePasswordVisibility('addPassword')">
+                                <i class="ri-eye-line" id="addPasswordToggleIcon"></i>
+                            </button>
+                        </div>
+                        <small class="form-hint">密码规则：至少6位字符，包含字母和数字</small>
+                        <div class="password-strength-indicator" id="passwordStrength">
+                            <div class="strength-bar"></div>
+                            <span class="strength-text">密码强度：弱</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addRealName">真实姓名 *</label>
+                        <input type="text" id="addRealName" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addEmail">邮箱 *</label>
+                        <input type="email" id="addEmail" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addPhone">手机号</label>
+                        <input type="tel" id="addPhone" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addUserType">用户类型 *</label>
+                        <select id="addUserType" class="form-control" required>
+                            <option value="teacher">教师</option>
+                            <option value="student">学生</option>
+                            <option value="parent">家长</option>
+                            <option value="alumni">校友</option>
+                            <option value="security">保安</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+
+                    <hr class="form-divider">
+
+                    <div class="form-row" id="addVisitableGroup" style="display: none;">
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="addIsVisitable">
+                                可拜访权限
+                            </label>
+                            <small class="form-hint">开启后，该用户可作为被拜访对象</small>
+                        </div>
+                    </div>
+
+                    <hr class="form-divider" style="display: none;" id="addStudentFieldsDivider">
+
+                    <div class="form-row">
+                        <div class="form-group" id="addStudentIdGroup">
+                            <label for="addStudentId">学号</label>
+                            <input type="text" id="addStudentId" class="form-control">
+                        </div>
+
+                        <div class="form-group" id="addEmployeeIdGroup">
+                            <label for="addEmployeeId">工号</label>
+                            <input type="text" id="addEmployeeId" class="form-control">
+                        </div>
+
+                        <div class="form-group" id="addClassIdGroup">
+                            <label for="addClassId">班级</label>
+                            <input type="text" id="addClassId" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" id="addGradeGroup">
+                            <label for="addGrade">年级</label>
+                            <input type="text" id="addGrade" class="form-control">
+                        </div>
+
+                        <div class="form-group" id="addIsClassTeacherGroup">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="addIsClassTeacher">
+                                <span class="checkmark"></span>
+                                是否班主任
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="UsersPage.hideAddUserModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="UsersPage.addUser()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑用户模态框 -->
+    <div class="modal" id="editUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>编辑用户</h3>
+                <button class="modal-close" onclick="UsersPage.hideEditUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId" name="id">
+
+                    <div class="form-group">
+                        <label for="editUsername">用户名 *</label>
+                        <input type="text" id="editUsername" class="form-control" required>
+                        <small class="form-hint">用于登录系统的唯一标识</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editRealName">真实姓名 *</label>
+                        <input type="text" id="editRealName" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editEmail">邮箱 *</label>
+                        <input type="email" id="editEmail" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editPhone">手机号</label>
+                        <input type="tel" id="editPhone" class="form-control">
+                    </div>
+
+                    <hr class="form-divider">
+
+                    <div class="form-group">
+                        <label>用户类型 *</label>
+                        <div class="user-type-checkboxes" id="editUserTypes">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeTeacher" value="teacher">
+                                <label for="editTypeTeacher">教师</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeStudent" value="student">
+                                <label for="editTypeStudent">学生</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeParent" value="parent">
+                                <label for="editTypeParent">家长</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeAlumni" value="alumni">
+                                <label for="editTypeAlumni">校友</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeSecurity" value="security">
+                                <label for="editTypeSecurity">保安</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="editTypeAdmin" value="admin">
+                                <label for="editTypeAdmin">管理员</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="form-divider">
+
+                    <div class="form-row">
+                        <div class="form-group" id="editStudentIdGroup">
+                            <label for="editStudentId">学号</label>
+                            <input type="text" id="editStudentId" class="form-control">
+                        </div>
+
+                        <div class="form-group" id="editEmployeeIdGroup">
+                            <label for="editEmployeeId">工号</label>
+                            <input type="text" id="editEmployeeId" class="form-control">
+                        </div>
+
+                        <div class="form-group" id="editClassIdGroup">
+                            <label for="editClassId">班级</label>
+                            <input type="text" id="editClassId" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" id="editGradeGroup">
+                            <label for="editGrade">年级</label>
+                            <input type="text" id="editGrade" class="form-control">
+                        </div>
+
+                        <div class="form-group" id="editIsClassTeacherGroup">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="editIsClassTeacher">
+                                <span class="checkmark"></span>
+                                是否班主任
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editPassword">新密码</label>
+                        <div class="password-input-container">
+                            <input type="password" id="editPassword" class="form-control" placeholder="留空表示不修改密码">
+                            <button type="button" class="password-toggle-btn" onclick="UsersPage.togglePasswordVisibility('editPassword')">
+                                <i class="ri-eye-line" id="editPasswordToggleIcon"></i>
+                            </button>
+                        </div>
+                        <small class="form-hint">留空则不修改原密码</small>
+                        <div class="password-strength-indicator" id="editPasswordStrength">
+                            <div class="strength-bar"></div>
+                            <span class="strength-text">密码强度：未输入</span>
+                        </div>
+                    </div>
+
+                    <hr class="form-divider">
+
+                    <div class="form-row">
+                        <div class="form-group" id="visitableGroup">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="editIsVisitable">
+                                可拜访权限
+                            </label>
+                            <small class="form-hint">开启后，该用户可作为被拜访对象</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editStatus">用户状态</label>
+                        <select id="editStatus" class="form-control">
+                            <option value="active">正常</option>
+                            <option value="inactive">禁用</option>
+                        </select>
+                        <small class="form-hint">禁用后用户将无法登录系统</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="UsersPage.hideEditUserModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="UsersPage.saveEditUser()">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户关系管理模态对话框 -->
+    <div class="modal" id="userRelationshipModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 id="userRelationshipModalTitle">用户关系管理</h3>
+                <button class="modal-close" onclick="UserRelationshipPage.closeModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 用户基本信息 -->
+                <div class="info-section" style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--primary-color);">用户信息</h4>
+                    <div id="userInfo" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                        <!-- 动态加载用户信息 -->
+                    </div>
+                </div>
+
+                <!-- 家长-学生关系配置 -->
+                <div id="parentStudentRelationships" style="display: none;">
+                    <div class="relationship-section">
+                        <h4 style="margin: 0 0 15px 0; color: var(--primary-color);">
+                            <i class="ri-group-line"></i> 家长-学生关系配置
+                        </h4>
+                        <div class="relationship-content">
+                            <div class="available-users">
+                                <label>可关联的<span id="relationshipTargetType">学生</span>：</label>
+                                <div id="availableUsersList" class="checkbox-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                                    <!-- 动态加载可选用户 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 组织关系配置 -->
+                <div class="relationship-section">
+                    <h4 style="margin: 20px 0 15px 0; color: var(--primary-color);">
+                        <i class="ri-building-line"></i> 组织关系
+                    </h4>
+                    <div class="form-group">
+                        <label>所属组织</label>
+                        <select id="userOrganizationId">
+                            <option value="">请选择组织</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="UserRelationshipPage.closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="UserRelationshipPage.saveRelationships()">保存关系</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 组织教师选择模态对话框 -->
+    <div class="modal" id="teacherSelectionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>选择教师</h3>
+                <button class="modal-close" onclick="OrganizationPage.closeTeacherSelectionModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <input type="text" id="teacherSearchInput" placeholder="搜索教师姓名..." onkeyup="OrganizationPage.filterTeachers()">
+                </div>
+                <div id="teacherList" style="max-height: 400px; overflow-y: auto;">
+                    <!-- 动态加载教师列表 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="OrganizationPage.closeTeacherSelectionModal()">取消</button>
+                <button class="btn btn-primary" onclick="OrganizationPage.selectTeacher()">确定</button>
+            </div>
+        </div>
+    </div>
+
+<!-- 问卷创建/编辑模态框 -->
+    <div class="modal" id="surveyModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="surveyModalTitle">创建问卷</h3>
+                <button class="modal-close" onclick="SurveyPage.closeSurveyModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="surveyForm">
+                    <div class="form-section">
+                        <h4>基本信息</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>问卷标题 <span class="required">*</span></label>
+                                <input type="text" id="surveyModalTitle" required>
+                            </div>
+                            <div class="form-group">
+                                <label>关联事件</label>
+                                <select id="surveyModalEvent">
+                                    <option value="">请选择事件（可选）</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>问卷描述</label>
+                            <textarea id="surveyModalDescription" rows="3" placeholder="请输入问卷描述..."></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>状态</label>
+                                <select id="surveyModalStatus">
+                                    <option value="draft">草稿</option>
+                                    <option value="published">已发布</option>
+                                    <option value="closed">已关闭</option>
+                                    <option value="archived">已归档</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>问卷类型</label>
+                                <select id="surveyModalType">
+                                    <option value="satisfaction">满意度调查</option>
+                                    <option value="feedback">活动反馈</option>
+                                    <option value="participation">参与情况调查</option>
+                                    <option value="custom">自定义问卷</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>问卷设置</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="surveyModalAnonymous">
+                                    匿名问卷
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="surveyModalPublic" checked>
+                                    公开问卷
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="surveyModalRequireLogin" checked>
+                                    需要登录
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>开始时间</label>
+                                <input type="datetime-local" id="surveyModalStartTime">
+                            </div>
+                            <div class="form-group">
+                                <label>结束时间</label>
+                                <input type="datetime-local" id="surveyModalEndTime">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>问卷问题</h4>
+                        <div class="questions-header">
+                            <button type="button" class="btn btn-primary" onclick="SurveyPage.addQuestion()">
+                                <i class="ri-add-line"></i>
+                                添加问题
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="SurveyPage.importQuestions()">
+                                <i class="ri-upload-2-line"></i>
+                                批量导入问题
+                            </button>
+                        </div>
+                        <div id="surveyModalQuestions" class="survey-questions-list">
+                            <!-- 问题将动态添加到这里 -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="SurveyPage.closeSurveyModal()">取消</button>
+                <button class="btn btn-primary" onclick="SurveyPage.saveSurvey()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 问题编辑模态框 -->
+    <div class="modal" id="questionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="questionModalTitle">添加问题</h3>
+                <button class="modal-close" onclick="SurveyPage.closeQuestionModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="questionForm">
+                    <div class="form-group">
+                        <label>问题内容 <span class="required">*</span></label>
+                        <textarea id="questionText" rows="3" required placeholder="请输入问题内容..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>问题类型 <span class="required">*</span></label>
+                            <select id="questionType" required onchange="SurveyPage.onQuestionTypeChange()">
+                                <option value="">请选择类型</option>
+                                <option value="single_choice">单选题</option>
+                                <option value="multiple_choice">多选题</option>
+                                <option value="text">单行文本</option>
+                                <option value="textarea">多行文本</option>
+                                <option value="rating">评分题</option>
+                                <option value="number">数字题</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="questionRequired" checked>
+                                必答
+                            </label>
+                        </div>
+                    </div>
+                    <div id="questionOptions" style="display: none;">
+                        <label>选项设置 <span class="required">*</span></label>
+                        <div id="optionsList" class="options-list">
+                            <!-- 选项将动态添加到这里 -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="SurveyPage.addQuestionOption()">
+                            <i class="ri-add-line"></i>
+                            添加选项
+                        </button>
+                    </div>
+                    <div id="ratingOptions" style="display: none;">
+                        <label>评分设置</label>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>最高分值</label>
+                                <input type="number" id="ratingMax" value="5" min="3" max="10">
+                            </div>
+                            <div class="form-group">
+                                <label>最低分值</label>
+                                <input type="number" id="ratingMin" value="1" min="0" max="5">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="SurveyPage.closeQuestionModal()">取消</button>
+                <button class="btn btn-primary" onclick="SurveyPage.saveQuestion()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 问卷统计报表模态框 -->
+    <div class="modal" id="surveyStatsModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>问卷统计报表</h3>
+                <button class="modal-close" onclick="SurveyPage.closeStatsModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="survey-stats-header">
+                    <div class="stats-summary">
+                        <div class="summary-item">
+                            <label>问卷标题：</label>
+                            <span id="statsSurveyTitle">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>总回答数：</label>
+                            <span id="statsTotalResponses">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>完成率：</label>
+                            <span id="statsCompletionRate">0%</span>
+                        </div>
+                    </div>
+                    <div class="stats-actions">
+                        <button class="btn btn-sm btn-success" onclick="SurveyPage.exportStats()">
+                            <i class="ri-download-line"></i>
+                            导出报告
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="SurveyPage.printStats()">
+                            <i class="ri-printer-line"></i>
+                            打印报告
+                        </button>
+                    </div>
+                </div>
+                <div id="surveyStatsContent" class="survey-stats-content">
+                    <!-- 统计图表将动态加载到这里 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="SurveyPage.closeStatsModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量导入问题模态框 -->
+    <div class="modal" id="importQuestionsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>批量导入问题</h3>
+                <button class="modal-close" onclick="SurveyPage.closeImportModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="import-steps">
+                    <div class="step">
+                        <h4>1. 下载模板</h4>
+                        <p>请先下载Excel模板，按照格式填写问题</p>
+                        <button class="btn btn-outline" onclick="SurveyPage.downloadQuestionTemplate()">
+                            <i class="ri-download-line"></i>
+                            下载模板
+                        </button>
+                    </div>
+                    <div class="step">
+                        <h4>2. 上传文件</h4>
+                        <p>上传填写好的Excel文件</p>
+                        <div class="file-upload-area" id="questionFileDrop">
+                            <input type="file" id="questionFileInput" accept=".xlsx,.xls" style="display: none;">
+                            <div class="upload-placeholder">
+                                <i class="ri-upload-cloud-line"></i>
+                                <p>拖拽文件到此处或点击选择文件</p>
+                                <small>支持 .xlsx, .xls 格式</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step" id="importPreviewStep" style="display: none;">
+                        <h4>3. 预览确认</h4>
+                        <div id="importPreviewContent">
+                            <!-- 预览内容 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="SurveyPage.closeImportModal()">取消</button>
+                <button class="btn btn-primary" id="confirmImportBtn" style="display: none;" onclick="SurveyPage.confirmImport()">
+                    确认导入
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入脚本 -->
+    <script src="/static/js/admin.js?v=20251111_3"></script>
+</body>
+</html>

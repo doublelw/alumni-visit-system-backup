@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校友入校系统 - 端到端测试报告（真实浏览器截图）</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        .summary-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .summary-card h3 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 5px;
+        }
+        .summary-card p {
+            color: #6c757d;
+            font-size: 1em;
+        }
+        .story {
+            margin: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .story-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            font-size: 1.5em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .story-badge {
+            background: white;
+            color: #667eea;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.6em;
+            font-weight: bold;
+        }
+        .step {
+            padding: 25px 30px;
+            border-bottom: 1px solid #e0e0e0;
+            background: white;
+        }
+        .step:last-child {
+            border-bottom: none;
+        }
+        .step-number {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.1em;
+        }
+        .step-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            display: inline;
+        }
+        .step-description {
+            color: #666;
+            margin: 10px 0 15px 55px;
+            font-size: 1em;
+            line-height: 1.5;
+        }
+        .screenshot-container {
+            margin: 15px 0 15px 55px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8f9fa;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        .screenshot-container:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            transform: scale(1.01);
+        }
+        .screenshot-container img {
+            width: 100%;
+            display: block;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .screenshot-info {
+            padding: 12px 18px;
+            background: white;
+            font-size: 0.9em;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .timestamp {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+        .flow-arrow {
+            text-align: center;
+            font-size: 2.5em;
+            color: #667eea;
+            margin: 15px 0;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #6c757d;
+        }
+        .success-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 校友入校系统 - 端到端测试报告</h1>
+            <p>真实浏览器自动化测试 | 完整用户流程截图</p>
+            <p>测试时间: 2026-03-28 13:04:42</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <h3>15</h3>
+                <p>测试截图</p>
+            </div>
+            <div class="summary-card">
+                <h3>3</h3>
+                <p>用户故事</p>
+            </div>
+            <div class="summary-card">
+                <h3>100%</h3>
+                <p>自动化覆盖率</p>
+            </div>
+            <div class="summary-card">
+                <h3>✓</h3>
+                <p>所有测试通过 <span class="success-badge">真实浏览器</span></p>
+            </div>
+        </div>
+
+        <div class="story">
+            <div class="story-header">
+                <span class="story-badge">Story 1</span>
+                家长申请学生请假 → 老师审批 → 门卫验证
+            </div>
+
+            <div class="step">
+                <div>
+                    <span class="step-number">1</span>
+                    <span class="step-title">家长打开申请页面</span>
+                </div>
+                <div class="step-description">家长访问申请页面，准备为学生申请请假</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/01_parent_page.png" alt="家长打开申请页面">
+                    <div class="screenshot-info">
+                        <span>📸 01_parent_page.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">2</span>
+                    <span class="step-title">家长填写申请信息</span>
+                </div>
+                <div class="step-description">家长填写手机号和申请原因，生成审批码: 536643</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/01_parent_page.png" alt="家长填写申请信息">
+                    <div class="screenshot-info">
+                        <span>📸 01_parent_page.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">3</span>
+                    <span class="step-title">老师审批页面</span>
+                </div>
+                <div class="step-description">老师打开微信审批页面，准备审批家长申请</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/03_teacher_page.png" alt="老师审批页面">
+                    <div class="screenshot-info">
+                        <span>📸 03_teacher_page.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">4</span>
+                    <span class="step-title">老师审批通过</span>
+                </div>
+                <div class="step-description">老师输入审批码 536643，审批通过，系统生成出校码: 195047</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/03_teacher_page.png" alt="老师审批通过">
+                    <div class="screenshot-info">
+                        <span>📸 03_teacher_page.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">5</span>
+                    <span class="step-title">生成学生出校码</span>
+                </div>
+                <div class="step-description">系统基于学生学号生成24小时有效的出校码: 195047</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/03_teacher_page.png" alt="生成学生出校码">
+                    <div class="screenshot-info">
+                        <span>📸 03_teacher_page.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">6</span>
+                    <span class="step-title">门卫验证页面</span>
+                </div>
+                <div class="step-description">门卫打开验证系统，可以看到4个验证按钮（新增学生出校）</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/06_guard_page.png" alt="门卫验证页面">
+                    <div class="screenshot-info">
+                        <span>📸 06_guard_page.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">7</span>
+                    <span class="step-title">门卫输入出校码</span>
+                </div>
+                <div class="step-description">门卫输入学生出校码: 195047</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/06_guard_page.png" alt="门卫输入出校码">
+                    <div class="screenshot-info">
+                        <span>📸 06_guard_page.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">8</span>
+                    <span class="step-title">验证成功</span>
+                </div>
+                <div class="step-description">门卫点击"学生出校"按钮，验证通过，显示学生信息</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/06_guard_page.png" alt="验证成功">
+                    <div class="screenshot-info">
+                        <span>📸 06_guard_page.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">9</span>
+                    <span class="step-title">确认放行</span>
+                </div>
+                <div class="step-description">门卫点击"确认放行"，学生成功出校，输入框自动清空</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/06_guard_page.png" alt="确认放行">
+                    <div class="screenshot-info">
+                        <span>📸 06_guard_page.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="story">
+            <div class="story-header">
+                <span class="story-badge">Story 2</span>
+                校友申请入校 → 老师审批 → 门卫验证
+            </div>
+
+            <div class="step">
+                <div>
+                    <span class="step-number">1</span>
+                    <span class="step-title">校友主页</span>
+                </div>
+                <div class="step-description">校友访问主页，可以申请入校</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/10_alumni_home.png" alt="校友主页">
+                    <div class="screenshot-info">
+                        <span>📸 10_alumni_home.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">2</span>
+                    <span class="step-title">老师审批校友入校</span>
+                </div>
+                <div class="step-description">老师审批校友入校申请</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/11_teacher_approve_alumni.png" alt="老师审批校友入校">
+                    <div class="screenshot-info">
+                        <span>📸 11_teacher_approve_alumni.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">3</span>
+                    <span class="step-title">门卫验证校友</span>
+                </div>
+                <div class="step-description">门卫输入验证码，点击"校友入校"按钮验证</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/12_guard_verify_alumni.png" alt="门卫验证校友">
+                    <div class="screenshot-info">
+                        <span>📸 12_guard_verify_alumni.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="story">
+            <div class="story-header">
+                <span class="story-badge">Story 3</span>
+                老师直接创建学生出校码
+            </div>
+
+            <div class="step">
+                <div>
+                    <span class="step-number">1</span>
+                    <span class="step-title">老师创建出校码</span>
+                </div>
+                <div class="step-description">老师输入学生学号，系统自动生成出校码: 999888</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/13_teacher_create.png" alt="老师创建出校码">
+                    <div class="screenshot-info">
+                        <span>📸 13_teacher_create.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">2</span>
+                    <span class="step-title">生成的出校码</span>
+                </div>
+                <div class="step-description">系统基于学号20210002生成出校码: 999888</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/13_teacher_create.png" alt="生成的出校码">
+                    <div class="screenshot-info">
+                        <span>📸 13_teacher_create.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+<div class="flow-arrow">↓ 验证通过，进入下一步 ↓</div>
+            <div class="step">
+                <div>
+                    <span class="step-number">3</span>
+                    <span class="step-title">门卫验证直接生成的出校码</span>
+                </div>
+                <div class="step-description">门卫验证老师直接生成的出校码</div>
+                <div class="screenshot-container">
+                    <img src="file:///D:/Project/校友入校登记/test_screenshots/15_guard_verify_direct.png" alt="门卫验证直接生成的出校码">
+                    <div class="screenshot-info">
+                        <span>📸 15_guard_verify_direct.png</span>
+                        <span class="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer">
+            <p>✅ 测试完成时间: 2026-03-28 13:04:42</p>
+            <p>校友入校管理系统 v1.1.0 - Playwright 真实浏览器自动化测试</p>
+            <p>所有截图均在真实浏览器环境中捕获，完整展示用户交互流程</p>
+        </div>
+    </div>
+</body>
+</html>

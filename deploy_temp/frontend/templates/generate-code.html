@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生成入校码 - 电子校友卡</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            height: 50px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 0 15px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            height: 55px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .code-display {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+            padding: 30px;
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            border-radius: 15px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .code-display.show {
+            display: block;
+        }
+
+        .code-display .code-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            letter-spacing: 10px;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-display .validity {
+            font-size: 16px;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .code-display .countdown {
+            font-size: 20px;
+            color: #ffeb3b;
+            font-weight: bold;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .info-card {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-card.show {
+            display: block;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: #666;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .error-message {
+            display: none;
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>生成入校码</h1>
+            <div class="subtitle">电子校友卡 - 快速入校</div>
+        </div>
+
+        <!-- 输入表单 -->
+        <div id="inputForm">
+            <div class="form-group">
+                <label for="studentId">学号/身份证号 *</label>
+                <input
+                    type="text"
+                    id="studentId"
+                    placeholder="请输入学号或身份证号"
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="pinCode">个人密码（2位）*</label>
+                <input
+                    type="password"
+                    id="pinCode"
+                    placeholder="请输入2位数字密码"
+                    maxlength="2"
+                    autocomplete="off"
+                >
+                <div class="hint">这是您的个人密码，防止他人冒用</div>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <button class="btn btn-primary" onclick="generateCode()">生成入校码</button>
+        </div>
+
+        <!-- 加载状态 -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #999;">正在生成...</p>
+        </div>
+
+        <!-- 码显示 -->
+        <div id="codeDisplay" class="code-display">
+            <div class="code-number" id="codeNumber">123456</div>
+            <div class="validity">2分钟内有效</div>
+            <div class="countdown" id="countdown">剩余时间：02:00</div>
+            <button class="btn btn-secondary" onclick="refreshCode()">刷新</button>
+            <button class="btn btn-secondary" onclick="resetForm()">返回</button>
+        </div>
+
+        <!-- 用户信息卡片 -->
+        <div id="infoCard" class="info-card">
+            <div class="info-item">
+                <span class="info-label">姓名：</span>
+                <span class="info-value" id="userName">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">身份：</span>
+                <span class="info-value" id="userType">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">有效期至：</span>
+                <span class="info-value" id="expiresAt">-</span>
+            </div>
+        </div>
+
+        <div class="back-link">
+            <a href="/">&larr; 返回首页</a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api/electronic-card';
+
+        let countdownInterval = null;
+        let currentCode = null;
+
+        // 生成入校码
+        async function generateCode() {
+            const studentId = document.getElementById('studentId').value.trim();
+            const pinCode = document.getElementById('pinCode').value.trim();
+            const errorMessage = document.getElementById('errorMessage');
+            const loading = document.getElementById('loading');
+            const inputForm = document.getElementById('inputForm');
+            const codeDisplay = document.getElementById('codeDisplay');
+            const infoCard = document.getElementById('infoCard');
+
+            // 验证输入
+            if (!studentId) {
+                showError('请输入学号或身份证号');
+                return;
+            }
+
+            if (!pinCode || pinCode.length !== 2) {
+                showError('请输入2位数字密码');
+                return;
+            }
+
+            if (!/^\d{2}$/.test(pinCode)) {
+                showError('密码必须是2位数字');
+                return;
+            }
+
+            // 隐藏错误信息
+            errorMessage.classList.remove('show');
+
+            // 显示加载状态
+            loading.classList.add('show');
+            inputForm.style.display = 'none';
+
+            try {
+                // 调用API生成码
+                const response = await fetch(`${API_BASE_URL}/application/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        student_id: studentId,
+                        pin_code: pinCode
+                    })
+                });
+
+                const result = await response.json();
+
+                loading.classList.remove('show');
+
+                if (result.success) {
+                    // 显示码
+                    currentCode = result.data.code;
+                    document.getElementById('codeNumber').textContent = result.data.code;
+                    document.getElementById('userName').textContent = result.data.user_info.name;
+                    document.getElementById('userType').textContent = getUserTypeLabel(result.data.user_info.type);
+                    document.getElementById('expiresAt').textContent = result.data.expires_at;
+
+                    codeDisplay.classList.add('show');
+                    infoCard.classList.add('show');
+
+                    // 开始倒计时
+                    startCountdown(result.data.expires_at);
+                } else {
+                    inputForm.style.display = 'block';
+                    showError(result.error || '生成失败');
+                }
+
+            } catch (error) {
+                console.error('生成失败:', error);
+                loading.classList.remove('show');
+                inputForm.style.display = 'block';
+                showError('生成失败，请重试');
+            }
+        }
+
+        // 刷新码
+        async function refreshCode() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            const studentId = document.getElementById('studentId').value.trim();
+            const pinCode = document.getElementById('pinCode').value.trim();
+
+            if (!studentId || !pinCode) {
+                resetForm();
+                return;
+            }
+
+            await generateCode();
+        }
+
+        // 返回/重置
+        function resetForm() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            document.getElementById('inputForm').style.display = 'block';
+            document.getElementById('codeDisplay').classList.remove('show');
+            document.getElementById('infoCard').classList.remove('show');
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        // 开始倒计时
+        function startCountdown(expiresAt) {
+            const expires = new Date(expiresAt);
+            const countdownEl = document.getElementById('countdown');
+
+            function updateCountdown() {
+                const now = new Date();
+                const diff = expires - now;
+
+                if (diff <= 0) {
+                    countdownEl.textContent = '已过期';
+                    if (countdownInterval) {
+                        clearInterval(countdownInterval);
+                    }
+                    return;
+                }
+
+                const minutes = Math.floor(diff / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+
+                countdownEl.textContent = `剩余时间：${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        // 获取用户类型标签
+        function getUserTypeLabel(type) {
+            const labels = {
+                'student': '学生',
+                'teacher': '教师',
+                'staff': '员工',
+                'alumni': '校友'
+            };
+            return labels[type] || type;
+        }
+
+        // 输入限制
+        document.getElementById('pinCode').addEventListener('input', function(e) {
+            this.value = this.value.replace(/\D/g, '');
+        });
+
+        // 页面加载完成
+        window.onload = function() {
+            document.getElementById('studentId').focus();
+        };
+    </script>
+</body>
+</html>

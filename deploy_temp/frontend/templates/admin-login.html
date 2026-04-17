@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#1976d2">
+    <title>管理后台登录 - 校友入校登记系统</title>
+
+    <!-- 引入字体 -->
+    <style>
+        /* 使用系统字体避免HTTPS请求 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+    </style>
+
+    <!-- 引入图标 -->
+    <link href="/static/vendor/remixicon.css" rel="stylesheet">
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="stylesheet" href="/static/css/responsive.css?v=2.0">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            font-family: 'Cinzel', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.98);
+            border: 2px solid #d4af37;
+            border-radius: 0;
+            box-shadow:
+                0 0 0 1px rgba(212, 175, 55, 0.3),
+                0 20px 60px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 420px;
+            padding: 50px 40px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            pointer-events: none;
+        }
+
+        .login-header {
+            margin-bottom: 45px;
+        }
+
+        .login-logo {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            border: 2px solid #d4af37;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .login-logo i {
+            font-size: 42px;
+            color: #d4af37;
+        }
+
+        .login-title {
+            color: #0a0a0a;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            font-family: 'Cinzel', serif;
+            text-transform: uppercase;
+        }
+
+        .login-subtitle {
+            color: #666;
+            font-size: 13px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        .login-form {
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            color: #0a0a0a;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #ccc;
+            background: #fafafa;
+            font-size: 15px;
+            transition: all 0.3s;
+            color: #0a0a0a;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #d4af37;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .form-input.error {
+            border-color: #c00;
+        }
+
+        .input-icon {
+            position: relative;
+        }
+
+        .input-icon i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #d4af37;
+            font-size: 18px;
+        }
+
+        .input-icon .form-input {
+            padding-left: 48px;
+        }
+
+        .form-error {
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .form-error.show {
+            display: block;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            color: #d4af37;
+            border: 1px solid #d4af37;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        .login-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .login-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .login-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .login-button.loading {
+            background: #ccc;
+            color: #666;
+            border-color: #ccc;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        .login-button.loading .spinner {
+            display: inline-block;
+        }
+
+        .login-button.loading .button-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .login-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .login-footer a {
+            color: #0a0a0a;
+            text-decoration: none;
+            font-size: 13px;
+            letter-spacing: 1px;
+            font-family: 'Cinzel', serif;
+            transition: color 0.3s;
+        }
+
+        .login-footer a:hover {
+            color: #d4af37;
+        }
+
+        .default-account {
+            background: #fafafa;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            padding: 16px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .default-account strong {
+            color: #0a0a0a;
+        }
+
+        .alert {
+            background: #fff5f5;
+            color: #c00;
+            padding: 12px 16px;
+            border: 1px solid #fcc;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 3px solid #c00;
+            font-size: 13px;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert.success {
+            background: #f5fff5;
+            color: #2d5a2d;
+            border-color: #cfc;
+            border-left-color: #2d5a2d;
+        }
+
+        .captcha-container {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .captcha-input {
+            flex: 1;
+        }
+
+        .captcha-image {
+            width: 120px;
+            height: 46px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .captcha-image:hover {
+            border-color: #d4af37;
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2);
+        }
+
+        .captcha-error {
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .captcha-error.show {
+            display: block;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+
+            .login-title {
+                font-size: 20px;
+            }
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            cursor: pointer;
+            font-size: 20px;
+            user-select: none;
+            transition: color 0.3s;
+            padding: 8px;
+            margin: -8px;
+            background: transparent;
+            border: none;
+            z-index: 10;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .password-toggle:hover {
+            color: #d4af37;
+        }
+
+        .input-icon.password-field .form-input {
+            padding-right: 48px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="login-logo">
+                <i class="ri-shield-user-line"></i>
+            </div>
+            <h1 class="login-title">管理后台</h1>
+            <p class="login-subtitle">校友入校登记系统</p>
+        </div>
+
+        <div class="alert" id="alertBox"></div>
+
+        <form class="login-form" id="loginForm">
+            <div class="form-group">
+                <label for="username" class="form-label">用户名</label>
+                <div class="input-icon">
+                    <i class="ri-user-line"></i>
+                    <input type="text" id="username" name="username" class="form-input"
+                           placeholder="请输入管理员用户名" required autocomplete="username">
+                </div>
+                <div class="form-error" id="usernameError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">密码</label>
+                <div class="input-icon password-field">
+                    <i class="ri-lock-line"></i>
+                    <input type="password" id="password" name="password" class="form-input"
+                           placeholder="请输入密码" required autocomplete="current-password">
+                    <i class="ri-eye-off-line password-toggle" id="passwordToggle" title="显示密码"></i>
+                </div>
+                <div class="form-error" id="passwordError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="captcha" class="form-label">验证码</label>
+                <div class="captcha-container">
+                    <input type="text" id="captcha" name="captcha" class="form-input captcha-input"
+                           placeholder="请输入答案" required autocomplete="off">
+                    <img id="captchaImage" class="captcha-image" alt="验证码" title="点击刷新验证码">
+                </div>
+                <div class="form-error" id="captchaError"></div>
+            </div>
+
+            <button type="submit" class="login-button" id="loginButton">
+                <div class="spinner"></div>
+                <span class="button-text">
+                    <i class="ri-login-box-line"></i>
+                    登录
+                </span>
+            </button>
+        </form>
+
+        <!-- 测试账号部分已隐藏 -->
+
+        <div class="login-footer">
+            <a href="/">← 返回主页面</a>
+        </div>
+    </div>
+
+    <!-- 引入配置 -->
+    <script src="/static/js/config.js?v=2.3"></script>
+
+    <script>
+
+        // DOM 元素
+        const loginForm = document.getElementById('loginForm');
+        const loginButton = document.getElementById('loginButton');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const captchaInput = document.getElementById('captcha');
+        const captchaImage = document.getElementById('captchaImage');
+        const alertBox = document.getElementById('alertBox');
+        const usernameError = document.getElementById('usernameError');
+        const passwordError = document.getElementById('passwordError');
+        const captchaError = document.getElementById('captchaError');
+        const passwordToggle = document.getElementById('passwordToggle');
+
+        // 显示提示信息
+        function showAlert(message, type = 'error') {
+            alertBox.textContent = message;
+            alertBox.className = `alert ${type} show`;
+
+            // 5秒后自动隐藏
+            setTimeout(() => {
+                alertBox.classList.remove('show');
+            }, 5000);
+        }
+
+        // 显示字段错误
+        function showFieldError(field, message) {
+            const errorElement = document.getElementById(field + 'Error');
+            const inputElement = document.getElementById(field);
+
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+            inputElement.classList.add('error');
+        }
+
+        // 清除所有错误
+        function clearErrors() {
+            document.querySelectorAll('.form-error').forEach(el => {
+                el.classList.remove('show');
+            });
+            document.querySelectorAll('.form-input').forEach(el => {
+                el.classList.remove('error');
+            });
+            alertBox.classList.remove('show');
+        }
+
+        // 加载验证码
+        function loadCaptcha() {
+            captchaImage.src = '/api/auth/captcha?' + Math.random();
+        }
+
+        // 刷新验证码
+        captchaImage.addEventListener('click', loadCaptcha);
+
+        // 设置加载状态
+        function setLoading(loading) {
+            if (loading) {
+                loginButton.classList.add('loading');
+                loginButton.disabled = true;
+                usernameInput.disabled = true;
+                passwordInput.disabled = true;
+                captchaInput.disabled = true;
+            } else {
+                loginButton.classList.remove('loading');
+                loginButton.disabled = false;
+                usernameInput.disabled = false;
+                passwordInput.disabled = false;
+                captchaInput.disabled = false;
+            }
+        }
+
+        // 表单验证
+        function validateForm() {
+            clearErrors();
+            let isValid = true;
+
+            if (!usernameInput.value.trim()) {
+                showFieldError('username', '请输入用户名');
+                isValid = false;
+            }
+
+            if (!passwordInput.value) {
+                showFieldError('password', '请输入密码');
+                isValid = false;
+            } else if (passwordInput.value.length < 6) {
+                showFieldError('password', '密码至少需要6个字符');
+                isValid = false;
+            }
+
+            if (!captchaInput.value.trim()) {
+                showFieldError('captcha', '请输入验证码');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // 登录请求
+        async function performLogin(username, password, captcha) {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password, captcha })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.user && data.user.user_type === 'admin') {
+                    // 登录成功，保存令牌和用户信息
+                    localStorage.setItem('admin_token', data.access_token);
+                    localStorage.setItem('admin_user', JSON.stringify(data.user));
+
+                    showAlert('登录成功，正在跳转...', 'success');
+
+                    // 跳转到管理后台
+                    setTimeout(() => {
+                        window.location.href = '/alumni-management-2025';
+                    }, 1000);
+
+                } else if (response.ok && data.user && data.user.user_type !== 'admin') {
+                    showAlert('此账户没有管理权限', 'error');
+                } else {
+                    showAlert(data.error || '登录失败，请检查用户名和密码');
+                    // 验证码错误时刷新验证码
+                    if (data.error && data.error.includes('验证码')) {
+                        loadCaptcha();
+                    }
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('网络错误，请稍后重试');
+            }
+        }
+
+        // 表单提交
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!validateForm()) {
+                return;
+            }
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            const captcha = captchaInput.value.trim();
+
+            setLoading(true);
+
+            try {
+                await performLogin(username, password, captcha);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // 输入事件监听
+        usernameInput.addEventListener('input', () => {
+            clearErrors();
+        });
+
+        passwordInput.addEventListener('input', () => {
+            clearErrors();
+        });
+
+        captchaInput.addEventListener('input', () => {
+            clearErrors();
+        });
+
+        // 检查是否已经登录
+        window.addEventListener('DOMContentLoaded', () => {
+            // 加载验证码
+            loadCaptcha();
+            const token = localStorage.getItem('admin_token');
+            const userStr = localStorage.getItem('admin_user');
+
+            if (token && userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    if (user.user_type === 'admin') {
+                        // 已经登录，直接跳转到管理后台
+                        window.location.href = '/alumni-management-2025';
+                        return;
+                    }
+                } catch (error) {
+                    // 清除无效的数据
+                    localStorage.removeItem('admin_token');
+                    localStorage.removeItem('admin_user');
+                }
+            }
+
+            // 不再自动填充默认账户信息
+        });
+
+        // 密码显示/隐藏功能
+        passwordToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const type = passwordInput.getAttribute('type');
+            if (type === 'password') {
+                passwordInput.setAttribute('type', 'text');
+                passwordToggle.className = 'ri-eye-line password-toggle';
+                passwordToggle.setAttribute('title', '隐藏密码');
+            } else {
+                passwordInput.setAttribute('type', 'password');
+                passwordToggle.className = 'ri-eye-off-line password-toggle';
+                passwordToggle.setAttribute('title', '显示密码');
+            }
+            // 切换后让输入框获得焦点
+            passwordInput.focus();
+        });
+
+        // 回车键登录
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !loginButton.disabled) {
+                loginForm.dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>

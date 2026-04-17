@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <title>响应式布局测试 - 校友入校登记系统</title>
+
+    <!-- 引入图标和样式 -->
+    <link href="/static/vendor/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/mobile.css?v=2.6">
+    <link rel="stylesheet" href="/static/css/responsive.css?v=2.0">
+
+    <style>
+        /* 测试页面专用样式 */
+        .test-section {
+            padding: var(--spacing-lg);
+            margin: var(--spacing-md);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .test-section h2 {
+            font-size: var(--font-size-xl);
+            margin-bottom: var(--spacing-md);
+            color: var(--primary-color);
+        }
+
+        .screen-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            margin: var(--spacing-md);
+            text-align: center;
+        }
+
+        .screen-info h1 {
+            font-size: var(--font-size-xxl);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .device-info {
+            font-size: var(--font-size-sm);
+            opacity: 0.9;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+        }
+
+        .test-card {
+            background: var(--surface);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+
+        .test-card h3 {
+            font-size: var(--font-size-lg);
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-primary);
+        }
+
+        .test-card .icon {
+            font-size: 48px;
+            margin-bottom: var(--spacing-sm);
+            color: var(--primary-color);
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+        }
+
+        .form-test {
+            max-width: 600px;
+            margin: var(--spacing-md);
+        }
+
+        .form-test .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-test label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-test input,
+        .form-test select,
+        .form-test textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-md);
+        }
+
+        .color-test {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+
+        .color-box {
+            flex: 1;
+            min-width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 页面头部 -->
+        <div class="page-header">
+            <h1>响应式布局测试</h1>
+            <div class="header-actions">
+                <button class="btn" onclick="window.location.href='/'">
+                    <i class="ri-home-line"></i> 返回首页
+                </button>
+            </div>
+        </div>
+
+        <!-- 页面内容 -->
+        <div class="page-container">
+            <!-- 屏幕信息 -->
+            <div class="screen-info">
+                <h1>📱 屏幕尺寸测试</h1>
+                <div class="device-info" id="deviceInfo">
+                    正在检测设备信息...
+                </div>
+            </div>
+
+            <!-- 功能测试 -->
+            <div class="test-section">
+                <h2>响应式功能测试</h2>
+                <div class="test-grid">
+                    <div class="test-card">
+                        <div class="icon">📏</div>
+                        <h3>断点测试</h3>
+                        <p id="breakpointInfo" style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+                            当前断点: 检测中...
+                        </p>
+                    </div>
+                    <div class="test-card">
+                        <div class="icon">🔄</div>
+                        <h3>方向测试</h3>
+                        <p id="orientationInfo" style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+                            当前方向: 检测中...
+                        </p>
+                    </div>
+                    <div class="test-card">
+                        <div class="icon">📊</div>
+                        <h3>像素比测试</h3>
+                        <p id="dpiInfo" style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+                            当前DPR: 检测中...
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 按钮测试 -->
+            <div class="test-section">
+                <h2>触摸目标测试</h2>
+                <div class="button-group">
+                    <button class="btn btn-primary">主要按钮</button>
+                    <button class="btn btn-secondary">次要按钮</button>
+                    <button class="btn btn-outline">轮廓按钮</button>
+                    <button class="btn btn-danger">危险按钮</button>
+                </div>
+                <p style="margin-top: var(--spacing-md); color: var(--text-secondary); font-size: var(--font-size-sm);">
+                    ✓ 所有按钮最小44x44px（WCAG AAA标准）
+                </p>
+            </div>
+
+            <!-- 表单测试 -->
+            <div class="test-section">
+                <h2>表单输入测试</h2>
+                <div class="form-test">
+                    <div class="form-group">
+                        <label>文本输入</label>
+                        <input type="text" placeholder="测试触摸输入">
+                    </div>
+                    <div class="form-group">
+                        <label>选择下拉</label>
+                        <select>
+                            <option>选项 1</option>
+                            <option>选项 2</option>
+                            <option>选项 3</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>多行文本</label>
+                        <textarea rows="3" placeholder="测试多行输入"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 颜色测试 -->
+            <div class="test-section">
+                <h2>主题色彩测试</h2>
+                <div class="color-test">
+                    <div class="color-box" style="background: var(--primary-color);">主色</div>
+                    <div class="color-box" style="background: var(--primary-light);">主色浅</div>
+                    <div class="color-box" style="background: var(--primary-dark);">主色深</div>
+                    <div class="color-box" style="background: var(--accent-color);">强调色</div>
+                    <div class="color-box" style="background: var(--success-color);">成功色</div>
+                    <div class="color-box" style="background: var(--warning-color);">警告色</div>
+                    <div class="color-box" style="background: var(--error-color);">错误色</div>
+                </div>
+            </div>
+
+            <!-- 网格测试 -->
+            <div class="test-section">
+                <h2>网格布局测试</h2>
+                <div class="test-grid grid-2-cols hide-md">
+                    <div class="test-card">
+                        <h4>小屏: 1列</h4>
+                        <p style="font-size: var(--font-size-sm);">平板以下单列显示</p>
+                    </div>
+                    <div class="test-card">
+                        <h4>大屏: 2列</h4>
+                        <p style="font-size: var(--font-size-sm);">平板以上双列显示</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 暗色模式测试 -->
+            <div class="test-section">
+                <h2>暗色模式</h2>
+                <p style="margin-bottom: var(--spacing-md); color: var(--text-secondary);">
+                    当前系统暗色模式: <span id="darkModeStatus">检测中...</span>
+                </p>
+                <button class="btn btn-secondary" onclick="toggleDarkMode()">
+                    <i class="ri-contrast-line"></i> 切换暗色模式
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检测设备信息
+        function detectDevice() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const dpr = window.devicePixelRatio || 1;
+
+            // 断点检测
+            let breakpoint = 'XS';
+            if (width >= 1024) breakpoint = 'XL (桌面)';
+            else if (width >= 768) breakpoint = 'LG (平板)';
+            else if (width >= 414) breakpoint = 'MD (大屏手机)';
+            else if (width >= 375) breakpoint = 'SM (标准手机)';
+            else breakpoint = 'XS (小屏手机)';
+
+            // 方向检测
+            const orientation = width > height ? '横屏' : '竖屏';
+
+            // 更新显示
+            document.getElementById('deviceInfo').innerHTML =
+                `<strong>屏幕:</strong> ${width} x ${height}px | ` +
+                `<strong>DPR:</strong> ${dpr}x | ` +
+                `<strong>方向:</strong> ${orientation}`;
+
+            document.getElementById('breakpointInfo').textContent = `当前断点: ${breakpoint}`;
+            document.getElementById('orientationInfo').textContent = `当前方向: ${orientation}`;
+            document.getElementById('dpiInfo').textContent = `设备像素比: ${dpr}x`;
+
+            // 暗色模式检测
+            const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.getElementById('darkModeStatus').textContent = darkMode ? '已启用' : '未启用';
+        }
+
+        // 切换暗色模式
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+
+            // 显示提示
+            const newMode = isDark ? '浅色' : '深色';
+            const status = document.getElementById('darkModeStatus');
+            status.textContent = `手动切换到${newMode}模式`;
+        }
+
+        // 监听变化
+        window.addEventListener('resize', detectDevice);
+        window.addEventListener('orientationchange', detectDevice);
+
+        // 初始化
+        detectDevice();
+
+        // 每5秒更新一次（实时监控）
+        setInterval(detectDevice, 5000);
+    </script>
+</body>
+</html>

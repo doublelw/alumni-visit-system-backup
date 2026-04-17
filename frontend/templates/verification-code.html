@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证码 - 校友入校登记系统</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .verification-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #4caf50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            font-size: 40px;
+            color: white;
+        }
+
+        .verification-title {
+            color: #333;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .verification-subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        .code-display {
+            background: #f8f9fa;
+            border: 2px dashed #1976d2;
+            border-radius: 12px;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+        }
+
+        .code-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #1976d2;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 10px;
+        }
+
+        .code-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            color: #1976d2;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .instructions ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .instructions li {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .instructions li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(25, 118, 210, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .footer-text {
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .verification-container {
+                padding: 30px 20px;
+            }
+
+            .verification-title {
+                font-size: 24px;
+            }
+
+            .code-number {
+                font-size: 36px;
+                letter-spacing: 4px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* 动画效果 */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .verification-container {
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .code-display {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-container">
+        <div class="success-icon">
+            ✓
+        </div>
+
+        <h1 class="verification-title">报名成功！</h1>
+        <p class="verification-subtitle">您的入校验证码已生成，请截图保存此验证码</p>
+
+        <div class="code-display">
+            <div class="code-label">您的入校验证码</div>
+            <div class="code-number" id="verificationCode">------</div>
+        </div>
+
+        <div class="instructions">
+            <h3>📱 重要提醒</h3>
+            <ul>
+                <li>请立即截图保存此验证码</li>
+                <li>入校时需要向工作人员出示此验证码</li>
+                <li>验证码当天有效，请妥善保管</li>
+                <li>如未保存验证码，请重新报名获取</li>
+            </ul>
+        </div>
+
+        <div class="action-buttons">
+            <a href="/" class="btn btn-primary">
+                <i>←</i>
+                返回首页
+            </a>
+            <button class="btn btn-secondary" onclick="copyCode()">
+                <i>📋</i>
+                复制验证码
+            </button>
+        </div>
+
+        <div class="footer-text">
+            感谢您报名参加校友活动，期待与您相见！
+        </div>
+    </div>
+
+    <script>
+        // 获取URL参数中的验证码
+        function getVerificationCode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+
+            if (code) {
+                document.getElementById('verificationCode').textContent = code;
+                // 保存到本地存储
+                localStorage.setItem('latest_verification_code', code);
+                localStorage.setItem('verification_timestamp', new Date().toISOString());
+            } else {
+                // 如果URL中没有验证码，尝试从本地存储获取
+                const savedCode = localStorage.getItem('latest_verification_code');
+                if (savedCode) {
+                    document.getElementById('verificationCode').textContent = savedCode;
+                } else {
+                    // 如果都没有，显示错误
+                    document.getElementById('verificationCode').textContent = '获取失败';
+                    document.querySelector('.verification-subtitle').textContent = '验证码获取失败，请重新报名';
+                }
+            }
+        }
+
+        // 复制验证码到剪贴板
+        function copyCode() {
+            const code = document.getElementById('verificationCode').textContent;
+
+            if (code && code !== '------' && code !== '获取失败') {
+                navigator.clipboard.writeText(code).then(() => {
+                    // 显示复制成功提示
+                    const button = event.target.closest('.btn');
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<i>✓</i> 已复制';
+                    button.style.background = '#4caf50';
+                    button.style.color = 'white';
+
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.style.background = '';
+                        button.style.color = '';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请手动选择验证码进行复制');
+                });
+            } else {
+                alert('没有可复制的验证码');
+            }
+        }
+
+        // 页面加载时获取验证码
+        window.addEventListener('DOMContentLoaded', getVerificationCode);
+
+        // 防止页面被缓存，确保每次都能获取最新的验证码
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
+</body>
+</html>

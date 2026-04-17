@@ -1,0 +1,149 @@
+# 微信云托管部署 - 第五次修复（添加PIL依赖）
+
+生成时间: 2026-04-07 22:52
+
+==========================================
+问题诊断
+==========================================
+
+**缺失PIL/Pillow图像处理库**
+
+错误日志：
+```
+File "/app/backend/app/routes/auth.py", line 15, in <module>
+    from PIL import Image, ImageDraw, ImageFont
+ModuleNotFoundError: No module named 'PIL'
+```
+
+**根本原因：**
+- 应用需要图像处理功能（人脸识别）
+- auth.py中导入了PIL库
+- requirements.txt缺少Pillow依赖
+
+==========================================
+修复方案
+==========================================
+
+已修改 requirements.txt，添加Pillow依赖：
+
+```
+Pillow==10.1.0
+```
+
+**Pillow版本选择：**
+- Pillow 10.1.0 是稳定的版本
+- 兼容Python 3.9
+- 支持所有图像处理功能
+- 与Flask 2.3.0兼容
+
+==========================================
+部署包信息
+==========================================
+
+文件名: welife_deploy_package_20260407_225223.zip
+大小: 4.4 MB
+位置: D:\Project\校友入校登记\
+
+完整修复记录:
+1. Dockerfile镜像源修复
+2. Flask-JWT-Extended版本修复
+3. Python导入路径修复（config）
+4. Python导入路径修复（services、routes、api、utils）
+5. PIL/Pillow依赖添加
+
+==========================================
+第六次部署操作步骤
+==========================================
+
+### 在微信云托管控制台
+
+#### 第1步：删除失败的部署
+- 找到 lnsyalumni-005 失败版本
+- 点击删除
+- 确认删除
+
+#### 第2步：上传新部署包
+- 点击"新建版本"或"重新部署"
+- 选择"本地上传代码包"
+- 选择文件: welife_deploy_package_20260407_225223.zip
+- 等待上传完成
+
+#### 第3步：保持环境变量不变
+
+#### 第4步：开始部署
+- 点击"开始部署"
+- 等待2-5分钟
+
+==========================================
+预期结果
+==========================================
+
+### 成功部署日志
+
+```
+Building Docker image...
+Installing system dependencies...
+  default-libmysqlclient-dev
+  pkg-config
+
+Installing Python dependencies...
+  Successfully installed Flask-2.3.0
+  Successfully installed Flask-SQLAlchemy-3.0.5
+  Successfully installed Flask-JWT-Extended-4.5.1
+  Successfully installed Pillow-10.1.0  <- 关键
+  Successfully installed Flask-CORS-4.0.0
+  Successfully installed gunicorn-21.2.0
+
+Starting application...
+  Starting gunicorn 21.2.0
+  Listening at: http://0.0.0.0:5000
+  Booting worker with pid: xxx
+
+Service is healthy
+部署状态: 运行中
+```
+
+==========================================
+技术说明
+==========================================
+
+### PIL vs Pillow
+
+- **PIL** (Python Imaging Library) - 原始库，已停止维护
+- **Pillow** - PIL的友好分支，活跃维护
+- 导入语句仍然使用 `from PIL import ...`
+- 但安装包名是 `Pillow`
+
+### 应用中的图像处理
+
+根据代码分析，应用使用Pillow进行：
+- 人脸识别图像处理
+- 二维码生成
+- 图片上传和处理
+- 电子校友卡图片生成
+
+==========================================
+部署清单
+==========================================
+
+- Dockerfile镜像源已修复
+- requirements.txt版本已修复
+- Python导入路径已修复
+- PIL/Pillow依赖已添加
+- 部署包已生成
+
+==========================================
+总结
+==========================================
+
+这是第六次部署尝试。
+所有已知的依赖问题都已修复：
+1. 镜像源403错误 - 已修复
+2. Flask-JWT-Extended版本 - 已修复
+3. Python导入路径冲突 - 已修复
+4. PIL/Pillow缺失 - 已修复
+
+这次应该能成功部署！
+
+按照上面的步骤，在微信云托管控制台删除失败部署，
+然后上传新的部署包。

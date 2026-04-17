@@ -1,0 +1,494 @@
+/* 电子校友卡样式 */
+
+/* 校友卡容器 */
+.alumni-card-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+}
+
+/* 校友卡主体 */
+.alumni-card {
+    width: 350px;
+    height: 200px;
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    color: white;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.alumni-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 卡片头部 */
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.school-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    font-size: 20px;
+}
+
+.school-info h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.school-info p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+/* 卡片主体 */
+.card-body {
+    display: flex;
+    padding: 15px 20px;
+    gap: 15px;
+}
+
+.user-photo {
+    flex-shrink: 0;
+}
+
+.photo-placeholder {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.user-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+}
+
+.info-row {
+    display: flex;
+    gap: 5px;
+}
+
+.info-row .label {
+    font-weight: 500;
+    opacity: 0.9;
+    min-width: 60px;
+}
+
+.info-row .value {
+    font-weight: 600;
+    flex: 1;
+}
+
+/* 卡片底部 */
+.card-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 20px;
+    background: rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.qr-code {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+#alumniCardQRCode {
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #1976d2;
+}
+
+.qr-code small {
+    font-size: 10px;
+    opacity: 0.8;
+}
+
+.validity {
+    text-align: right;
+}
+
+.validity small {
+    display: block;
+    font-size: 10px;
+    opacity: 0.8;
+    margin-bottom: 2px;
+}
+
+.validity span {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* 卡片操作按钮 */
+.card-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.card-actions .btn {
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 8px;
+}
+
+/* 校友卡背面样式 */
+.alumni-card-back {
+    width: 100%;
+    max-width: 500px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.card-back-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.card-back-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.card-back-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.contact-info {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+}
+
+.contact-info .info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.contact-info .info-row:last-child {
+    border-bottom: none;
+}
+
+.contact-info .info-row .label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 100px;
+    font-weight: 500;
+    color: #666;
+}
+
+.contact-info .info-row .value {
+    flex: 1;
+    color: #333;
+}
+
+.verification-section {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+}
+
+.verification-section h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.verification-section h4::before {
+    content: '🔒';
+    font-size: 18px;
+}
+
+.verification-info .info-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+}
+
+.verification-info .info-row .label {
+    min-width: 100px;
+    font-weight: 500;
+    color: #666;
+    font-size: 14px;
+}
+
+.verification-info .info-row .value {
+    flex: 1;
+    color: #333;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+}
+
+.card-features {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    padding: 15px;
+    border-radius: 10px;
+    color: white;
+}
+
+.card-features h4 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-features h4::before {
+    content: '✨';
+    font-size: 18px;
+}
+
+.card-features ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.card-features li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 14px;
+}
+
+.card-features li i {
+    font-size: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+    .alumni-card {
+        width: 100%;
+        max-width: 320px;
+        height: 180px;
+    }
+
+    .card-header {
+        padding: 12px 15px 5px;
+    }
+
+    .school-logo {
+        width: 35px;
+        height: 35px;
+        font-size: 18px;
+    }
+
+    .school-info h3 {
+        font-size: 14px;
+    }
+
+    .school-info p {
+        font-size: 11px;
+    }
+
+    .card-body {
+        padding: 12px 15px;
+        gap: 12px;
+    }
+
+    .photo-placeholder {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+
+    .user-info {
+        font-size: 11px;
+    }
+
+    .info-row .label {
+        min-width: 50px;
+        font-size: 11px;
+    }
+
+    .info-row .value {
+        font-size: 11px;
+    }
+
+    .card-footer {
+        padding: 8px 15px;
+    }
+
+    #alumniCardQRCode {
+        width: 35px;
+        height: 35px;
+        font-size: 18px;
+    }
+
+    .card-actions {
+        gap: 8px;
+    }
+
+    .card-actions .btn {
+        font-size: 13px;
+        padding: 6px 12px;
+    }
+
+    .alumni-card-back {
+        padding: 15px;
+    }
+
+    .card-back-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .contact-info .info-row .label {
+        min-width: 80px;
+        font-size: 13px;
+    }
+
+    .verification-info .info-row .label,
+    .verification-info .info-row .value {
+        font-size: 13px;
+    }
+}
+
+/* 模态框适配 */
+#alumniCardModal .modal-content {
+    max-width: 600px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+#alumniCardModal .modal-body {
+    padding: 0;
+}
+
+/* 动画效果 */
+.alumni-card {
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+}
+
+.alumni-card.flipped {
+    transform: rotateY(180deg);
+}
+
+/* 加载状态 */
+.alumni-card.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.alumni-card.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 状态提示 */
+.card-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+
+.card-status.verified {
+    background: rgba(76, 175, 80, 0.8);
+    color: white;
+}
+
+.card-status.pending {
+    background: rgba(255, 193, 7, 0.8);
+    color: #333;
+}
+
+.card-status.inactive {
+    background: rgba(244, 67, 54, 0.8);
+    color: white;
+}

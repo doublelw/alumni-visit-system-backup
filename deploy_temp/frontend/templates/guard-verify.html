@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>门卫验证系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ========== GUCCI风格 - 极简奢华 ========== */
+        :root {
+            --color-black: #000000;
+            --color-white: #ffffff;
+            --color-gold: #c9a86c;
+            --color-gold-light: #e8d5b5;
+            --color-gray-light: #f5f5f5;
+            --color-gray-medium: #999999;
+            --color-gray-dark: #333333;
+
+            --font-display: 'Cinzel', serif;
+            --font-body: 'Inter', sans-serif;
+
+            --spacing-xs: 8px;
+            --spacing-sm: 16px;
+            --spacing-md: 24px;
+            --spacing-lg: 32px;
+            --spacing-xl: 48px;
+            --spacing-2xl: 64px;
+
+            --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-white);
+            color: var(--color-black);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ========== 品牌标识 ========== */
+        .brand-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: var(--color-white);
+            border-bottom: 1px solid var(--color-gray-light);
+            padding: var(--spacing-sm) var(--spacing-md);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition-smooth);
+        }
+
+        .brand-logo {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            color: var(--color-black);
+        }
+
+        .guard-info {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-gray-dark);
+            letter-spacing: 0.05em;
+        }
+
+        /* ========== 主容器 - 左右布局 ========== */
+        .verify-container {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            padding: calc(var(--spacing-2xl) + var(--spacing-md)) var(--spacing-xl) var(--spacing-2xl);
+            min-height: 100vh;
+            background: var(--color-white);
+            gap: var(--spacing-2xl);
+        }
+
+        /* 左侧输入区域 */
+        .left-panel {
+            flex: 0 0 450px;
+            display: flex;
+            flex-direction: column;
+            padding: var(--spacing-xl);
+            background: var(--color-gray-light);
+            border-radius: var(--spacing-sm);
+            height: fit-content;
+            position: sticky;
+            top: calc(var(--spacing-2xl) + var(--spacing-md));
+        }
+
+        /* 右侧结果区域 */
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        /* 空状态提示 */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: var(--spacing-2xl);
+            color: var(--color-gray-medium);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.3;
+        }
+
+        .empty-state-title {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            color: var(--color-black);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+            color: var(--color-gray-medium);
+        }
+
+        /* ========== 左侧面板样式 ========== */
+        .panel-header {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--color-gray-light);
+        }
+
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            color: var(--color-black);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .panel-subtitle {
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            color: var(--color-gray-medium);
+            text-transform: uppercase;
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .verify-form {
+            margin-bottom: var(--spacing-md);
+        }
+
+        /* 左侧操作按钮 */
+        .left-panel .action-buttons {
+            flex-direction: column;
+            margin-top: var(--spacing-xl);
+            gap: var(--spacing-md);
+        }
+
+        .left-panel .action-btn {
+            width: 100%;
+            height: 60px;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+        }
+
+        /* ========== 右侧面板样式 ========== */
+        .right-panel {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .right-panel .result-card {
+            flex: 1;
+            display: none;
+            animation: fadeUp 0.4s ease-out;
+            max-height: calc(100vh - var(--spacing-2xl) - var(--spacing-xl));
+            overflow-y: auto;
+        }
+
+        .right-panel .result-card.show {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* PC端优化：确保无滚动条 */
+        @media (min-width: 1025px) {
+            .right-panel .result-card {
+                max-height: none;
+                overflow-y: visible;
+            }
+        }
+
+        /* ========== 验证码输入区域 ========== */
+        .code-label {
+            font-family: var(--font-display);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--color-gray-dark);
+            margin-bottom: var(--spacing-sm);
+            display: block;
+        }
+
+        .code-input-wrapper {
+            position: relative;
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .code-input {
+            flex: 1;
+            height: 56px;
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 500;
+            letter-spacing: 0.3em;
+            text-align: center;
+            color: var(--color-black);
+            background: var(--color-white);
+            border: 1px solid var(--color-black);
+            outline: none;
+            transition: var(--transition-smooth);
+            cursor: text;
+        }
+
+        .code-input::placeholder {
+            color: var(--color-gray-medium);
+            letter-spacing: 0.1em;
+        }
+
+        .code-input:focus {
+            border-color: var(--color-gold);
+            box-shadow: 0 0 0 1px var(--color-gold);
+        }
+
+        .verify-btn {
+            min-width: 120px;
+            height: 56px;
+            padding: 0 var(--spacing-md);
+            font-family: var(--font-display);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--color-white);
+            background: var(--color-black);
+            border: 1px solid var(--color-black);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            white-space: nowrap;
+        }
+
+        .verify-btn:hover {
+            background: var(--color-gold);
+            border-color: var(--color-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(201, 168, 108, 0.3);
+        }
+
+        .verify-btn:active {
+            transform: translateY(0);
+        }
+
+        .back-btn {
+            min-width: 100px;
+            height: 56px;
+            padding: 0 var(--spacing-md);
+            font-family: var(--font-display);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--color-black);
+            background: var(--color-white);
+            border: 1px solid var(--color-black);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            white-space: nowrap;
+        }
+
+        .back-btn:hover {
+            background: var(--color-gray-light);
+        }
+
+        /* ========== 验证类型按钮 ========== */
+        .verify-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        .verify-type-btn {
+            min-width: 120px;
+            height: 56px;
+            padding: 0 var(--spacing-md);
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--color-white);
+            background: var(--color-black);
+            border: 1px solid var(--color-black);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            white-space: nowrap;
+        }
+
+        .verify-type-btn:hover {
+            background: var(--color-gold);
+            border-color: var(--color-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(201, 168, 108, 0.3);
+        }
+
+        .verify-type-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .verify-buttons {
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--spacing-sm);
+            }
+
+            .verify-type-btn {
+                width: 100%;
+                min-width: auto;
+            }
+        }
+
+        /* ========== 加载状态 ========== */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: var(--spacing-lg);
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        /* 左侧面板加载状态 */
+        .left-panel .loading {
+            padding: var(--spacing-xl) 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--color-gray-light);
+            border-top-color: var(--color-black);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto var(--spacing-sm);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            color: var(--color-gray-medium);
+            text-transform: uppercase;
+        }
+
+        /* ========== 结果卡片 ========== */
+        .result-card {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            background: var(--color-white);
+            border-radius: var(--spacing-sm);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            animation: fadeUp 0.4s ease-out;
+            overflow: hidden;
+        }
+
+        .result-card.show {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-card.success {
+            border-top: 3px solid var(--color-gold);
+        }
+
+        .result-card.error {
+            border-top: 3px solid #d32f2f;
+        }
+
+        /* 紧凑的结果项（与老师审批页面一致） */
+        .result-item {
+            background: white;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .result-item .label {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: var(--font-display), serif;
+        }
+
+        .result-item .value {
+            font-size: 16px;
+            color: var(--color-black);
+            font-weight: 600;
+        }
+
+        .result-item .value.highlight {
+            color: var(--color-gold);
+            font-size: 18px;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        /* ========== 头像区域（居中大头像） ========== */
+        .avatar-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: var(--spacing-xl) var(--spacing-md);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .avatar-large {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 4px solid white;
+        }
+
+        /* ========== 信息卡片区域 ========== */
+        .info-cards {
+            padding: var(--spacing-md);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);  /* 一行显示3个卡片 */
+            gap: 12px;
+        }
+
+        .result-header {
+            padding: var(--spacing-md) 0;
+            border-bottom: 1px solid var(--color-gray-light);
+            margin-bottom: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .result-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .result-card.success .result-icon {
+            background: var(--color-gold-light);
+        }
+
+        .result-card.error .result-icon {
+            background: #ffebee;
+        }
+
+        .result-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .result-card.success .result-icon svg {
+            color: var(--color-gold);
+        }
+
+        .result-card.error .result-icon svg {
+            color: #d32f2f;
+        }
+
+        .result-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--color-black);
+        }
+
+        .result-message {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--color-gray-dark);
+            margin-top: 4px;
+        }
+
+        /* ========== 用户信息 ========== */
+        .user-info {
+            padding: var(--spacing-xl);
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* PC端用户信息优化 */
+        @media (min-width: 1025px) {
+            .user-info {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                padding: var(--spacing-2xl);
+            }
+
+            .user-details {
+                width: 100%;
+                max-width: 700px;
+                margin: 0 auto;
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--spacing-lg);
+            }
+
+            .user-detail-item {
+                padding: var(--spacing-lg);
+                background: var(--color-gray-light);
+                border-radius: var(--spacing-sm);
+            }
+
+            .user-detail-item.full-width {
+                grid-column: 1 / -1;
+                background: var(--color-gold-light);
+            }
+
+            .user-detail-item.full-width:not(.emergency):not(.direction) {
+                background: transparent;
+                padding-top: var(--spacing-lg);
+                border-top: 1px solid var(--color-gray-light);
+                margin-top: var(--spacing-md);
+            }
+
+            .user-detail-label {
+                font-size: 13px;
+                margin-bottom: var(--spacing-xs);
+            }
+
+            .user-detail-value {
+                font-size: 16px;
+                font-weight: 600;
+            }
+        }
+
+        .user-photo {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto var(--spacing-md);
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid var(--color-gold);
+            box-shadow: 0 4px 12px rgba(201, 168, 108, 0.3);
+            flex-shrink: 0;
+        }
+
+        /* PC端大头像 */
+        @media (min-width: 1025px) {
+            .user-photo {
+                width: 140px;
+                height: 140px;
+                font-size: 48px;
+                margin-bottom: var(--spacing-lg);
+            }
+        }
+
+        .user-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-align: center;
+            color: var(--color-black);
+            margin-bottom: var(--spacing-md);
+        }
+
+        /* PC端大字体 */
+        @media (min-width: 1025px) {
+            .user-name {
+                font-size: 32px;
+                margin-bottom: var(--spacing-lg);
+            }
+
+            .user-details {
+                grid-template-columns: 1fr 1fr;
+                gap: var(--spacing-md);
+            }
+
+            .user-detail-item {
+                padding: var(--spacing-md);
+                font-size: 15px;
+            }
+
+            .user-detail-label {
+                font-size: 12px;
+            }
+
+            .user-detail-value {
+                font-size: 16px;
+            }
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            border-radius: 2px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .status-badge.dynamic {
+            background: var(--color-black);
+            color: var(--color-white);
+        }
+
+        .status-badge.visitor {
+            background: var(--color-gold);
+            color: var(--color-white);
+        }
+
+        .status-badge.leave {
+            background: var(--color-gray-dark);
+            color: var(--color-white);
+        }
+
+        .user-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-sm);
+        }
+
+        .user-detail-item {
+            display: flex;
+            flex-direction: column;
+            padding: var(--spacing-sm);
+            background: var(--color-gray-light);
+            border-radius: 2px;
+        }
+
+        .user-detail-label {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--color-gray-medium);
+            margin-bottom: 4px;
+        }
+
+        .user-detail-value {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-black);
+        }
+
+        .user-detail-item.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .user-detail-item.emergency {
+            background: #ffebee;
+        }
+
+        .user-detail-item.emergency .user-detail-label,
+        .user-detail-item.emergency .user-detail-value {
+            color: #d32f2f;
+        }
+
+        .user-detail-item.direction {
+            background: #e8d5b5;
+        }
+
+        .user-detail-item.direction .user-detail-label,
+        .user-detail-item.direction .user-detail-value {
+            color: var(--color-black);
+        }
+
+        /* ========== 按钮组 ========== */
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-lg);
+        }
+
+        .action-btn {
+            flex: 1;
+            height: 48px;
+            font-family: var(--font-display);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--color-white);
+            background: var(--color-black);
+            border: 1px solid var(--color-black);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .action-btn:hover {
+            background: var(--color-gold);
+            border-color: var(--color-gold);
+        }
+
+        .action-btn.secondary {
+            color: var(--color-black);
+            background: var(--color-white);
+            border-color: var(--color-black);
+        }
+
+        .action-btn.secondary:hover {
+            background: var(--color-gray-light);
+            border-color: var(--color-gray-dark);
+        }
+
+        /* ========== 底部信息 ========== */
+        .footer-info {
+            text-align: center;
+            padding: var(--spacing-lg) var(--spacing-md);
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            color: var(--color-gray-medium);
+            text-transform: uppercase;
+        }
+
+        /* ========== 响应式设计 ========== */
+        @media (max-width: 1024px) {
+            /* 平板和以下：改为上下布局 */
+            .verify-container {
+                flex-direction: column;
+                padding: calc(var(--spacing-2xl) + var(--spacing-md)) var(--spacing-md) var(--spacing-2xl);
+            }
+
+            .left-panel {
+                flex: 0 0 auto;
+                width: 100%;
+                position: static;
+            }
+
+            .right-panel {
+                flex: 1;
+                min-height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            :root {
+                --spacing-xs: 6px;
+                --spacing-sm: 12px;
+                --spacing-md: 18px;
+                --spacing-lg: 24px;
+                --spacing-xl: 36px;
+                --spacing-2xl: 48px;
+            }
+
+            .brand-header {
+                padding: 12px var(--spacing-sm);
+            }
+
+            .brand-logo {
+                font-size: 16px;
+                letter-spacing: 0.15em;
+            }
+
+            .guard-info {
+                font-size: 11px;
+            }
+
+            .verify-container {
+                padding: calc(var(--spacing-2xl) + 50px) var(--spacing-sm) var(--spacing-xl);
+            }
+
+            .left-panel {
+                padding: var(--spacing-md);
+            }
+
+            .panel-header {
+                margin-bottom: var(--spacing-md);
+            }
+
+            .panel-title {
+                font-size: 20px;
+            }
+
+            .form-group {
+                margin-bottom: var(--spacing-md);
+            }
+
+            .code-input-wrapper {
+                flex-direction: column;
+            }
+
+            .code-input,
+            .verify-btn {
+                width: 100%;
+            }
+
+            .code-input {
+                height: 52px;
+                font-size: 22px;
+            }
+
+            .verify-btn {
+                height: 52px;
+            }
+
+            /* 结果卡片在移动端显示 */
+            .right-panel .result-card.show {
+                display: block;
+            }
+
+            /* 移动端头像调整 */
+            .avatar-large {
+                width: 100px;
+                height: 100px;
+                font-size: 48px;
+            }
+
+            .avatar-section {
+                padding: var(--spacing-lg) var(--spacing-md);
+            }
+
+            /* 移动端一行显示2个卡片 */
+            .info-cards {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .empty-state {
+                padding: var(--spacing-xl);
+            }
+
+            .empty-state-icon {
+                font-size: 48px;
+            }
+
+            .empty-state-title {
+                font-size: 20px;
+            }
+
+            .user-details {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-xs);
+            }
+
+            .user-detail-item {
+                padding: var(--spacing-xs) var(--spacing-sm);
+            }
+
+            .user-photo {
+                width: 80px;
+                height: 80px;
+            }
+
+            .user-name {
+                font-size: 20px;
+            }
+
+            /* 左侧按钮在移动端保持纵向 */
+            .left-panel .action-buttons {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --spacing-xs: 4px;
+                --spacing-sm: 10px;
+                --spacing-md: 16px;
+                --spacing-lg: 20px;
+                --spacing-xl: 32px;
+                --spacing-2xl: 40px;
+            }
+
+            .brand-header {
+                padding: 10px var(--spacing-sm);
+            }
+
+            .brand-logo {
+                font-size: 14px;
+            }
+
+            .guard-info {
+                font-size: 10px;
+            }
+
+            .verify-container {
+                padding: calc(var(--spacing-2xl) + 45px) var(--spacing-sm) var(--spacing-lg);
+            }
+
+            .left-panel {
+                padding: var(--spacing-sm);
+            }
+
+            .panel-title {
+                font-size: 18px;
+            }
+
+            .code-input {
+                height: 48px;
+                font-size: 20px;
+            }
+
+            .verify-btn {
+                height: 48px;
+                font-size: 10px;
+            }
+
+            .user-name {
+                font-size: 18px;
+            }
+
+            .user-photo {
+                width: 70px;
+                height: 70px;
+            }
+
+            .action-btn {
+                height: 48px;
+                font-size: 10px;
+            }
+
+            .result-icon {
+                width: 40px;
+                height: 40px;
+            }
+
+            .result-icon svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+        /* 超小屏幕优化 */
+        @media (max-width: 360px) {
+            .code-input {
+                height: 44px;
+                font-size: 18px;
+            }
+
+            .verify-btn {
+                height: 44px;
+            }
+        }
+
+        /* ========== 打印样式 ========== */
+        @media print {
+            .brand-header,
+            .code-section,
+            .action-buttons,
+            .footer-info {
+                display: none;
+            }
+
+            .result-card {
+                border: none;
+            }
+
+            .user-info {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 品牌头部 -->
+    <header class="brand-header">
+        <div class="brand-logo">门卫验证系统</div>
+        <div class="guard-info">门卫: <span id="guardNameDisplay">门卫01</span></div>
+    </header>
+
+    <!-- 主容器 -->
+    <div class="verify-container">
+        <!-- 左侧面板 - 输入区域 -->
+        <div class="left-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">门卫验证</h2>
+                <p class="panel-subtitle">Gate Verification</p>
+            </div>
+
+            <!-- 门卫姓名输入 -->
+            <div class="form-group">
+                <label class="code-label" for="guardName">门卫姓名</label>
+                <input
+                    type="text"
+                    id="guardName"
+                    class="code-input"
+                    style="height: 50px; font-size: 15px; letter-spacing: 0.05em; text-align: left; padding: 0 var(--spacing-sm);"
+                    placeholder="请输入您的姓名"
+                    value="门卫01"
+                >
+            </div>
+
+            <!-- 验证码输入 -->
+            <form id="verifyForm" onsubmit="return false;" class="verify-form">
+                <label class="code-label" for="codeInput">验证码</label>
+                <div class="code-input-wrapper">
+                    <input
+                        type="text"
+                        id="codeInput"
+                        class="code-input"
+                        maxlength="6"
+                        placeholder="请输入6位验证码"
+                        autocomplete="off"
+                        autofocus
+                    >
+                </div>
+
+                <!-- 四个验证按钮 -->
+                <div class="verify-buttons">
+                    <button class="verify-type-btn" onclick="verifyWithType('student-parent')">在校验证</button>
+                    <button class="verify-type-btn" onclick="verifyWithType('student-leave')">学生出校</button>
+                    <button class="verify-type-btn" onclick="verifyWithType('alumni')">校友验证</button>
+                    <button class="verify-type-btn" onclick="verifyWithType('visitor')">访客验证</button>
+                </div>
+            </form>
+
+            <!-- 加载状态 -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p class="loading-text">验证中...</p>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-buttons" id="actionButtons" style="display: none;">
+                <button class="action-btn" id="confirmBtn" onclick="confirmEntry()">确认放行</button>
+            </div>
+        </div>
+
+        <!-- 右侧面板 - 结果显示区域 -->
+        <div class="right-panel">
+            <!-- 空状态 -->
+            <div class="empty-state" id="emptyState">
+                <div class="empty-state-icon">🔍</div>
+                <h3 class="empty-state-title">等待验证</h3>
+                <p class="empty-state-text">请输入6位验证码进行身份验证</p>
+            </div>
+
+            <!-- 验证结果卡片 -->
+            <div class="result-card" id="resultCard">
+                <!-- 头像区域（居中大头像） -->
+                <div class="avatar-section" id="avatarSection">
+                    <div class="avatar-large" id="avatarLarge"></div>
+                </div>
+
+                <!-- 紧凑卡片信息 -->
+                <div class="info-cards" id="infoCards"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部信息 -->
+    <footer class="footer-info">
+        校园安全访问系统
+    </footer>
+
+    <script>
+        const API_BASE_URL = '/api';
+        let currentApplicationId = null;  // 存储当前验证的application_id
+
+        // ========== 验证码输入 ==========
+
+        // 自动聚焦输入框
+
+        // 自动聚焦输入框
+        document.getElementById('codeInput').addEventListener('input', function(e) {
+            this.value = this.value.replace(/\D/g, '');
+        });
+
+        // 监听验证码输入框的Enter键 - 输入6位后自动验证
+        document.getElementById('codeInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && this.value.length === 6) {
+                e.preventDefault();
+                // 触发表单提交
+                const event = new Event('submit', { bubbles: true, cancelable: true });
+                document.getElementById('verifyForm').dispatchEvent(event);
+            }
+        });
+
+        // 门卫姓名变化时更新显示
+        document.getElementById('guardName').addEventListener('input', function(e) {
+            const name = e.target.value.trim() || '门卫01';
+            document.getElementById('guardNameDisplay').textContent = name;
+        });
+
+        // ========== 验证功能 ==========
+
+        // 带类型的验证（点击三个按钮时调用）
+        async function verifyWithType(type) {
+            const code = document.getElementById('codeInput').value.trim();
+            const guardName = document.getElementById('guardName').value.trim() || '门卫01';
+
+            if (code.length !== 6) {
+                showError('请输入6位访问码');
+                return;
+            }
+
+            await verifyCode(code, guardName, type);
+        }
+
+        // 验证访问码（核心函数）
+        async function verifyCode(code, guardName, verifyType = null) {
+            if (!code) {
+                const codeInput = document.getElementById('codeInput');
+                code = codeInput.value.trim();
+            }
+
+            if (!guardName) {
+                guardName = document.getElementById('guardName').value.trim() || '门卫01';
+            }
+
+            if (code.length !== 6) {
+                showError('请输入6位访问码');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const resultCard = document.getElementById('resultCard');
+            const emptyState = document.getElementById('emptyState');
+            const actionButtons = document.getElementById('actionButtons');
+
+            loading.classList.add('show');
+            resultCard.classList.remove('show');
+            emptyState.style.display = 'none';
+            actionButtons.style.display = 'none';
+
+            try {
+                const requestBody = {
+                    code: code,
+                    guard_name: guardName
+                };
+
+                // 添加验证类型参数（用于后端优化查询）
+                if (verifyType) {
+                    requestBody.verify_type = verifyType;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/guard/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const result = await response.json();
+                loading.classList.remove('show');
+
+                if (response.ok && result.success && result.data && result.data.valid) {
+                    showSuccess(result.data);
+                    actionButtons.style.display = 'flex';
+                    // 验证成功后保留输入框内容，方便查看；只在确认放行后清空
+                    // document.getElementById('codeInput').value = '';  // 注释掉，不清空
+                } else if (result.data && result.data.message) {
+                    showError(result.data.message);
+                    emptyState.style.display = 'flex';
+                    // 验证失败时清空输入框
+                    document.getElementById('codeInput').value = '';
+                    document.getElementById('codeInput').focus();
+                } else if (result.error) {
+                    showError(result.error);
+                    emptyState.style.display = 'flex';
+                    // 验证失败时清空输入框
+                    document.getElementById('codeInput').value = '';
+                    document.getElementById('codeInput').focus();
+                } else {
+                    showError('访问码无效或已过期');
+                    emptyState.style.display = 'flex';
+                    // 验证失败时清空输入框
+                    document.getElementById('codeInput').value = '';
+                    document.getElementById('codeInput').focus();
+                }
+
+            } catch (error) {
+                console.error('验证失败:', error);
+                loading.classList.remove('show');
+                showError('验证失败，请重试');
+                emptyState.style.display = 'flex';
+                // 清空输入框
+                document.getElementById('codeInput').value = '';
+                document.getElementById('codeInput').focus();
+            }
+        }
+
+        // 显示成功结果（紧凑卡片格式，中间大头像）
+        function showSuccess(data) {
+            // 存储application_id用于确认放行
+            currentApplicationId = data.application_id || null;
+
+            const resultCard = document.getElementById('resultCard');
+            const avatarSection = document.getElementById('avatarLarge');
+            const infoCards = document.getElementById('infoCards');
+
+            resultCard.className = 'result-card success show';
+
+            const personInfo = data.user_info || {};
+
+            // 生成头像（使用名字首字母）
+            function generateAvatar(name) {
+                if (!name) return '?';
+                const names = name.trim().split(' ');
+                const firstName = names[names.length - 1];
+                return firstName.charAt(0).toUpperCase();
+            }
+
+            // 生成头像颜色（根据用户类型）
+            function getAvatarColor(userType) {
+                const colors = {
+                    'student': '#667eea',
+                    'parent': '#4facfe',
+                    'alumni': '#ffd700',
+                    'teacher': '#f093fb',
+                    'student-leave': '#667eea',
+                    'parent-visit': '#4facfe'
+                };
+                return colors[userType] || '#999999';
+            }
+
+            // 设置大头像
+            const avatarLetter = generateAvatar(personInfo.name);
+            const avatarColor = getAvatarColor(personInfo.type);
+
+            avatarSection.style.background = avatarColor;
+            avatarSection.textContent = avatarLetter;
+
+            // 获取用户类型中文标签
+            function getUserTypeLabel(type) {
+                const labels = {
+                    'student': '学生',
+                    'parent': '家长',
+                    'alumni': '校友',
+                    'teacher': '教师',
+                    'student-leave': '学生请假',
+                    'parent-visit': '家长访问'
+                };
+                return labels[type] || '访客';
+            }
+
+            // 生成紧凑卡片
+            let html = '';
+
+            // 类型标签（第一个，高亮显示）
+            html += '<div class="result-item"><div class="label">类型</div><div class="value highlight">' + getUserTypeLabel(personInfo.type) + '</div></div>';
+
+            // 申请人姓名
+            html += '<div class="result-item"><div class="label">姓名</div><div class="value">' + personInfo.name + '</div></div>';
+
+            // 如果是家长，显示孩子信息（高亮显示）
+            if (personInfo.type === 'parent' && personInfo.child_info) {
+                const child = personInfo.child_info;
+                html += '<div class="result-item"><div class="label">孩子姓名</div><div class="value highlight">' + child.name + '</div></div>';
+                if (child.student_no) {
+                    html += '<div class="result-item"><div class="label">学号</div><div class="value">' + child.student_no + '</div></div>';
+                }
+            }
+
+            // 手机号（小字体）
+            html += '<div class="result-item"><div class="label">手机号</div><div class="value" style="font-size: 14px;">' + personInfo.phone + '</div></div>';
+
+            // 审批老师（高亮显示）
+            if (personInfo.approver_name) {
+                html += '<div class="result-item"><div class="label">审批老师</div><div class="value highlight">' + personInfo.approver_name + '</div></div>';
+            }
+
+            // 审批时间（小字体）
+            if (personInfo.approval_time_str) {
+                html += '<div class="result-item"><div class="label">审批时间</div><div class="value" style="font-size: 13px; color: #666;">' + personInfo.approval_time_str + '</div></div>';
+            }
+
+            // 访问目的（小字体）
+            if (personInfo.visit_purpose) {
+                html += '<div class="result-item"><div class="label">访问目的</div><div class="value" style="font-size: 14px;">' + personInfo.visit_purpose + '</div></div>';
+            }
+
+            infoCards.innerHTML = html;
+
+            // 自动聚焦到"确认放行"按钮，方便直接按Enter确认
+            setTimeout(() => {
+                const confirmBtn = document.getElementById('confirmBtn');
+                if (confirmBtn) {
+                    confirmBtn.focus();
+                }
+            }, 100);
+        }
+
+        // 显示错误
+        function showError(message) {
+            const resultCard = document.getElementById('resultCard');
+            const emptyState = document.getElementById('emptyState');
+            const avatarSection = document.getElementById('avatarLarge');
+            const infoCards = document.getElementById('infoCards');
+            const actionButtons = document.getElementById('actionButtons');
+
+            // 在右侧显示错误卡片
+            emptyState.style.display = 'none';
+            resultCard.className = 'result-card error show';
+            actionButtons.style.display = 'none';
+
+            // 显示错误图标（红色X）
+            avatarSection.style.background = '#d32f2f';
+            avatarSection.textContent = 'X';
+            avatarSection.style.fontSize = '48px';
+
+            // 显示错误信息
+            infoCards.innerHTML = '<div class="result-item"><div class="label">错误</div><div class="value" style="color: #d32f2f;">' + message + '</div></div>';
+        }
+
+        // 清除表单
+        function clearForm() {
+            currentApplicationId = null;  // 清除application_id
+            document.getElementById('codeInput').value = '';
+            document.getElementById('resultCard').classList.remove('show');
+            document.getElementById('emptyState').style.display = 'flex';
+            document.getElementById('actionButtons').style.display = 'none';
+            document.getElementById('codeInput').focus();
+        }
+
+        // 确认放行（标记记录为已使用，实现一人一码一次）
+        async function confirmEntry() {
+            if (!currentApplicationId) {
+                console.error('没有可确认的记录');
+                clearForm();
+                return;
+            }
+
+            try {
+                const guardName = document.getElementById('guardName').value.trim() || '门卫01';
+
+                const response = await fetch(`${API_BASE_URL}/guard/confirm`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        application_id: currentApplicationId,
+                        guard_name: guardName
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    console.log('✅ 已确认放行，记录已标记为使用');
+                    alert(`✅ ${result.applicant_name || '访客'} 已确认放行`);
+                    // 清空所有内容，准备验证下一个
+                    clearForm();
+                } else {
+                    console.error('确认放行失败:', result.error || result.message);
+                    alert(result.error || '确认放行失败，请重试');
+                }
+            } catch (error) {
+                console.error('确认放行请求失败:', error);
+                alert('确认放行失败，请重试');
+            }
+        }
+
+        // 添加确认按钮回车监听
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmBtn = document.getElementById('confirmBtn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        confirmEntry();
+                    }
+                });
+            }
+        });
+
+        // 获取用户类型标签
+        function getUserTypeLabel(type) {
+            const labels = {
+                'student': '学生',
+                'teacher': '教师',
+                'alumni': '校友',
+                'parent': '家长'
+            };
+            return labels[type] || type;
+        }
+
+        // 页面加载时聚焦输入框
+        window.onload = function() {
+            document.getElementById('codeInput').focus();
+        };
+    </script>
+</body>
+</html>

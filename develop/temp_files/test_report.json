@@ -1,0 +1,151 @@
+{
+  "summary": {
+    "total": 20,
+    "passed": 9,
+    "failed": 11,
+    "success_rate": "45.0%"
+  },
+  "tests": [
+    {
+      "test": "健康检查",
+      "status": "[FAIL]",
+      "message": "Status: 404",
+      "details": "{\n  \"error\": \"Not found\"\n}\n",
+      "timestamp": "2026-03-25T14:39:48.857020"
+    },
+    {
+      "test": "数据库连接",
+      "status": "[FAIL]",
+      "message": "Health check passed",
+      "details": "{\"error\": \"Not found\"}",
+      "timestamp": "2026-03-25T14:39:51.408176"
+    },
+    {
+      "test": "首页访问",
+      "status": "[PASS]",
+      "message": "Status: 200",
+      "details": "Content length: 78782",
+      "timestamp": "2026-03-25T14:39:53.986173"
+    },
+    {
+      "test": "管理后台页面",
+      "status": "[FAIL]",
+      "message": "Status: 404",
+      "details": "Content preview: {\n  \"error\": \"Not found\"\n}\n",
+      "timestamp": "2026-03-25T14:39:56.555311"
+    },
+    {
+      "test": "页面加载: 首页",
+      "status": "[PASS]",
+      "message": "Status: 200, Size: 83004 bytes",
+      "details": "",
+      "timestamp": "2026-03-25T14:39:59.110208"
+    },
+    {
+      "test": "页面加载: 注册页",
+      "status": "[PASS]",
+      "message": "Status: 200, Size: 21615 bytes",
+      "details": "",
+      "timestamp": "2026-03-25T14:40:01.162423"
+    },
+    {
+      "test": "页面加载: 管理后台",
+      "status": "[FAIL]",
+      "message": "Status: 404, Size: 27 bytes",
+      "details": "",
+      "timestamp": "2026-03-25T14:40:03.198426"
+    },
+    {
+      "test": "页面加载: 管理员登录页",
+      "status": "[FAIL]",
+      "message": "Status: 404, Size: 27 bytes",
+      "details": "",
+      "timestamp": "2026-03-25T14:40:05.249340"
+    },
+    {
+      "test": "页面加载: 活动注册页",
+      "status": "[FAIL]",
+      "message": "Status: 404, Size: 27 bytes",
+      "details": "",
+      "timestamp": "2026-03-25T14:40:07.291195"
+    },
+    {
+      "test": "静态文件访问: /static/css/",
+      "status": "[PASS]",
+      "message": "Status: 404",
+      "details": "",
+      "timestamp": "2026-03-25T14:40:09.827916"
+    },
+    {
+      "test": "静态文件访问: /static/js/",
+      "status": "[PASS]",
+      "message": "Status: 404",
+      "details": "",
+      "timestamp": "2026-03-25T14:40:11.891071"
+    },
+    {
+      "test": "用户注册API",
+      "status": "[FAIL]",
+      "message": "Status: 400",
+      "details": "{\n  \"message\": \"realName\\u4e0d\\u80fd\\u4e3a\\u7a7a\",\n  \"success\": false\n}\n",
+      "timestamp": "2026-03-25T14:40:14.452679"
+    },
+    {
+      "test": "用户登录API",
+      "status": "[FAIL]",
+      "message": "Status: 401",
+      "details": "{\n  \"error\": \"\\u5bc6\\u7801\\u9519\\u8bef\\uff0c\\u8bf7\\u91cd\\u65b0\\u8f93\\u5165\"\n}\n",
+      "timestamp": "2026-03-25T14:40:17.147543"
+    },
+    {
+      "test": "管理员登录API",
+      "status": "[FAIL]",
+      "message": "Status: 404",
+      "details": "{\n  \"error\": \"Not found\"\n}\n",
+      "timestamp": "2026-03-25T14:40:19.682953"
+    },
+    {
+      "test": "校友列表API",
+      "status": "[PASS]",
+      "message": "Status: 401",
+      "details": "",
+      "timestamp": "2026-03-25T14:40:22.221390"
+    },
+    {
+      "test": "访问申请API",
+      "status": "[PASS]",
+      "message": "Status: 401",
+      "details": "",
+      "timestamp": "2026-03-25T14:40:24.274604"
+    },
+    {
+      "test": "管理员仪表板API",
+      "status": "[PASS]",
+      "message": "Status: 401",
+      "details": "",
+      "timestamp": "2026-03-25T14:40:26.334041"
+    },
+    {
+      "test": "公开日历API",
+      "status": "[FAIL]",
+      "message": "Status: 404",
+      "details": "{\n  \"error\": \"Not found\"\n}\n",
+      "timestamp": "2026-03-25T14:40:28.365018"
+    },
+    {
+      "test": "压力测试 (20请求)",
+      "status": "[FAIL]",
+      "message": "成功: 0/20, 总耗时: 4.12s, 平均响应: 2.046s",
+      "details": "失败详情: [{'id': 2, 'status': 404, 'time': 2.0340962409973145, 'success': False}, {'id': 4, 'status': 404, 'time': 2.0342981815338135, 'success': False}, {'id': 5, 'status': 404, 'time': 2.03433895111084, 'success': False}, {'id': 6, 'status': 404, 'time': 2.0347163677215576, 'success': False}, {'id': 3, 'status': 404, 'time': 2.0434086322784424, 'success': False}, {'id': 0, 'status': 404, 'time': 2.049769639968872, 'success': False}, {'id': 7, 'status': 404, 'time': 2.04209041595459, 'success': False}, {'id': 1, 'status': 404, 'time': 2.052623987197876, 'success': False}, {'id': 8, 'status': 404, 'time': 2.046442985534668, 'success': False}, {'id': 9, 'status': 404, 'time': 2.0461630821228027, 'success': False}, {'id': 13, 'status': 404, 'time': 2.0403313636779785, 'success': False}, {'id': 11, 'status': 404, 'time': 2.04542875289917, 'success': False}, {'id': 14, 'status': 404, 'time': 2.0409562587738037, 'success': False}, {'id': 10, 'status': 404, 'time': 2.055194616317749, 'success': False}, {'id': 15, 'status': 404, 'time': 2.0466129779815674, 'success': False}, {'id': 12, 'status': 404, 'time': 2.0599658489227295, 'success': False}, {'id': 18, 'status': 404, 'time': 2.049532890319824, 'success': False}, {'id': 17, 'status': 404, 'time': 2.053600788116455, 'success': False}, {'id': 16, 'status': 404, 'time': 2.060908317565918, 'success': False}, {'id': 19, 'status': 404, 'time': 2.0561041831970215, 'success': False}]",
+      "timestamp": "2026-03-25T14:40:32.995727"
+    },
+    {
+      "test": "内存泄漏测试",
+      "status": "[PASS]",
+      "message": "平均响应: 2.043s, 性能下降: -0.2%, 成功率: 100/100",
+      "details": "响应时间范围: 2.020s - 2.080s",
+      "timestamp": "2026-03-25T14:43:57.837576"
+    }
+  ],
+  "timestamp": "2026-03-25T14:43:58.338500"
+}

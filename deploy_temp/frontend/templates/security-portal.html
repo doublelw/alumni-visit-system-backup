@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1976d2">
+    <meta name="format-detection" content="telephone=no">
+    <title>保安管理端</title>
+
+    <!-- 引入移动端一致的字体和图标 -->
+    <style>
+        /* 使用系统字体避免HTTPS请求 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+    </style>
+    <link rel="stylesheet" href="/static/vendor/remixicon.css">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+
+    <style>
+        /* 强制导航栏全宽样式 */
+        header.fixed {
+            left: 0 !important;
+            right: 0 !important;
+            width: 100vw !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        header.fixed > div {
+            width: 100% !important;
+            max-width: none !important;
+        }
+
+        /* CSS变量定义 - 与移动端保持一致 */
+        :root {
+            /* 主色调 */
+            --primary-color: #1976d2;
+            --primary-light: #42a5f5;
+            --primary-dark: #1565c0;
+
+            /* 辅助色 */
+            --secondary-color: #dc004e;
+            --accent-color: #00c853;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+
+            /* 中性色 */
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --text-disabled: #bdbdbd;
+            --background-primary: #ffffff;
+            --background-secondary: #e3f2fd;
+            --surface: #ffffff;
+            --border: #e0e0e0;
+
+            /* 阴影 */
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 20px rgba(0,0,0,0.15);
+
+            /* 圆角 */
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+
+            /* 间距 */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+
+            /* 字体 */
+            --font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-size-xs: 12px;
+            --font-size-sm: 14px;
+            --font-size-md: 16px;
+            --font-size-lg: 18px;
+            --font-size-xl: 20px;
+            --font-size-xxl: 24px;
+            --font-size-xxxl: 32px;
+        }
+
+        /* 基础样式 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+
+        /* 通用工具类 */
+        .min-h-screen { min-height: 100vh; }
+        .max-w-7xl { max-width: 1280px; margin: 0 auto; padding: 0 var(--spacing-md); }
+        .max-w-md { max-width: 28rem; margin: 0 auto; }
+        .w-full { width: 100%; }
+        .w-96 { width: 24rem; }
+
+        /* 间距 */
+        .p-4 { padding: var(--spacing-md); }
+        .p-6 { padding: var(--spacing-lg); }
+        .p-8 { padding: var(--spacing-xl); }
+        .px-3 { padding-left: 12px; padding-right: 12px; }
+        .px-4 { padding-left: var(--spacing-md); padding-right: var(--spacing-md); }
+        .px-6 { padding-left: var(--spacing-lg); padding-right: var(--spacing-lg); }
+        .py-2 { padding-top: 8px; padding-bottom: 8px; }
+        .py-3 { padding-top: 12px; padding-bottom: 12px; }
+        .py-4 { padding-top: var(--spacing-md); padding-bottom: var(--spacing-md); }
+        .py-6 { padding-top: var(--spacing-lg); padding-bottom: var(--spacing-lg); }
+        .py-8 { padding-top: var(--spacing-xl); padding-bottom: var(--spacing-xl); }
+
+        .mb-2 { margin-bottom: 8px; }
+        .mb-4 { margin-bottom: var(--spacing-md); }
+        .mb-6 { margin-bottom: var(--spacing-lg); }
+        .mb-8 { margin-bottom: var(--spacing-xl); }
+        .mt-2 { margin-top: 8px; }
+        .mt-4 { margin-top: var(--spacing-md); }
+        .mt-6 { margin-top: var(--spacing-lg); }
+        .mr-2 { margin-right: 8px; }
+        .mr-3 { margin-right: 12px; }
+        .mr-4 { margin-right: var(--spacing-md); }
+        .ml-2 { margin-left: 8px; }
+        .ml-4 { margin-left: var(--spacing-md); }
+
+        /* 文字 */
+        .text-xs { font-size: var(--font-size-xs); }
+        .text-sm { font-size: var(--font-size-sm); }
+        .text-lg { font-size: var(--font-size-lg); }
+        .text-xl { font-size: var(--font-size-xl); }
+        .text-2xl { font-size: var(--font-size-xxl); }
+        .text-3xl { font-size: var(--font-size-xxxl); }
+
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        /* 颜色 */
+        .text-white { color: white; }
+        .text-gray-500 { color: var(--text-secondary); }
+        .text-gray-600 { color: #666666; }
+        .text-gray-700 { color: var(--text-primary); }
+        .text-gray-900 { color: #000000; }
+        .text-blue-600 { color: var(--primary-color); }
+        .text-blue-800 { color: var(--primary-dark); }
+        .text-blue-900 { color: #0d47a1; }
+        .text-green-800 { color: #2e7d32; }
+        .text-red-600 { color: var(--error-color); }
+        .text-red-800 { color: #c62828; }
+        .text-yellow-600 { color: #f57c00; }
+        .text-yellow-800 { color: #e65100; }
+        .text-purple-800 { color: #6a1b9a; }
+
+        /* 背景色 */
+        .bg-white { background-color: var(--surface); }
+        .bg-gray-50 { background-color: #f5f9ff; }
+        .bg-gray-100 { background-color: #e3f2fd; }
+        .bg-blue-50 { background-color: #e3f2fd; }
+        .bg-blue-500 { background-color: var(--primary-color); }
+        .bg-blue-600 { background-color: var(--primary-dark); }
+        .bg-blue-700 { background-color: #0d47a1; }
+        .bg-green-500 { background-color: var(--accent-color); }
+        .bg-green-600 { background-color: #009624; }
+        .bg-red-500 { background-color: var(--error-color); }
+        .bg-red-600 { background-color: #d32f2f; }
+        .bg-gray-600 { background-color: #757575; }
+        .bg-yellow-500 { background-color: var(--warning-color); }
+        .bg-yellow-600 { background-color: #f57f17; }
+        .bg-purple-500 { background-color: #7b1fa2; }
+        .bg-purple-600 { background-color: #6a1b9a; }
+        .bg-black { background-color: rgba(0, 0, 0, 0.5); }
+
+        /* 布局 */
+        .block { display: block; }
+        .flex { display: flex; }
+        .inline-block { display: inline-block; }
+        .grid { display: grid; }
+        .hidden { display: none; }
+        .fixed { position: fixed; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .z-50 { z-index: 50; }
+
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .space-x-3 > * + * { margin-left: 12px; }
+        .space-x-4 > * + * { margin-left: var(--spacing-md); }
+        .space-x-6 > * + * { margin-left: var(--spacing-lg); }
+        .space-y-2 > * + * { margin-top: 8px; }
+        .space-y-3 > * + * { margin-top: 12px; }
+        .space-y-4 > * + * { margin-top: var(--spacing-md); }
+        .space-y-6 > * + * { margin-top: var(--spacing-lg); }
+        .space-y-8 > * + * { margin-top: var(--spacing-xl); }
+
+        .flex-1 { flex: 1; }
+        .flex-wrap { flex-wrap: wrap; }
+
+        /* 圆角 */
+        .rounded-lg { border-radius: var(--radius-md); }
+        .rounded-xl { border-radius: var(--radius-lg); }
+        .rounded-full { border-radius: 50px; }
+
+        /* 边框 */
+        .border { border: 1px solid var(--border); }
+        .border-2 { border: 2px solid var(--border); }
+        .border-dashed { border-style: dashed; }
+        .border-gray-200 { border-color: #e0e0e0; }
+        .border-gray-300 { border-color: #bdbdbd; }
+        .border-gray-400 { border-color: #9e9e9e; }
+        .border-blue-200 { border-color: #90caf9; }
+        .border-green-200 { border-color: #a5d6a7; }
+        .border-red-200 { border-color: #ef9a9a; }
+        .border-purple-200 { border-color: #ce93d8; }
+        .border-transparent { border-color: transparent; }
+
+        /* 阴影 */
+        .shadow-lg { box-shadow: var(--shadow-lg); }
+        .shadow-md { box-shadow: var(--shadow-md); }
+        .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+
+        /* 悬停效果 */
+        .hover\:bg-blue-600:hover { background-color: var(--primary-dark); }
+        .hover\:bg-blue-700:hover { background-color: #0d47a1; }
+        .hover\:bg-green-600:hover { background-color: #009624; }
+        .hover\:bg-red-600:hover { background-color: #d32f2f; }
+        .hover\:bg-gray-600:hover { background-color: #616161; }
+        .hover\:bg-gray-700:hover { background-color: #424242; }
+        .hover\:text-blue-800:hover { color: #0d47a1; }
+        .hover\:border-gray-400:hover { border-color: #9e9e9e; }
+        .hover\:shadow-xl:hover { box-shadow: var(--shadow-xl); }
+        .hover\:scale-105:hover { transform: scale(1.05); }
+
+        /* 焦点效果 */
+        .focus\:outline-none:focus { outline: none; }
+        .focus\:ring-2:focus { box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2); }
+        .focus\:ring-blue-500:focus { box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2); }
+        .focus\:border-transparent:focus { border-color: transparent; }
+        .focus\:ring-offset-2:focus { box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2), 0 0 0 1px rgba(255, 255, 255, 1); }
+
+        .disabled\:opacity-50:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .transition-colors { transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease; }
+        .transition-all { transition: all 0.2s ease; }
+        .transform { transform: translateZ(0); }
+
+        /* 渐变背景 */
+        .bg-gradient-to-br {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        }
+
+        /* 网格 */
+        .grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+        .gap-3 { gap: 12px; }
+        .gap-4 { gap: var(--spacing-md); }
+        .gap-6 { gap: var(--spacing-lg); }
+
+        /* 动画 */
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 图标 */
+        .bi {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 8px;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .grid-cols-1 { grid-template-columns: 1fr; }
+            .grid-cols-2 { grid-template-columns: 1fr; }
+            .grid-cols-3 { grid-template-columns: 1fr; }
+            .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+            .p-6 { padding: var(--spacing-md); }
+            .p-8 { padding: var(--spacing-lg); }
+            .mb-8 { margin-bottom: var(--spacing-lg); }
+            .text-3xl { font-size: var(--font-size-xxl); }
+            .text-2xl { font-size: var(--font-size-xl); }
+
+            /* 调整固定导航栏在移动端的间距 */
+            main {
+                padding-top: 120px !important; /* 统一移动端顶部间距避免遮挡 */
+            }
+        }
+
+        /* 平板端适配 */
+        @media (max-width: 1024px) {
+            /* 隐藏大屏幕的工作时间显示，保持界面整洁 */
+            .hidden.lg\\:flex {
+                display: none !important;
+            }
+        }
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .hover-card {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .hover-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* 状态标签样式 */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+        }
+
+        .checked-in {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .absent {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .scheduled {
+            background-color: #fff3e0;
+            color: #e65100;
+        }
+
+        /* 滚动条样式 */
+        .max-h-96 {
+            max-height: 24rem;
+        }
+
+        .max-h-96::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .max-h-96::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .max-h-96::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .max-h-96::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Toast 样式 */
+        .toast-success {
+            background: linear-gradient(135deg, var(--accent-color), #00a652);
+            color: white;
+        }
+
+        .toast-error {
+            background: linear-gradient(135deg, var(--error-color), #d32f2f);
+            color: white;
+        }
+
+        .toast-warning {
+            background: linear-gradient(135deg, var(--warning-color), #f57c00);
+            color: white;
+        }
+
+        .toast-info {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+        }
+
+        /* Toast动画效果 */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast-enter {
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .toast-exit {
+            animation: slideOutRight 0.3s ease-in;
+        }
+
+        /* 禁用移动端缩放和触摸手势 */
+        body {
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 允许输入框选择文本 */
+        input, textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+
+        /* 禁用双击缩放 */
+        * {
+            touch-action: manipulation;
+        }
+
+        .border-b { border-bottom: 1px solid var(--border); }
+        .border-t { border-top: 1px solid var(--border); }
+
+        /* 保安人员移动端专业优化 */
+        @media (max-width: 768px) {
+            /* 大按钮设计 - 便于戴手套操作 */
+            .btn-large {
+                min-height: 60px !important;
+                font-size: 18px !important;
+                padding: 16px 24px !important;
+                border-radius: 12px !important;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+                user-select: none;
+            }
+
+            /* 超大按钮 - 主要操作 */
+            .btn-xlarge {
+                min-height: 80px !important;
+                font-size: 22px !important;
+                padding: 20px 32px !important;
+                border-radius: 16px !important;
+                font-weight: 600 !important;
+            }
+
+            /* 验证按钮特殊样式 */
+            .verify-btn {
+                min-height: 100px !important;
+                font-size: 24px !important;
+                padding: 24px 32px !important;
+                margin: 12px 0 !important;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+                border: 3px solid transparent !important;
+                transition: all 0.3s ease !important;
+            }
+
+            .verify-btn:active {
+                transform: scale(0.98) !important;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+            }
+
+            /* 大字体输入框 */
+            .input-large {
+                font-size: 20px !important;
+                padding: 16px !important;
+                min-height: 60px !important;
+                border-radius: 12px !important;
+                border-width: 2px !important;
+            }
+
+            /* 验证码输入框特殊样式 */
+            .verification-input {
+                font-size: 28px !important;
+                padding: 20px !important;
+                min-height: 80px !important;
+                text-align: center !important;
+                font-weight: bold !important;
+                letter-spacing: 8px !important;
+                border-radius: 16px !important;
+                border: 3px solid var(--primary-color) !important;
+                font-family: 'Courier New', monospace !important;
+            }
+
+            /* 状态指示器 */
+            .status-indicator {
+                font-size: 16px !important;
+                padding: 12px 20px !important;
+                border-radius: 20px !important;
+                font-weight: 600 !important;
+            }
+
+            /* 操作区域间距 */
+            .action-section {
+                margin: 24px 0 !important;
+                padding: 20px !important;
+            }
+
+            /* 移动端卡片优化 */
+            .mobile-card {
+                margin: 16px !important;
+                padding: 20px !important;
+                border-radius: 16px !important;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+            }
+
+            /* 头部导航优化 */
+            header {
+                padding: 12px 16px !important;
+            }
+
+            header h1 {
+                font-size: 20px !important;
+                font-weight: 700 !important;
+            }
+
+            header p {
+                font-size: 14px !important;
+                margin-top: 2px !important;
+            }
+
+            /* 用户信息区域 */
+            .user-info-mobile {
+                font-size: 14px !important;
+                padding: 8px 16px !important;
+                border-radius: 20px !important;
+            }
+
+            /* 主要内容区域 */
+            main {
+                padding: 16px !important;
+                padding-top: 120px !important; /* 增加顶部间距避免被固定导航栏遮挡 */
+            }
+
+            /* 网格布局优化 */
+            .grid-mobile-1 {
+                grid-template-columns: 1fr !important;
+                gap: 16px !important;
+            }
+
+            /* 访客验证区域 */
+            .verification-section {
+                padding: 24px !important;
+                margin: 16px 0 !important;
+            }
+
+            .verification-section h2 {
+                font-size: 24px !important;
+                margin-bottom: 16px !important;
+            }
+
+            .verification-section h3 {
+                font-size: 20px !important;
+                margin-bottom: 12px !important;
+            }
+
+            .verification-section p {
+                font-size: 16px !important;
+                line-height: 1.5 !important;
+            }
+
+            /* 按钮组优化 */
+            .button-group-mobile {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 16px !important;
+                margin: 20px 0 !important;
+            }
+
+            .button-group-mobile button {
+                width: 100% !important;
+                min-height: 60px !important;
+                font-size: 18px !important;
+                font-weight: 600 !important;
+            }
+
+            /* 相机控制按钮 */
+            .camera-controls {
+                display: flex !important;
+                gap: 12px !important;
+                margin: 20px 0 !important;
+            }
+
+            .camera-controls button {
+                flex: 1 !important;
+                min-height: 56px !important;
+                font-size: 16px !important;
+                font-weight: 600 !important;
+            }
+
+            /* 视频预览优化 */
+            #qrCameraVideo {
+                border-radius: 16px !important;
+                border: 3px solid var(--primary-color) !important;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+            }
+
+            /* 说明文字优化 */
+            .info-text-mobile {
+                font-size: 16px !important;
+                line-height: 1.6 !important;
+                padding: 16px !important;
+                background: #f8f9fa !important;
+                border-radius: 12px !important;
+                border-left: 4px solid var(--primary-color) !important;
+                margin: 16px 0 !important;
+            }
+
+            /* 列表项优化 */
+            .list-item-mobile {
+                padding: 16px !important;
+                margin: 8px 0 !important;
+                border-radius: 12px !important;
+                font-size: 16px !important;
+                border: 1px solid #e0e0e0 !important;
+                background: white !important;
+            }
+
+            /* 紧急操作按钮 */
+            .emergency-btn {
+                background: #dc3545 !important;
+                color: white !important;
+                min-height: 70px !important;
+                font-size: 20px !important;
+                font-weight: 700 !important;
+                border: none !important;
+                border-radius: 16px !important;
+                box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3) !important;
+                animation: pulse-emergency 2s infinite !important;
+            }
+
+            @keyframes pulse-emergency {
+                0% { box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3); }
+                50% { box-shadow: 0 8px 35px rgba(220, 53, 69, 0.6); }
+                100% { box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3); }
+            }
+
+            /* 成功状态 */
+            .success-state {
+                background: linear-gradient(135deg, #28a745, #20c997) !important;
+                color: white !important;
+                padding: 24px !important;
+                border-radius: 16px !important;
+                font-size: 18px !important;
+                font-weight: 600 !important;
+                text-align: center !important;
+            }
+
+            /* 错误状态 */
+            .error-state {
+                background: linear-gradient(135deg, #dc3545, #fd7e14) !important;
+                color: white !important;
+                padding: 24px !important;
+                border-radius: 16px !important;
+                font-size: 18px !important;
+                font-weight: 600 !important;
+                text-align: center !important;
+            }
+
+            /* 加载状态 */
+            .loading-state {
+                background: linear-gradient(135deg, #007bff, #6610f2) !important;
+                color: white !important;
+                padding: 24px !important;
+                border-radius: 16px !important;
+                font-size: 18px !important;
+                font-weight: 600 !important;
+                text-align: center !important;
+            }
+
+            /* 隐藏桌面端元素 */
+            .desktop-only {
+                display: none !important;
+            }
+
+            /* 显示移动端元素 */
+            .mobile-only {
+                display: block !important;
+            }
+        }
+
+        /* 平板设备优化 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .btn-large {
+                min-height: 56px !important;
+                font-size: 17px !important;
+                padding: 14px 20px !important;
+            }
+
+            .verification-input {
+                font-size: 24px !important;
+                padding: 16px !important;
+                min-height: 68px !important;
+            }
+
+            main {
+                padding: 20px !important;
+                padding-top: 120px !important;
+            }
+        }
+    </style>
+    <link href="/static/css/security-portal.css" rel="stylesheet">
+</head>
+<body class="bg-blue-50">
+    <!-- 登录页面 -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center bg-gradient-to-br">
+        <div class="w-96 space-y-8 bg-white p-6 rounded-xl shadow-xl">
+            <div class="text-center">
+                <i class="ri-shield-check-line text-6xl text-blue-600 mb-4"></i>
+                <h2 class="text-3xl font-bold text-gray-900">访客管理系统</h2>
+                <p class="mt-2 text-gray-600">请登录您的保安账户</p>
+            </div>
+
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                    <input type="text" id="username" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="请输入保安用户名"
+                           onclick="this.select();"
+                           onfocus="this.select();">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                    <input type="password" id="password" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="请输入密码"
+                           onclick="this.select();"
+                           onfocus="this.select();">
+                </div>
+
+                <button type="submit" id="loginBtn"
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    <i class="ri-login-box-line mr-2"></i>
+                    登录
+                </button>
+            </form>
+
+            <!-- 测试账号区域 -->
+            <div class="mt-6 pt-4 border-t border-gray-200">
+                <p class="text-xs text-gray-500 mb-3">🛡️ 安全人员测试账号（点击自动填充）：</p>
+
+                <!-- 保安人员账号 -->
+                <div class="grid grid-cols-1 gap-2 mb-4">
+                    <button type="button" onclick="fillTestAccount('security001', 'security123')"
+                            class="flex items-center justify-center py-3 px-4 border border-green-200 rounded-lg shadow-sm text-sm font-medium text-green-700 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
+                        <i class="ri-shield-check-line mr-2 text-lg"></i>
+                        <div class="text-left">
+                            <div class="font-semibold">保安人员-001</div>
+                            <div class="text-xs opacity-75">security001 / security123</div>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- 功能说明 -->
+                <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <div class="flex items-start">
+                        <i class="ri-information-line text-blue-500 mr-2 mt-0.5"></i>
+                        <div>
+                            <h4 class="text-sm font-semibold text-blue-800 mb-1">🛡️ 安全人员权限</h4>
+                            <ul class="text-xs text-blue-700 space-y-0.5">
+                                <li>• 校园出入口安全管理</li>
+                                <li>• 访问人员身份验证</li>
+                                <li>• 二维码扫描核验</li>
+                                <li>• 安全事件记录</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 返回链接 -->
+                <div class="mt-4 text-center">
+                    <a href="/" class="text-xs text-blue-600 hover:text-blue-800 transition-colors">
+                        ← 返回主页面
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主页面 -->
+    <div id="mainPage" class="min-h-screen hidden">
+        <!-- 固定顶部导航 -->
+        <header class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 shadow-2xl border-b-2 border-blue-300">
+            <div class="w-full px-4 sm:px-6 lg:px-8">
+                <!-- 桌面端导航 -->
+                <div class="hidden md:flex justify-between items-center py-3">
+                    <div class="flex items-center">
+                        <i class="ri-shield-check-line text-3xl text-white mr-3"></i>
+                        <div>
+                            <h1 class="text-2xl font-bold text-white">访客管理系统</h1>
+                            <p class="text-sm text-blue-100">访客验证与出入管理</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-6">
+                        <!-- 签到状态区域 -->
+                        <div class="hidden md:flex items-center space-x-4 bg-white bg-opacity-10 backdrop-blur-md px-6 py-3 rounded-xl border-2 border-white border-opacity-30 shadow-lg">
+                            <div class="text-right">
+                                <p class="text-xs text-blue-100">当前时间</p>
+                                <p class="text-sm font-medium text-white" id="currentTime">-</p>
+                            </div>
+                            <div class="w-px h-8 bg-white bg-opacity-30"></div>
+                            <div class="text-right">
+                                <p class="text-xs text-blue-100">工作状态</p>
+                                <p class="text-sm font-medium text-white" id="shiftStatus">-</p>
+                            </div>
+                            <div class="flex space-x-3 ml-4">
+                                <button id="checkInBtn" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                    签到
+                                </button>
+                                <button id="checkOutBtn" class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:transform-none" disabled>
+                                    签退
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 用户信息区域 -->
+                        <div class="flex items-center space-x-3">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-sm font-medium text-white" id="securityName">-</p>
+                                <p class="text-xs text-blue-100" id="todayDate">-</p>
+                            </div>
+                            <button id="logoutBtnDesktop" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl border-2 border-red-500">
+                                <i class="ri-logout-box-r-line mr-1"></i>
+                                退出
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 移动端导航 -->
+                <div class="md:hidden">
+                    <div class="flex justify-between items-center py-3">
+                        <div class="flex items-center">
+                            <i class="ri-shield-check-line text-2xl text-white mr-2"></i>
+                            <div>
+                                <h1 class="text-lg font-bold text-white">访客管理系统</h1>
+                                <p class="text-xs text-blue-100">访客验证与出入管理</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="logoutBtnMobile" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                <i class="ri-logout-box-r-line mr-1"></i>
+                                退出
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 移动端签到状态栏 -->
+                    <div class="border-t border-white border-opacity-20 py-2">
+                        <div class="flex justify-between items-center">
+                            <div class="flex-1">
+                                <p class="text-xs text-blue-100">当前时间: <span id="currentTimeMobile" class="font-medium text-white">-</span></p>
+                                <p class="text-xs text-blue-100">状态: <span id="shiftStatusMobile" class="font-medium text-white">-</span></p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="checkInBtnMobile" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                    签到
+                                </button>
+                                <button id="checkOutBtnMobile" class="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:transform-none" disabled>
+                                    签退
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
+            <!-- 为固定导航栏留出空间 -->
+            <!-- 访客验证区域 -->
+            <div class="bg-white rounded-xl shadow-lg p-8 mb-8 mobile-card verification-section">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">
+                        <i class="ri-user-check-line text-blue-600 mr-3 text-4xl"></i>
+                        访客验证
+                    </h2>
+                    <p class="text-lg text-gray-600">选择验证方式确认访身份信息</p>
+                </div>
+
+                <!-- 验证方式选择 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 max-w-4xl mx-auto grid-mobile-1">
+                    <button id="qrScanBtn" class="group bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 text-white p-8 rounded-2xl hover:from-blue-700 hover:via-blue-600 hover:to-blue-500 transition-all duration-300 transform hover:scale-105 shadow-2xl border-2 border-blue-300 verify-btn">
+                        <div class="text-center">
+                            <div class="bg-white bg-opacity-20 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                                <i class="ri-qr-scan-2-line text-5xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">出入二维码</h3>
+                            <p class="text-blue-50 text-base font-medium">扫描入校/出校二维码验证</p>
+                        </div>
+                    </button>
+                    <button id="faceScanBtn" class="group bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 text-white p-8 rounded-2xl hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 transition-all duration-300 transform hover:scale-105 shadow-2xl border-2 border-emerald-300 verify-btn">
+                        <div class="text-center">
+                            <div class="bg-white bg-opacity-20 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                                <i class="ri-user-smile-line text-5xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">人脸识别</h3>
+                            <p class="text-emerald-50 text-base font-medium">人脸信息验证身份</p>
+                        </div>
+                    </button>
+                    <button id="studentFaceScanBtn" class="group bg-gradient-to-br from-purple-600 via-purple-500 to-purple-400 text-white p-8 rounded-2xl hover:from-purple-700 hover:via-purple-600 hover:to-purple-500 transition-all duration-300 transform hover:scale-105 shadow-2xl border-2 border-purple-300 verify-btn">
+                        <div class="text-center">
+                            <div class="bg-white bg-opacity-20 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                                <i class="ri-school-line text-5xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">学生出校</h3>
+                            <p class="text-purple-50 text-base font-medium">学生人脸扫描验证</p>
+                        </div>
+                    </button>
+                    <button id="studentCodeBtn" class="group bg-gradient-to-br from-orange-600 via-orange-500 to-orange-400 text-white p-8 rounded-2xl hover:from-orange-700 hover:via-orange-600 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-2xl border-2 border-orange-300 verify-btn">
+                        <div class="text-center">
+                            <div class="bg-white bg-opacity-20 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                                <i class="ri-key-2-line text-5xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">申请码验证</h3>
+                            <p class="text-orange-50 text-base font-medium">输入6位出校申请码</p>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- 验证说明 -->
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8 max-w-4xl mx-auto info-text-mobile">
+                    <div class="flex items-start">
+                        <i class="ri-information-line text-blue-600 text-2xl mr-3 mt-1"></i>
+                        <div>
+                            <h4 class="text-blue-800 font-bold mb-2 text-lg">验证说明</h4>
+                            <p class="text-blue-700 text-base leading-relaxed">访客必须提前预约并获得二维码和验证码，验证时需要扫描二维码并输入验证码。只有接待人确认的访客方可入校。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 二维码扫描区域 -->
+                <div id="qrScanSection" class="verification-section hidden">
+                    <div class="bg-white border-2 border-gray-200 rounded-xl p-8 shadow-lg">
+                        <div class="text-center mb-6">
+                            <i class="ri-qr-scan-2-line text-6xl text-blue-500 mb-4"></i>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">出入二维码</h3>
+                            <p class="text-gray-600">扫描入校/出校二维码并输入验证码进行身份验证</p>
+                        </div>
+
+                        <!-- 验证码输入区域 -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto mobile-card">
+                            <label class="block text-base font-bold text-blue-800 mb-3">
+                                <i class="ri-key-2-line mr-2 text-xl"></i>验证码
+                            </label>
+                            <input type="text" id="verificationCodeInput"
+                                   class="w-full px-4 py-3 text-lg border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center font-mono font-bold verification-input input-large"
+                                   placeholder="请输入6位验证码" maxlength="6"
+                                   onclick="this.select();"
+                                   onfocus="this.select();">
+                            <p class="text-sm text-blue-600 mt-3 font-medium">请向访客索取验证码并输入</p>
+                        </div>
+
+                        <!-- 扫描方式选择 -->
+                        <div class="button-group-mobile">
+                            <button id="openCameraBtn"
+                                    class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium btn-large">
+                                <i class="ri-camera-line mr-2 text-xl"></i> 打开相机
+                            </button>
+                            <button id="uploadImageBtn"
+                                    class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium btn-large">
+                                <i class="ri-image-line mr-2 text-xl"></i> 上传图片
+                            </button>
+                        </div>
+
+                        <!-- 相机扫描区域 -->
+                        <div id="cameraScanArea" class="hidden max-w-md mx-auto">
+                            <video id="qrCameraVideo" class="w-full rounded-lg mb-4" style="display: none;"></video>
+                            <canvas id="qrCameraCanvas" class="hidden"></canvas>
+                            <div class="camera-controls">
+                                <button id="startCameraBtn"
+                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors btn-large">
+                                    <i class="ri-play-circle-line mr-2 text-xl"></i> 启动相机
+                                </button>
+                                <button id="captureQrBtn"
+                                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 btn-large" disabled>
+                                    <i class="ri-camera-line mr-2 text-xl"></i> 拍照识别
+                                </button>
+                                <button id="stopCameraBtn"
+                                        class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors hidden btn-large">
+                                    <i class="ri-stop-circle-line mr-2 text-xl"></i> 停止相机
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 图片上传区域 -->
+                        <div id="imageUploadArea" class="hidden max-w-md mx-auto">
+                            <div class="border-2 border-dashed border-gray-400 rounded-lg p-6 mb-4">
+                                <i class="ri-upload-cloud-line text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600 mb-4">点击选择或拖拽二维码图片到此处</p>
+                                <input type="file" id="qrImageInput" accept="image/*" capture="environment" class="hidden">
+                                <button id="selectImageBtn"
+                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="ri-folder-open-line mr-2"></i> 选择图片
+                                </button>
+                            </div>
+                            <div id="qrImagePreview" class="hidden mb-4">
+                                <img id="qrPreviewImg" class="w-full rounded-lg" alt="二维码预览">
+                                <button id="reselectImageBtn"
+                                        class="mt-2 w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                                    <i class="ri-refresh-line mr-2"></i> 重新选择
+                                </button>
+                            </div>
+                        </div>
+
+                    
+                        <!-- 扫描结果显示 -->
+                        <div id="qrScanResult" class="hidden max-w-md mx-auto mt-4">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p class="text-sm font-medium text-blue-800 mb-1">识别结果：</p>
+                                <p id="qrScanResultText" class="text-lg font-semibold text-blue-900"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 人脸识别区域 -->
+                <div id="faceScanSection" class="verification-section hidden">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                        <i class="ri-camera-line text-6xl text-gray-400 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">人脸识别验证</h3>
+                        <p class="text-gray-600 mb-4">请对准摄像头进行人脸识别验证</p>
+
+                        <div class="max-w-md mx-auto">
+                            <video id="faceVideo" class="w-full rounded-lg mb-4" style="display: none;"></video>
+                            <canvas id="faceCanvas" class="hidden"></canvas>
+                            <button id="startFaceScanBtn"
+                                    class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold btn-large">
+                                <i class="ri-camera-line mr-2 text-xl"></i> 开始人脸识别
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                          </div>
+
+                <!-- 学生人脸识别区域 -->
+                <div id="studentFaceScanSection" class="verification-section hidden">
+                    <div class="border-2 border-dashed border-purple-300 rounded-lg p-8 text-center bg-purple-50">
+                        <i class="ri-school-line text-6xl text-purple-400 mb-4"></i>
+                        <h3 class="text-lg font-medium text-purple-900 mb-2">学生出校验证</h3>
+                        <p class="text-purple-600 mb-4">请对准摄像头进行学生人脸识别验证</p>
+
+                        <div class="max-w-md mx-auto">
+                            <video id="studentFaceVideo" class="w-full rounded-lg mb-4" style="display: none;"></video>
+                            <canvas id="studentFaceCanvas" class="hidden"></canvas>
+                            <button id="startStudentFaceScanBtn"
+                                    class="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold btn-large">
+                                <i class="ri-camera-line mr-2 text-xl"></i> 开始学生人脸识别
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 申请码验证区域 -->
+                <div id="studentCodeSection" class="verification-section hidden">
+                    <div class="border-2 border-dashed border-orange-300 rounded-lg p-8 text-center bg-orange-50">
+                        <i class="ri-key-2-line text-6xl text-orange-400 mb-4"></i>
+                        <h3 class="text-lg font-medium text-orange-900 mb-2">出校申请码验证</h3>
+                        <p class="text-orange-600 mb-4">请输入6位出校申请码进行验证</p>
+
+                        <div class="max-w-md mx-auto">
+                            <div class="mb-4">
+                                <input type="text"
+                                       id="studentCodeInput"
+                                       maxlength="6"
+                                       pattern="[0-9]{6}"
+                                       placeholder="请输入6位数字申请码"
+                                       class="w-full px-4 py-3 text-lg font-mono text-center border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                                <p class="text-sm text-orange-600 mt-2">申请码由学生提供，验证后立即失效</p>
+                            </div>
+                            <button id="verifyStudentCodeBtn"
+                                    class="w-full bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors font-semibold btn-large">
+                                <i class="ri-check-line mr-2 text-xl"></i> 验证申请码
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- 验证结果区域 -->
+            <div id="verificationResult" class="hidden bg-white rounded-lg shadow-lg p-6 mb-8">
+                <!-- 结果内容将动态插入 -->
+            </div>
+
+            <!-- 操作记录区域 -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+                    <div class="mb-4 sm:mb-0">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                            <i class="ri-file-text-line text-blue-600 mr-2"></i>
+                            操作记录
+                        </h2>
+                        <p class="text-gray-600">实时查看访客验证和通行记录</p>
+                    </div>
+                                    </div>
+
+                <!-- 统计卡片 -->
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div id="grantedCard" class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-600 text-sm font-medium">今日通行</p>
+                                <p class="text-2xl font-bold text-green-800" id="todayGrantedCount">0</p>
+                            </div>
+                            <i class="ri-checkbox-circle-fill text-green-500 text-2xl"></i>
+                        </div>
+                    </div>
+                    <div id="deniedCard" class="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-red-600 text-sm font-medium">拒绝进入</p>
+                                <p class="text-2xl font-bold text-red-800" id="todayDeniedCount">0</p>
+                            </div>
+                            <i class="ri-close-circle-fill text-red-500 text-2xl"></i>
+                        </div>
+                    </div>
+                    <div id="pendingCard" class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-blue-600 text-sm font-medium">待验证</p>
+                                <p class="text-2xl font-bold text-blue-800" id="pendingCount">0</p>
+                            </div>
+                            <i class="ri-time-fill text-blue-500 text-2xl"></i>
+                        </div>
+                    </div>
+                    <div id="totalCard" class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-purple-600 text-sm font-medium">验证总数</p>
+                                <p class="text-2xl font-bold text-purple-800" id="totalVerifications">0</p>
+                            </div>
+                            <i class="ri-user-check-fill text-purple-500 text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 访问记录 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b border-blue-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xl font-bold text-gray-900">
+                                <i class="ri-file-list-3-line text-blue-600 mr-2"></i>
+                                访问记录
+                                <span class="text-xs text-blue-600 ml-2 font-normal bg-blue-100 px-2 py-1 rounded">自动刷新</span>
+                            </h3>
+                            <div class="text-sm text-gray-600" id="recordsCount">
+                                显示前 <span id="currentCount">0</span> 条记录
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 搜索栏 - 单独一行 -->
+                    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center justify-center">
+                            <div class="relative w-full max-w-2xl">
+                                <input type="text"
+                                       id="searchInput"
+                                       placeholder="搜索访客姓名、电话、车牌号、受访人..."
+                                       class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm">
+                                <i class="ri-search-line absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 表格 -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full logs-table">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider w-1/4">访客姓名</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider w-2/5">接待人</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider w-1/3">入校时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsContainer" class="bg-white divide-y divide-gray-200" onscroll="AccessLogs.handleTableScroll(this)">
+                                <!-- 记录内容将动态插入 -->
+                                <tr>
+                                    <td colspan="3" class="px-6 py-8 text-center text-gray-500">
+                                        <i class="ri-inbox-line text-4xl mb-2 block"></i>
+                                        <p>暂无访问记录</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-4 flex items-center">
+            <i id="toastIcon" class="text-2xl mr-3"></i>
+            <div>
+                <p id="toastTitle" class="font-semibold text-gray-900"></p>
+                <p id="toastMessage" class="text-sm text-gray-600"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载提示 -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p id="loadingText" class="text-gray-700">处理中...</p>
+        </div>
+    </div>
+
+    <!-- 引入配置 -->
+    <script src="/static/js/config.js?v=2.3"></script>
+
+    <script>
+        // 测试账号自动填充函数
+        function fillTestAccount(username, password) {
+            // 填充登录表单
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+
+            // 高亮显示填充的输入框
+            const usernameField = document.getElementById('username');
+            const passwordField = document.getElementById('password');
+
+            usernameField.style.backgroundColor = '#e8f5e8';
+            passwordField.style.backgroundColor = '#e8f5e8';
+
+            setTimeout(() => {
+                usernameField.style.backgroundColor = '';
+                passwordField.style.backgroundColor = '';
+            }, 1000);
+        }
+
+        // 简化的jsQR实现，用于二维码识别
+        // 注意：这是一个简化版本，实际项目中应该使用完整的jsQR库
+        (function(global) {
+            'use strict';
+
+            function jsQR(data, width, height, options) {
+                // 简化版本的二维码识别
+                // 这里返回null表示无法识别，实际使用时需要完整的jsQR库
+                console.log('jsQR called with data length:', data ? data.length : 'no data');
+                return null;
+            }
+
+            if (typeof exports === 'object' && typeof module !== 'undefined') {
+                module.exports = jsQR;
+            } else if (typeof define === 'function' && define.amd) {
+                define([], function() { return jsQR; });
+            } else {
+                global.jsQR = jsQR;
+            }
+        }(typeof window !== 'undefined' ? window : this));
+    </script>
+    <script src="/static/js/security-portal.js?v=3.1"></script>
+</body>
+</html>

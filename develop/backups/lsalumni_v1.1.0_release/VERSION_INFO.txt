@@ -1,0 +1,38 @@
+校友入校登记系统 v1.1.0
+======================
+
+发布时间: 2025-11-13
+版本号: v1.1.0
+构建环境: Python 3.12+ (Ubuntu 24.04)
+
+系统要求:
+- Python 3.8+
+- SQLite 3.x
+- Flask 2.3+
+- Nginx (推荐生产环境)
+
+本版本修复内容:
+✅ 用户注册500错误修复
+✅ 活动报名时区问题修复
+✅ 数据库表结构完整性修复
+✅ 验证码功能恢复正常
+✅ 并发处理性能提升
+
+更新文件清单:
+- backend/app/routes/auth.py - 注册功能重构
+- backend/app/routes/event.py - 时间显示修复
+- backend/app/models/event_registration.py - 模型更新
+- backend/app/routes/health.py - 版本号更新
+- frontend/* - 前端相关文件更新
+
+数据库变更:
+- ALTER TABLE event_registrations ADD COLUMN verification_code VARCHAR(6);
+
+部署说明:
+详见 DEPLOY_v1.1.0.md
+
+技术支持:
+请查看 CHANGELOG_v1.1.0.md 了解详细信息
+
+======================
+© 2025 校友入校登记系统

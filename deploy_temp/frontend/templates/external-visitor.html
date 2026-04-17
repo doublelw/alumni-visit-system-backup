@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>外部访客申请 - 校友入校系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-black: #000000;
+            --color-white: #ffffff;
+            --color-gold: #c9a86c;
+            --color-gold-light: #e8d5b5;
+            --color-gray-light: #f5f5f5;
+            --color-gray-medium: #999999;
+            --color-gray-dark: #333333;
+
+            --font-display: 'Cinzel', serif;
+            --font-body: 'Inter', sans-serif;
+
+            --spacing-xs: 8px;
+            --spacing-sm: 16px;
+            --spacing-md: 24px;
+            --spacing-lg: 32px;
+            --spacing-xl: 48px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-gray-light);
+            color: var(--color-black);
+            min-height: 100vh;
+            padding: var(--spacing-md);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid var(--color-black);
+        }
+
+        .header h1 {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .header p {
+            font-size: 14px;
+            color: var(--color-gray-medium);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .form-card {
+            background: var(--color-white);
+            border-radius: var(--spacing-sm);
+            padding: var(--spacing-xl);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-label {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--color-gray-dark);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px var(--spacing-sm);
+            font-family: var(--font-body);
+            font-size: 15px;
+            color: var(--color-black);
+            background: var(--color-white);
+            border: 1px solid var(--color-gray-dark);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--color-gold);
+            box-shadow: 0 0 0 3px rgba(201, 168, 108, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--color-white);
+            background: var(--color-black);
+            border: 1px solid var(--color-black);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background: var(--color-gold);
+            border-color: var(--color-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(201, 168, 108, 0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            background: var(--color-gray-medium);
+            border-color: var(--color-gray-medium);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-card {
+            display: none;
+            margin-top: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            background: #f0fdf4;
+            border: 1px solid #22c55e;
+            border-radius: var(--spacing-sm);
+            text-align: center;
+        }
+
+        .result-card.show {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-card h3 {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 500;
+            color: #15803d;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .visitor-code {
+            font-size: 48px;
+            font-weight: 600;
+            color: var(--color-black);
+            letter-spacing: 0.3em;
+            margin: var(--spacing-md) 0;
+            padding: var(--spacing-md);
+            background: var(--color-white);
+            border: 2px solid var(--color-black);
+            border-radius: var(--spacing-sm);
+        }
+
+        .visitor-info {
+            margin-top: var(--spacing-md);
+            text-align: left;
+        }
+
+        .visitor-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-xs) 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .visitor-info-item:last-child {
+            border-bottom: none;
+        }
+
+        .visitor-info-label {
+            font-weight: 500;
+            color: var(--color-gray-dark);
+        }
+
+        .visitor-info-value {
+            font-weight: 600;
+            color: var(--color-black);
+        }
+
+        .error-message {
+            display: none;
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-sm);
+            background: #fef2f2;
+            border: 1px solid #ef4444;
+            border-radius: 4px;
+            color: #dc2626;
+            font-size: 14px;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: var(--spacing-lg);
+            font-size: 14px;
+            color: var(--color-gray-dark);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: var(--color-gold);
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: var(--spacing-sm);
+            }
+
+            .form-card {
+                padding: var(--spacing-md);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>外部访客申请</h1>
+            <p>External Visitor Application</p>
+        </header>
+
+        <div class="form-card">
+            <form id="visitorForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="visitor_name">访客姓名 *</label>
+                        <input type="text" id="visitor_name" name="visitor_name" class="form-input" required placeholder="请输入访客姓名">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="visitor_phone">联系电话 *</label>
+                        <input type="tel" id="visitor_phone" name="visitor_phone" class="form-input" required placeholder="请输入手机号码">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="visitor_company">公司/单位</label>
+                        <input type="text" id="visitor_company" name="visitor_company" class="form-input" placeholder="例如：XX快递、XX公司">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="visit_purpose">访问目的 *</label>
+                        <select id="visit_purpose" name="visit_purpose" class="form-select" required>
+                            <option value="">请选择访问目的</option>
+                            <option value="送货">送货</option>
+                            <option value="拜访">拜访老师</option>
+                            <option value="维修">维修服务</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="contact_person">校内联系人 *</label>
+                    <input type="text" id="contact_person" name="contact_person" class="form-input" required placeholder="请输入联系人姓名（如：李老师）">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="visit_date">访问日期</label>
+                    <input type="date" id="visit_date" name="visit_date" class="form-input">
+                    <small style="color: var(--color-gray-medium); font-size: 12px;">留空则默认为今天</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="notes">备注信息</label>
+                    <textarea id="notes" name="notes" class="form-textarea" placeholder="请输入备注信息（可选）"></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">创建访客申请</button>
+            </form>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <div class="result-card" id="resultCard">
+                <h3>✓ 申请创建成功</h3>
+                <p style="margin-bottom: var(--spacing-sm);">请将以下验证码告知访客：</p>
+                <div class="visitor-code" id="visitorCode"></div>
+                <div class="visitor-info" id="visitorInfo"></div>
+                <p style="margin-top: var(--spacing-md); font-size: 14px; color: var(--color-gray-medium);">
+                    验证码有效期：7天
+                </p>
+                <button onclick="window.print()" class="submit-btn" style="margin-top: var(--spacing-md); background: var(--color-gray-dark);">打印验证码</button>
+            </div>
+        </div>
+
+        <a href="/" class="back-link">← 返回首页</a>
+    </div>
+
+    <script>
+        const form = document.getElementById('visitorForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultCard = document.getElementById('resultCard');
+
+        // 设置默认日期为今天
+        document.getElementById('visit_date').valueAsDate = new Date();
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 禁用提交按钮
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+
+            // 隐藏错误和结果
+            errorMessage.classList.remove('show');
+            resultCard.classList.remove('show');
+
+            // 收集表单数据
+            const formData = {
+                visitor_name: document.getElementById('visitor_name').value.trim(),
+                visitor_phone: document.getElementById('visitor_phone').value.trim(),
+                visitor_company: document.getElementById('visitor_company').value.trim(),
+                visit_purpose: document.getElementById('visit_purpose').value,
+                contact_person: document.getElementById('contact_person').value.trim(),
+                visit_date: document.getElementById('visit_date').value,
+                notes: document.getElementById('notes').value.trim()
+            };
+
+            try {
+                const response = await fetch('/api/external-visitor/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const data = result.data;
+
+                    // 显示验证码
+                    document.getElementById('visitorCode').textContent = data.visitor_code;
+
+                    // 显示访客信息
+                    let visitorInfoHTML = '';
+                    visitorInfoHTML += `<div class="visitor-info-item"><span class="visitor-info-label">访客姓名:</span><span class="visitor-info-value">${data.visitor_name}</span></div>`;
+                    visitorInfoHTML += `<div class="visitor-info-item"><span class="visitor-info-label">联系电话:</span><span class="visitor-info-value">${formData.visitor_phone}</span></div>`;
+                    if (formData.visitor_company) {
+                        visitorInfoHTML += `<div class="visitor-info-item"><span class="visitor-info-label">公司/单位:</span><span class="visitor-info-value">${formData.visitor_company}</span></div>`;
+                    }
+                    visitorInfoHTML += `<div class="visitor-info-item"><span class="visitor-info-label">访问目的:</span><span class="visitor-info-value">${data.visit_purpose}</span></div>`;
+                    visitorInfoHTML += `<div class="visitor-info-item"><span class="visitor-info-label">校内联系人:</span><span class="visitor-info-value">${data.contact_person}</span></div>`;
+                    visitorInfoHTML += `<div class="visitor-info-item"><span class="visitor-info-label">访问日期:</span><span class="visitor-info-value">${data.visit_date}</span></div>`;
+
+                    document.getElementById('visitorInfo').innerHTML = visitorInfoHTML;
+
+                    // 显示结果卡片
+                    resultCard.classList.add('show');
+
+                    // 如果是已存在的访客，更新提示
+                    if (data.is_existing) {
+                        document.querySelector('#resultCard h3').textContent = '✓ 该访客已有有效验证码';
+                        document.querySelector('#resultCard p').textContent = data.message;
+                    }
+
+                    // 清空表单
+                    form.reset();
+                    document.getElementById('visit_date').valueAsDate = new Date();
+
+                } else {
+                    // 显示错误
+                    errorMessage.textContent = result.error || '创建申请失败';
+                    errorMessage.classList.add('show');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessage.textContent = '网络错误，请稍后重试';
+                errorMessage.classList.add('show');
+            } finally {
+                // 恢复提交按钮
+                submitBtn.disabled = false;
+                submitBtn.textContent = '创建访客申请';
+            }
+        });
+    </script>
+</body>
+</html>
